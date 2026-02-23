@@ -1,0 +1,273 @@
+/* FULL PAGE BACKGROUND */
+.auth-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: #ffb36b;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* MAIN CARD */
+.auth-modal {
+  width: 900px;
+  max-width: 100%;
+  background: #ffffff;
+  border-radius: 14px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* LEFT SIDE */
+.auth-left {
+  width: 40%;
+  background: #ffffff;
+  border-right: 1px solid #ececec;
+  padding: 50px 25px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-img {
+  /* width: 70px; */
+  height: 250px;
+}
+
+.welcome-title {
+  margin: 10px 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+}
+
+.welcome-sub {
+  font-size: 14px;
+  color: #666;
+}
+
+/* RIGHT SIDE */
+.auth-right {
+  width: 60%;
+  padding: 40px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.title {
+  text-align: center;
+  color: #333;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+/* SOCIAL LOGIN */
+.social-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-social {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 30px;
+  border: 1px solid #ddd;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-social:hover {
+  background: #fafafa;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.social-icon-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.btn-text {
+  flex: 1;
+  text-align: center;
+}
+
+/* DIVIDER */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #ddd;
+}
+
+.divider-text {
+  margin: 0 8px;
+  font-size: 12px;
+  color: #777;
+}
+
+/* FORM */
+.input-group {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.input-field {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  padding: 10px 0;
+  font-size: 15px;
+  outline: none;
+}
+
+.input-field:focus {
+  border-bottom-color: #a02e4e;
+}
+
+.input-error {
+  border-bottom-color: #d32f2f !important;
+}
+
+.error-text {
+  font-size: 12px;
+  color: #d32f2f;
+  margin-top: 4px;
+}
+
+/* PASSWORD TOGGLE */
+.password-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.password-toggle-button {
+  margin-left: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  background: transparent;
+  border: none;
+}
+
+.forgot-password-text {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.forgot-password-link {
+  color: #1a73e8;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
+/* BUTTON */
+.btn-primary {
+  width: 100%;
+  background: #fffdfe;
+  color: #150909;
+  border: 2px solid #000;
+  border-radius: 30px;
+  padding: 14px 0;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #fffdfe;
+}
+
+.btn-primary:disabled {
+  background-color: #faf5f5;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* BOTTOM TEXT */
+.login-text {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+/* RESPONSIVE BREAKPOINTS */
+@media (max-width: 850px) {
+  .auth-modal {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .auth-left,
+  .auth-right {
+    width: 100%;
+    padding: 32px 24px;
+  }
+
+  .auth-left {
+    border-right: none;
+    border-bottom: 1px solid #eee;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-right {
+    padding: 28px 20px;
+  }
+
+  .input-field {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .auth-wrapper {
+    padding: 12px;
+  }
+
+  .auth-right,
+  .auth-left {
+    padding: 20px 16px;
+  }
+
+  .btn-primary {
+    font-size: 14px;
+    padding: 12px 0;
+  }
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Razorpay Checkout Test</title>
+</head>
+<body>
+
+<h2>Razorpay Checkout Test</h2>
+<button id="pay">Pay Now</button>
+
+<!-- Razorpay Checkout Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+    document.getElementById("pay").onclick = function () {
+     var options = {
+        key: "rzp_test_Ry6wJuU2c92nbH",
+        order_id: "order_SBxJGmi5S4EqBz",
+        name: "Test Donation",
+        description: "Donation Payment",
+        currency: "INR",
+
+        handler: function (response) {
+         console.log("Payment Success", response);
+         alert("Payment successful: " + response.razorpay_payment_id);
+        }
+     };
+
+     var rzp = new Razorpay(options);
+     rzp.open();
+    };
+</script>
+
+</body>
+</html>

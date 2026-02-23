@@ -1,0 +1,252 @@
+.my-donations-page {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.my-donations-page h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+/* ================= STATUS TABS ================= */
+
+.donation-status-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.status-tab {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status-tab.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+/* ================= TABLE ================= */
+
+.donations-table-wrapper {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+   overflow: hidden;
+}
+
+.donations-table {
+  width: 100%;
+  border-collapse: collapse;
+  /* min-width: 1100px; */
+  table-layout: auto;
+}
+
+.donations-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-transform: uppercase;
+}
+
+
+.donations-table td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.donations-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* Make Fundraiser column wider */
+.donations-table th:nth-child(1),
+.donations-table td:nth-child(1) {
+  width: 30%;
+}
+
+/* Donation */
+.donations-table th:nth-child(2),
+.donations-table td:nth-child(2) {
+  width: 10%;
+}
+
+/* PDF */
+.donations-table th:nth-child(3),
+.donations-table td:nth-child(3) {
+  width: 12%;
+}
+
+/* Total Paid */
+.donations-table th:nth-child(4),
+.donations-table td:nth-child(4) {
+  width: 10%;
+}
+
+/* Status */
+.donations-table th:nth-child(5),
+.donations-table td:nth-child(5) {
+  width: 12%;
+}
+
+/* Date */
+.donations-table th:nth-child(6),
+.donations-table td:nth-child(6) {
+  width: 13%;
+}
+/* Receipt button column */
+.donations-table th:nth-child(7),
+.donations-table td:nth-child(7) {
+  width: 13%;
+}
+
+
+.donation-id {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.donation-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* ================= STATUS BADGES ================= */
+
+.donation-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.donation-status.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.donation-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.donation-status.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ================= DOWNLOAD RECEIPT ================= */
+
+.download-receipt-btn {
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.download-receipt-btn:hover {
+  background: #1e40af;
+}
+
+.download-receipt-btn:active {
+  transform: scale(0.97);
+}
+
+/* ================= STATES ================= */
+
+.loading-cell,
+.empty-cell {
+  text-align: center;
+  padding: 24px;
+  color: #6b7280;
+}
+
+/* ================= RESPONSIVE SCROLL (TABLET + MOBILE) ================= */
+
+@media (max-width: 1024px) {
+  .donations-table-wrapper {
+    overflow-x: auto; /* ✅ allow scroll */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .donations-table {
+    min-width: 950px; /* ✅ keep columns visible */
+  }
+}
+
+@media (max-width: 640px) {
+  .donations-table-wrapper {
+    overflow-x: auto; /* ✅ allow scroll */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .donations-table {
+    min-width: 900px; /* ✅ full table stays */
+  }
+
+  .download-receipt-btn {
+    white-space: nowrap; /* ✅ button won't break */
+  }
+}
+
+
+.status-with-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.amount-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;            /* ✅ more space between amount + tip */
+  flex-wrap: wrap;
+  padding-top: 2px;     /* ✅ slight spacing inside */
+}
+
+.amount-main {
+  font-weight: 700;
+  color: #111827;
+}
+
+.amount-sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+
+.download-receipt-btn:hover {
+  background: #1d4ed8;
+}

@@ -1,0 +1,122 @@
+.admin-platform-tips-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+.admin-platform-tips-page h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 20px;
+}
+
+/* ================= SUMMARY ================= */
+
+.tips-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.tips-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px 20px;
+  min-width: 200px;
+}
+
+.tips-card span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.tips-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* ================= TABLE ================= */
+
+.tips-table-wrapper {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  overflow-x: auto;
+}
+
+.tips-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tips-table th {
+  padding: 14px;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+  background: #f9fafb;
+  text-align: left;
+}
+
+.tips-table td {
+  padding: 14px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.amount {
+  font-weight: 700;
+}
+
+/* ================= TAGS ================= */
+
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tag.guest {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tag.user {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+/* ================= STATES ================= */
+
+.loading-cell,
+.empty-cell {
+  text-align: center;
+  padding: 24px;
+  color: #6b7280;
+}
+
+.donation-id {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 640px) {
+  .tips-summary {
+    flex-direction: column;
+  }
+
+  .tips-card {
+    width: 100%;
+  }
+}

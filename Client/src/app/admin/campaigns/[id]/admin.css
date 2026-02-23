@@ -1,0 +1,947 @@
+/* =====================================================
+   ADMIN CAMPAIGN DETAILS – ROOT
+===================================================== */
+
+.admin-campaign-page {
+  background: #f6f7f9;
+  min-height: 100vh;
+  padding-bottom: 80px;
+  font-family: Inter, system-ui, sans-serif;
+  color: #1f2937;
+}
+
+/* Center on desktop */
+@media (min-width: 1024px) {
+  .admin-campaign-page {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+}
+
+/* =====================================================
+   TOP BAR
+===================================================== */
+
+@media (max-width: 640px) {
+  .admin-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .admin-view-text {
+    font-size: 13px;
+    color: #6b7280;
+  }
+}
+
+
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 14px 18px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-back-btn {
+  background: none;
+  border: none;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.admin-view-text {
+  font-weight: 700;
+}
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.admin-header {
+  background: #ffffff;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-header h1 {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.admin-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* =====================================================
+   PROGRESS
+===================================================== */
+
+.admin-progress {
+  margin: 16px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+}
+
+@media (max-width: 640px) {
+  .admin-progress-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+
+.admin-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-raised {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.admin-goal {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.admin-progress-bar {
+  margin-top: 10px;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.admin-progress-bar div {
+  height: 100%;
+  background: #22c55e;
+}
+
+/* =====================================================
+   COVER IMAGE
+===================================================== */
+
+.admin-cover {
+  margin: 16px;
+}
+
+.admin-cover-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9; 
+  background: #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.admin-cover-box img {
+    position: absolute;
+    inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =====================================================
+   STORY
+===================================================== */
+
+
+.admin-story {
+  background: #ffffff;
+  margin: 16px;
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-story h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.admin-story p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #374151;
+}
+
+/* =====================================================
+   MEDIA
+===================================================== */
+
+.admin-media {
+  background: #ffffff;
+  margin: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-media h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.admin-media-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .admin-media-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.admin-media-grid img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+/* Videos */
+.admin-video {
+  margin-top: 16px;
+}
+
+.admin-video-box {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-video-box iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* =====================================================
+   BENEFICIARY
+===================================================== */
+.beneficiary-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px; 
+}
+.admin-beneficiary {
+  background: #ffffff;
+  margin: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-beneficiary h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.admin-beneficiary-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-beneficiary-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 800;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.approve-btn { background: #16a34a; color: white; }
+.reject-btn { background: #dc2626; color: white; }
+.activate-btn { background: #2563eb; color: white; }
+.suspend-btn { background: #dcaa54; color: white; }
+.revoke-btn {  background: #ef4444; color: white; }
+.complete-btn { background: #2563eb; color: white;
+}
+
+.approve-btn:hover { background: #15803d;}
+
+.reject-btn:hover { background: #b91c1c;}
+
+.activate-btn:hover { background: #1d4ed8;}
+
+.suspend-btn:hover { background: #f2b854;}
+
+.revoke-btn:hover { background: #ca623c;}
+
+.complete-btn:hover { background: #1d4ed8;}
+
+
+
+/* ================= REJECT MODAL ================= */
+.rp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999; /* ✅ must be higher than action-bar (50) */
+  padding: 16px;
+}
+
+.rp-modal {
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px 18px;
+
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  border: 1px solid #e5e7eb;
+}
+
+.rp-modal h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.rp-modal textarea {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 90px;
+
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+
+  outline: none;
+  resize: none;
+
+  font-size: 14px;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.rp-modal textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.rp-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+@media (max-width: 640px) {
+  .rp-modal-actions {
+    flex-direction: column;
+  }
+
+  .rp-modal-actions .admin-action-btn {
+    width: 100%;
+  }
+}
+
+
+/* ================= ADMIN ACTION BAR ================= */
+@media (max-width: 640px) {
+  .action-bar-inner {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-action-btn {
+    width: 100%;
+  }
+}
+
+.action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 14px 20px;
+
+  display: flex;
+  justify-content: center;
+  z-index: 50;
+}
+
+/* Inner container to align right */
+.action-bar-inner {
+  width: 100%;
+  max-width: 960px;
+
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px; /* 👈 SPACE BETWEEN BUTTONS */
+}
+
+/* Base button */
+.admin-action-btn {
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 10px;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+
+
+/* Disabled state */
+.admin-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ================= ADMIN RECIPIENT CARD ================= */
+
+.recipient-admin-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  margin: 16px;
+
+}
+
+.recipient-admin-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .admin-media-grid img {
+    height: 200px;
+  }
+}
+
+/* GRID */
+.recipient-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.recipient-admin-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  word-break: break-word;
+}
+
+/* FOOTER */
+.recipient-admin-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+/* STATUS */
+.status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status.pending {
+  color: #d97706;
+}
+
+.status.verified {
+  color: #059669;
+}
+
+/* VERIFY BUTTON */
+.verify-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.verify-btn:hover {
+  background: #1d4ed8;
+}
+
+/* MOBILE */
+@media (max-width: 640px) {
+  .recipient-admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recipient-admin-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+/* =====================================================
+   ADMIN DOCUMENTS
+===================================================== */
+@media (max-width: 640px) {
+  .admin-document-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .admin-document-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+
+.admin-documents {
+  background: #ffffff;
+  margin: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-documents-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* CARD WRAPPER */
+.admin-documents-card {
+  background: #f9fafb;
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+/* EMPTY STATE */
+.admin-documents-empty {
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+/* LIST */
+.admin-documents-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* DOCUMENT ROW */
+.admin-document-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+}
+
+.admin-document-item:last-child {
+  margin-bottom: 0;
+}
+
+/* LEFT INFO */
+.admin-document-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-document-link {
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.admin-document-link:hover {
+  text-decoration: underline;
+}
+
+/* STATUS BADGES */
+.admin-doc-status {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.admin-doc-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-doc-status.verified {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-doc-status.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ACTION BUTTONS */
+.admin-document-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-doc-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* VERIFY BUTTON */
+.admin-doc-btn.verify {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.admin-doc-btn.verify:hover {
+  background: #15803d;
+}
+
+/* REJECT BUTTON */
+.admin-doc-btn.reject {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.admin-doc-btn.reject:hover {
+  background: #b91c1c;
+}
+
+/* =====================================================
+   CAMPAIGN UPDATES (ADMIN)
+===================================================== */
+
+.campaign-updates-section {
+  background: #ffffff;
+  margin: 18px;
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.campaign-updates-section h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 16px;
+  color: #111827;
+}
+
+/* LIST */
+.updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* UPDATE ITEM */
+.update-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+/* HEADER */
+.update-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* TITLE */
+.update-header strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.3;
+}
+
+/* DATE */
+.update-date {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* CONTENT */
+.update-content {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #374151;
+}
+
+/* EMPTY STATE TEXT */
+.campaign-updates-section p {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+/* =====================================================
+   MOBILE OPTIMIZATION
+===================================================== */
+
+@media (max-width: 640px) {
+  .campaign-updates-section {
+    padding: 18px;
+  }
+
+  .update-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .update-date {
+    font-size: 11px;
+  }
+}
+
+/* ================= CAMPAIGN HIGHLIGHTS ================= */
+
+.campaign-highlights {
+  margin: 16px;
+}
+
+.campaign-highlights h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+/* Card */
+.highlights-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Rows */
+.highlight-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .highlight-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Item */
+.highlight-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.highlight-item.full {
+  grid-column: 1 / -1;
+}
+
+/* Text */
+.highlight-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.highlight-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Skills */
+.skill-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.skill-chip {
+  background: #f3f4f6;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+@media (max-width: 640px) {
+  .view-pan-btn {
+    position: static;
+    margin-top: 10px;
+    align-self: flex-start;
+  }
+}
+
+
+.view-pan-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.view-pan-btn:hover {
+  background: #dbeafe;
+}
+
+.pan-inline-card {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: grid;
+  gap: 8px;
+  animation: fadeIn 0.15s ease-in;
+}
+
+.pan-inline-card .label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pan-inline-card .value {
+  font-weight: 500;
+  color: #111827;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-beneficiary-card {
+  position: relative;
+  display: flex;
+  gap: 16px;
+}
+
+/* Content takes full width */
+.admin-beneficiary-content {
+  flex: 1;
+}
+
+
+@media (max-width: 640px) {
+  .admin-header h1 {
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  .admin-subtitle {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-beneficiary-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-beneficiary-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+}
+
+

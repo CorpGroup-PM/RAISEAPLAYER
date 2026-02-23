@@ -1,0 +1,83 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { APP_FILTER } from '@nestjs/core';
+
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { MailModule } from './mail/mail.module';
+import { AdminModule } from './admin/admin.module';
+import { UserprofileModule } from './userprofile/userprofile.module';
+import { FundraiserModule } from './fundraiser/fundraiser.module';
+import { FundraiserDocumentsModule } from './fundraiser-documents/fundraiser-documents.module';
+import { RecipientAccountModule } from './recipient-account/recipient-account.module';
+import { PaymentsModule } from './payments/payments.module';
+import { SuppoertersModule } from './donation/supporters.module';
+import { PayoutRequestsModule } from './payout-requests/payout-requests.module';
+import { RedisModule } from './redies/redis.module';
+import { PayoutsModule } from './payouts/payouts.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { ReceiptService } from './receipt/receipt.service';
+import { ContactusModule } from './contactus/contactus.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    RedisModule,
+    ThrottlerModule.forRootAsync({
+     imports: [RedisModule],
+     inject: ['REDIS_CLIENT'],
+     useFactory: (redis) => ({
+        throttlers: [
+         {
+            name: 'short',
+            ttl: 60,
+            limit: 3,
+         },
+         {
+            name: 'medium',
+            ttl: 10,
+            limit: 20,
+         },
+         {
+            name: 'long',
+            ttl: 60,
+            limit: 100,
+         },
+        ],
+        storage: new ThrottlerStorageRedisService(redis),
+     }),
+    }),
+
+    PrismaModule,
+    UsersModule,
+    AuthModule,
+    MailModule,
+    AdminModule,
+    UserprofileModule,
+    FundraiserModule,
+    FundraiserDocumentsModule,
+    RecipientAccountModule,
+    PaymentsModule,
+    SuppoertersModule,
+    PayoutRequestsModule,
+    PayoutsModule,
+    ContactusModule,
+    AnalyticsModule,
+  
+  ],
+  controllers: [AppController,],
+  providers: [
+    AppService,
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    }, ReceiptService,
+  ],
+})
+export class AppModule {}

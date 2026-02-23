@@ -1,0 +1,20 @@
+<p>Hi {{name}},</p>
+
+<p>
+Good news! Your payout has been <strong>successfully transferred</strong>.
+</p>
+
+<ul>
+  <li><strong>Fundraiser:</strong> {{fundraiserTitle}}</li>
+  <li><strong>Amount:</strong> ₹{{amount}}</li>
+  {{#if transactionId}}
+  <li><strong>Transaction ID:</strong> {{transactionId}}</li>
+  {{/if}}
+</ul>
+
+<p>
+The amount has been credited to your registered bank account.
+</p>
+
+<p>– Team RaiseAPlayer</p>
+

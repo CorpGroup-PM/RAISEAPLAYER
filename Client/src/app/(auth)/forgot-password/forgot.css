@@ -1,0 +1,282 @@
+/* Use same wrapper + modal styles from register.css */
+@import "../register/register.css";
+
+/* ---------------- FORGOT PASSWORD SPECIFIC ELEMENTS ---------------- */
+
+.auth-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: #ffb36b;   /* SAME BACKGROUND */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.auth-modal {
+  width: 900px;
+  max-width: 100%;
+  background: white;
+  border-radius: 14px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+}
+
+/* EMAIL ROW – input + Verify Email button on same line */
+.email-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Email input should stretch */
+.email-row .input-field {
+  flex: 1;
+  margin: 0;
+  padding-bottom: 12px;
+}
+
+/* Verify Email button – small, right side */
+.inline-otp-btn {
+
+  margin-top: 8px;
+  width: 120px;
+  padding: 8px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  
+}
+
+.inline-otp-btn:hover {
+  background: #1765cc;
+}
+
+/* Verified label */
+.verified-badge {
+  color: #0f9d58;
+  font-weight: 600;
+  margin-left: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Make Verify OTP + Resend OTP appear side by side */
+.otp-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;       /* spacing between buttons */
+  margin-top: 8px;
+}
+
+/* Keep "Resend OTP in Xs" aligned properly */
+.otp-actions-row .timer-text {
+  font-size: 14px;
+  color: #555;
+  white-space: nowrap;
+}
+
+
+
+/* Subtitle text */
+.forgot-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.forgot-subtext {
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 22px;
+}
+
+/* FORCE SHOW PASSWORD FIELDS */
+.input-group {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  margin-bottom: 18px;
+}
+.auth-right {
+  overflow: visible !important;
+}
+
+
+.password-strength-bar {
+  width: 80px;
+  height: 5px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+/* Colors per level */
+.strength-0 { width: 10%; background: #d32f2f; }
+.strength-1 { width: 25%; background: #ff9800; }
+.strength-2 { width: 50%; background: #fbc02d; }
+.strength-3 { width: 75%; background: #7cb342; }
+.strength-4 { width: 100%; background: #2e7d32; }
+
+
+.password-hint {
+  font-size: 13px;
+  color: #666;
+  margin-top: 10px;
+}
+
+.password-rule-dynamic {
+  margin-top: 10px;
+  padding-left: 20px;
+}
+
+.password-rule-dynamic li {
+  color: #d32f2f;   /* Red text */
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #444;
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* PASSWORD WRAPPER – FIX OVERLAP */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* make space inside input for the eye icon */
+.password-wrapper .input-field {
+  padding-right: 40px !important;
+  width: 100%;
+}
+
+.password-toggle-button {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+}
+
+
+/* EMAIL SECTION */
+.email-section {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.email-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.email-row .input-field {
+  flex: 1;
+  margin: 0;
+  padding-bottom: 12px;
+}
+
+/* OTP section inside forgot password flow */
+.forgot-otp-wrapper {
+  margin-top: 10px;
+}
+
+/* Reset Password Section */
+.reset-section {
+  width: 100%;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: fadeIn 0.25s ease;
+}
+
+/* Reset Password button matches your .btn-primary */
+.btn-reset {
+  width: 100%;
+  background: #fffdfe;
+  color: #150909;
+  border: 2px solid #000;
+  border-radius: 30px;
+  padding: 14px 0;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-reset:hover {
+  background: #ffffff;
+}
+
+.input-field:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.password-toggle-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* Disabled Reset Password button */
+.btn-primary:disabled {
+  background-color: #faf5f5 !important;  /* light grey */
+  color: #999 !important;                /* faded text */
+  border-color: #070606 !important;         /* lighter border */
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+/* Prevent hover effects when disabled */
+.btn-primary:disabled:hover {
+  background-color: #faf5f5 !important;
+}
+
+
+/* Small fade animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Match responsive behaviour */
+@media (max-width: 600px) {
+  .reset-section {
+    margin-top: 16px;
+  }
+}

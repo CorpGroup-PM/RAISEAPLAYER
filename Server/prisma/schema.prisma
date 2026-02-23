@@ -1,0 +1,516 @@
+// ----------------------------------------------------------------------
+// 1. CONFIGURATION
+// ----------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------------------------------------------
+// 2. ENUMS
+// ----------------------------------------------------------------------
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum CampaignFor {
+  SELF
+  OTHER
+}
+
+enum CampaignStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ACTIVE
+  SUSPENDED
+  COMPLETED
+}
+
+enum PaymentProvider {
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum OtpType {
+  SIGNUP
+  PASSWORD_RESET
+  EMAIL_VERIFY
+}
+
+enum DocumentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum SportsDocumentType {
+  ATHLETE_IDENTITY
+  ACADEMY_CONFIRMATION
+  COACH_CONFIRMATION
+  EQUIPMENT_QUOTE
+  TOURNAMENT_INVITE
+  TRAINING_RECEIPT
+  SPORTS_FEDERATION_PROOF
+  OTHER
+}
+
+enum RecipientType {
+  SELF
+  PARENT_GUARDIAN
+  COACH
+  ACADEMY
+}
+
+enum TransferStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+// ----------------------------------------------------------------------
+// 3. USER & AUTH DOMAIN
+// ----------------------------------------------------------------------
+
+model User {
+  id          String  @id @default(uuid())
+  firstName   String  @map("first_name")
+  lastName    String? @map("last_name")
+  email       String  @unique
+  phoneNumber String? @unique @map("phone_number")
+
+  passwordHash String?      @map("password_hash")
+  provider     AuthProvider @default(LOCAL)
+  googleId     String?      @unique
+  role         UserRole     @default(USER)
+
+  isEmailVerified           Boolean @default(false) @map("is_email_verified")
+  currentHashedRefreshToken String?
+  refreshTokenUpdatedAt     DateTime? @map("refresh_token_updated_at")
+  profileImageUrl           String? @map("profile_image_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  fundraisersCreated       Fundraiser[]          @relation("FundraiserCreator")
+  fundraisersBeneficiary   Fundraiser[]          @relation("FundraiserBeneficiaryUser")
+  donations                Donation[]            @relation("RegisteredDonor")
+  processedPayouts         Payout[]              @relation("PayoutProcessedBy")
+  adminLogs                AdminLog[]
+  otps                     EmailOtp[]
+  panDetails               PanDetails?
+  transferRequestsCreated  FundTransferRequest[] @relation("TransferRequestedBy")
+  transferRequestsReviewed FundTransferRequest[] @relation("TransferReviewedBy")
+
+  @@map("users")
+}
+
+// ----------------------------------------------------------------------
+// OTP MODEL
+// ----------------------------------------------------------------------
+
+model EmailOtp {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  otpCode      String   @map("otp_code")
+  otpHash      String
+  type         OtpType
+  attemptCount Int      @default(0)
+  expiresAt    DateTime @map("expires_at")
+  isUsed       Boolean  @default(false) @map("is_used")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, type, isUsed])
+  @@map("email_otp")
+}
+
+// ----------------------------------------------------------------------
+// RESET TOKEN
+// ----------------------------------------------------------------------
+
+model ResetToken {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------
+// PAN DETAILS
+// ----------------------------------------------------------------------
+
+model PanDetails {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  panNumber String?
+  panName   String?
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  pincode   String?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ----------------------------------------------------------------------
+// 4. FUNDRAISER DOMAIN
+// ----------------------------------------------------------------------
+
+model Fundraiser {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Creator
+  creatorId String @map("creator_id")
+  creator   User   @relation("FundraiserCreator", fields: [creatorId], references: [id])
+
+  // Campaign type
+  campaignFor CampaignFor
+
+  // Beneficiary (SELF)
+  beneficiaryUserId String?
+  beneficiaryUser   User?   @relation("FundraiserBeneficiaryUser", fields: [beneficiaryUserId], references: [id])
+
+  // Beneficiary (OTHER snapshot)
+  beneficiaryOther FundraiserBeneficiaryOther?
+
+  // Content
+  title            String
+  shortDescription String @db.VarChar(220)
+  story            String @db.Text
+
+  // Sport info
+  sport      String
+  discipline String?
+  level      String?
+  skills     String[]
+
+  // Location
+  city    String
+  state   String
+  country String @default("India")
+
+  // Media
+  coverImageURL String
+  media         FundraiserMedia[]
+
+  // Status
+  status          CampaignStatus @default(PENDING_REVIEW)
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  // Money
+  goalAmount   Decimal @db.Decimal(12, 2)
+  raisedAmount Decimal @default(0) @db.Decimal(12, 2)
+
+  // Relations
+  donations Donation[]
+  payouts   Payout[]
+
+  //Relations for Documentation
+  documents        FundraiserDocument[]
+  fundraiserupdates FundraiserUpdate[]
+  recipientAccount RecipientAccount?
+  withdrawals      FundTransferRequest[]
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([sport])
+}
+
+// ----------------------------------------------------------------------
+// FUNDRAISER BENEFICIARY (OTHER)
+// ----------------------------------------------------------------------
+
+model FundraiserBeneficiaryOther {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  fullName              String
+  age                   Int?
+  relationshipToCreator String
+  phoneNumber           String?
+  email                 String?
+
+  fundraiserId String     @unique
+  fundraiser   Fundraiser @relation(fields: [fundraiserId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------------------------
+// FUNDRAISER MEDIA
+// ----------------------------------------------------------------------
+
+model FundraiserMedia {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  fundraiserId String     @unique @map("fundraiser_id")
+  fundraiser   Fundraiser @relation(fields: [fundraiserId], references: [id], onDelete: Cascade)
+
+  youTubeUrl   String[]
+  playerImages String[]
+  sortOrder    Int      @default(0)
+
+  @@index([fundraiserId])
+  @@map("fundraiser_media")
+}
+
+//========================================
+//  Documentation of Fundraiser
+//========================================
+model FundraiserDocument {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fundraiserId String
+  fundraiser   Fundraiser @relation(fields: [fundraiserId], references: [id], onDelete: Cascade)
+
+  type     SportsDocumentType
+  title    String?
+  fileUrl  String
+  mimeType String
+  fileSize Int
+
+  isPublic Boolean @default(false)
+
+  verificationStatus DocumentVerificationStatus @default(PENDING)
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  rejectionReason    String?
+
+  @@index([fundraiserId])
+}
+
+//============================
+//  Fundraiser Updates
+//============================
+model FundraiserUpdate {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  UpdateAt  DateTime @updatedAt
+
+  fundraiserId String     
+  fundraiser   Fundraiser @relation(fields: [fundraiserId], references: [id], onDelete: Cascade)
+
+  title   String?
+  content String  @db.Text
+
+  @@index([fundraiserId])
+}
+
+//=======================================
+//  Receipent Account
+//=======================================
+model RecipientAccount {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  fundraiserId String     @unique
+  fundraiser   Fundraiser @relation(fields: [fundraiserId], references: [id], onDelete: Restrict)
+
+  recipientType RecipientType
+
+  firstName     String
+  lastName      String
+  accountNumber String
+  bankName      String
+  country       String
+  ifscCode      String?
+
+  isVerified Boolean @default(false)
+
+  @@index([fundraiserId])
+}
+
+//---------------------------
+//  FundTransferRequest
+//---------------------------
+model FundTransferRequest {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  fundraiserId String
+  fundraiser   Fundraiser @relation(fields: [fundraiserId], references: [id], onDelete: Cascade)
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String  @default("INR")
+
+  status      TransferStatus @default(PENDING)
+  processedAt DateTime?
+
+  // creator who requested payout
+  requestedById String @map("requested_by_id")
+  requestedBy   User   @relation("TransferRequestedBy", fields: [requestedById], references: [id])
+
+  // admin who reviewed / processed
+  reviewedById String? @map("reviewed_by_id")
+  reviewedBy   User?   @relation("TransferReviewedBy", fields: [reviewedById], references: [id])
+
+  reviewReason String? @map("review_reason")
+  failedReason String? @map("failed_reason")
+
+  // link to payout ledger
+  payoutId String? @unique @map("payout_id")
+  payout   Payout? @relation(fields: [payoutId], references: [id])
+
+  // idempotency for processing endpoint
+  idempotencyKey String? @unique @map("idempotency_key")
+
+  @@index([fundraiserId])
+  @@index([status])
+  @@map("FundTransferRequest") 
+}
+
+// ----------------------------------------------------------------------
+// 5. DONATIONS & PAYMENTS
+// ----------------------------------------------------------------------
+
+model Donation {
+  id           String  @id @default(uuid())
+  fundraiserId String  @map("fundraiser_id")
+  donorId      String? @map("donor_id")
+
+  guestName   String?
+  guestEmail  String?
+  guestMobile String?
+
+  //Money imp
+  donationAmount    Decimal @db.Decimal(15, 2)
+  platformTipAmount Decimal @default(0) @db.Decimal(15, 2)
+  totalAmount       Decimal @db.Decimal(15, 2)
+
+  currency    String        @default("INR")
+  isAnonymous Boolean       @default(false)
+  message     String?
+  status      PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  fundraiser Fundraiser @relation(fields: [fundraiserId], references: [id])
+  donor      User?      @relation("RegisteredDonor", fields: [donorId], references: [id])
+  payment    Payment?
+
+  @@map("donations")
+}
+
+model Payment {
+  id         String          @id @default(uuid())
+  donationId String          @unique @map("donation_id")
+  provider   PaymentProvider @default(RAZORPAY)
+
+  //Razopay identifiers
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+
+  status      PaymentStatus @default(PENDING)
+  rawResponse Json?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  donation Donation @relation(fields: [donationId], references: [id])
+
+  @@map("payments")
+}
+
+// ----------------------------------------------------------------------
+// 6. PAYOUTS
+// ----------------------------------------------------------------------
+
+model Payout {
+  id           String  @id @default(uuid())
+  fundraiserId String  @map("fundraiser_id")
+  amount       Decimal @db.Decimal(15, 2)
+  currency     String  @default("INR")
+
+  //snapshot fields
+  accountHolderName   String
+  maskedAccountNumber String
+  transferredToLabel  String //eg. "Family Membersr(Father,Mother,etc)"
+  bankName            String?
+  ifscCode            String?
+
+  transactionId String
+  paymentDate   DateTime @map("payment_date")
+  proofImageUrl String?
+  notes         String?
+
+  processedById String   @map("processed_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  fundraiser          Fundraiser           @relation(fields: [fundraiserId], references: [id])
+  processedBy         User                 @relation("PayoutProcessedBy", fields: [processedById], references: [id])
+  fundTransferRequest FundTransferRequest?
+
+  @@map("payouts")
+}
+
+// ----------------------------------------------------------------------
+// 7. LOGS
+// ----------------------------------------------------------------------
+
+model NotificationLog {
+  id             String   @id @default(uuid())
+  recipientEmail String
+  subject        String
+  type           String
+  sentAt         DateTime @default(now())
+  status         String
+
+  @@map("notification_logs")
+}
+
+model AdminLog {
+  id          String   @id @default(uuid())
+  adminId     String
+  action      String
+  targetId    String
+  targetTable String
+  ipAddress   String?
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@map("admin_activity_logs")
+}
+
+model Review {
+  id    String @id @default(uuid())
+  name  String
+  rating  Int
+  message String
+  createdAt   DateTime @default(now())
+  isVerified Boolean @default(false)
+
+  @@map("reveiw")
+}

@@ -1,0 +1,536 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { api } from "@/lib/api-client";
+import "../../dashboard/campaigns/[id]/campaign-details.css";
+import DonateModal from "@/components/donation/DonateModal";
+import DonorsList from "@/components/donation/DonorsList";
+import type { Donation } from "@/types/donation";
+import "./explore.css";
+import PayoutSummary from "@/components/public/payouts/PayoutSummary";
+import StatusBadge from "@/components/StatusBadge/StatusBadge";
+
+
+type BeneficiaryUser = {
+  firstName: string;
+  lastName: string;
+};
+
+type BeneficiaryOther = {
+  fullName: string;
+  relationshipToCreator: string;
+};
+
+type Fundraiser = {
+  id: string;
+  title: string;
+  shortDescription: string;
+  coverImageURL?: string;
+  goalAmount: string;
+  raisedAmount: string;
+  sport: string;
+  city: string;
+  state: string;
+  story?: string;
+  media?: any[];
+  status: "ACTIVE" | "INACTIVE" | "REJECTED";
+
+  campaignFor?: "SELF" | "OTHER";
+  beneficiaryUser?: BeneficiaryUser;
+  beneficiaryOther?: BeneficiaryOther;
+
+  donations?: Donation[];
+};
+
+type VideoMedia = {
+  embedUrl: string;
+  originalUrl: string;
+};
+
+type CampaignUpdate = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+};
+
+export default function ExploreFundraiserDetailsPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+
+  const [campaign, setCampaign] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [openDonate, setOpenDonate] = useState(false);
+
+  const [imageMedia, setImageMedia] = useState<string[]>([]);
+  const [videoMedia, setVideoMedia] = useState<VideoMedia[]>([]);
+  const [updates, setUpdates] = useState<CampaignUpdate[]>([]);
+  const [currentImage, setCurrentImage] = useState(0);
+  const [currentVideo, setCurrentVideo] = useState(0);
+
+  const [showAllUpdates, setShowAllUpdates] = useState(false);
+  const [expandedStory, setExpandedStory] = useState(false);
+
+
+  const nextImage = () => {
+    setCurrentImage((prev) =>
+      prev === imageMedia.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const prevImage = () => {
+    setCurrentImage((prev) =>
+      prev === 0 ? imageMedia.length - 1 : prev - 1
+    );
+  };
+
+  const nextVideo = () => {
+    setCurrentVideo((prev) =>
+      prev === videoMedia.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const prevVideo = () => {
+    setCurrentVideo((prev) =>
+      prev === 0 ? videoMedia.length - 1 : prev - 1
+    );
+  };
+
+
+  /* ================= FETCH CAMPAIGN ================= */
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchCampaign = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/fundraiser/${id}/public`);
+
+        const campaign = res?.data?.data;
+        setCampaign(campaign);
+
+        console.log("campaign details", campaign);
+        console.log("updates from be", campaign?.fundraiserupdates);
+
+        const updatesFromBE = Array.isArray(campaign?.fundraiserupdates)
+          ? campaign.fundraiserupdates
+          : [];
+
+        setUpdates(
+          updatesFromBE.sort(
+            (a: any, b: any) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+        );
+      } catch (err) {
+        console.error("Failed to fetch campaign", err);
+        setCampaign(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCampaign();
+  }, [id, openDonate]);
+
+
+  /* ================= MEDIA NORMALIZATION ================= */
+  useEffect(() => {
+    if (!campaign?.media) return;
+
+    const images: string[] = [];
+    const videos: VideoMedia[] = [];
+
+    campaign.media.forEach((item: any) => {
+      if (Array.isArray(item.playerImages)) {
+        images.push(...item.playerImages);
+      }
+
+      if (Array.isArray(item.youTubeUrl)) {
+        item.youTubeUrl.forEach((originalUrl: string) => {
+          const videoId = originalUrl.includes("youtu.be/")
+            ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
+            : originalUrl.split("v=")[1]?.split("&")[0];
+
+          if (videoId) {
+            videos.push({
+              embedUrl: `https://www.youtube.com/embed/${videoId}`,
+              originalUrl,
+            });
+          }
+        });
+      }
+    });
+
+    setImageMedia(images);
+    setVideoMedia(videos);
+  }, [campaign]);
+
+  /* ================= STATES ================= */
+  if (loading) {
+    return <div className="dashboard-center">Loading campaign...</div>;
+  }
+
+  if (!campaign || campaign.status !== "ACTIVE") {
+    return <div className="dashboard-center">Campaign not available</div>;
+  }
+
+  const raised = Number(campaign.raisedAmount || 0);
+  const goal = Number(campaign.goalAmount || 0);
+  const progress =
+    goal === 0 ? 0 : Math.min(Math.round((raised / goal) * 100), 100);
+
+  return (
+
+    <div className="campaign-page public-view">
+      <header className="campaign-topbar">
+        <button
+          className="back-btn"
+          onClick={() => router.push("/donate")}
+        >
+          ← Back to Explore
+        </button>
+        <span className="manage-text">Manage</span>
+        <StatusBadge status={campaign.status} />
+      </header>
+
+      {/* HEADER */}
+      <section className="campaign-header">
+        <h1>{campaign.title}</h1>
+        <p className="subtitle">{campaign.shortDescription}</p>
+      </section>
+
+      {/* ================= TOP SPLIT SECTION ================= */}
+      <div className="campaign-layout">
+
+        {/* LEFT COLUMN */}
+        <div className="campaign-left">
+
+          {/* COVER */}
+          <div className="cover-box">
+            <img
+              src={campaign.coverImageURL || "/background.png"}
+              alt="Campaign cover"
+              className="cover-image"
+            />
+          </div>
+
+          {/* SPORT / LEVEL / LOCATION */}
+          <section className="highlights-card">
+
+            <div className="highlight-item">
+              <span>Sport</span>
+              <strong>{campaign.sport}</strong>
+            </div>
+
+            <div className="highlight-item">
+              <span>Level</span>
+              <strong>{campaign.level}</strong>
+            </div>
+
+            <div className="highlight-item">
+              <span>Location</span>
+              <strong>{campaign.city}, {campaign.state}</strong>
+            </div>
+
+            <div className="highlight-item">
+              <span>Discipline</span>
+              <strong>{campaign.discipline || "—"}</strong>
+            </div>
+
+            {Array.isArray(campaign.skills) &&
+              campaign.skills.length > 0 && (
+                <div className="highlight-item full">
+                  <span className="highlight-label">
+                    Key Skills
+                  </span>
+                  <div className="skill-chip-row">
+                    {campaign.skills.map(
+                      (skill: string, idx: number) => (
+                        <span className="skill-chip" key={idx}>
+                          {skill}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+
+            {/* BENEFICIARY INSIDE SAME BOX */}
+            <div className="highlight-beneficiary">
+
+              <span className="highlight-label">Beneficiary</span>
+
+              {campaign.campaignFor === "SELF" && campaign.beneficiaryUser && (
+                <div className="beneficiary-inline">
+                  <div className="beneficiary-avatar">
+                    {campaign.beneficiaryUser.firstName?.[0]}
+                  </div>
+
+                  <div className="beneficiary-info">
+                    <strong>
+                      {campaign.beneficiaryUser.firstName}{" "}
+                      {campaign.beneficiaryUser.lastName}
+                    </strong>
+                    <span className="beneficiary-meta">
+                      Organizer • Self
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {campaign.campaignFor === "OTHER" && campaign.beneficiaryOther && (
+                <div className="beneficiary-inline">
+                  <div className="beneficiary-avatar">
+                    {campaign.beneficiaryOther.fullName?.[0]}
+                  </div>
+
+                  <div className="beneficiary-info">
+                    <strong>{campaign.beneficiaryOther.fullName}</strong>
+                    <span className="beneficiary-meta">
+                      {campaign.beneficiaryOther.relationshipToCreator}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+          </section>
+
+          {/* MY JOURNEY */}
+          <section className="story-card">
+            <h3>My Journey</h3>
+
+            <p
+              className={`story-text ${expandedStory ? "expanded" : "collapsed"
+                }`}
+            >
+              {campaign.story}
+            </p>
+
+            {campaign.story && (
+              <button
+                className="read-more-story-btn"
+                onClick={() => setExpandedStory((prev) => !prev)}
+              >
+                {expandedStory ? "Read less" : "Read more"}
+              </button>
+            )}
+          </section>
+
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="campaign-right">
+
+          {/* DONATION CARD */}
+          <div className="donation-card">
+            <div className="amount">
+              ₹{raised.toLocaleString()}
+            </div>
+
+            <div className="goal">
+              raised of ₹{goal.toLocaleString()} goal
+            </div>
+
+            <div className="progress-bar">
+              <div style={{ width: `${progress}%` }} />
+            </div>
+
+            <button
+              className="donate-btn"
+              onClick={() => setOpenDonate(true)}
+            >
+              Donate Now
+            </button>
+          </div>
+
+
+          {/* RECENT DONORS */}
+          {campaign.donations && (
+            <DonorsList
+              donations={campaign.donations}
+              fundraiserId={campaign.id}
+              maxItems={5}
+            />
+          )}
+
+        </div>
+
+      </div>
+
+
+      {/* ================= FULL WIDTH START ================= */}
+
+      <section className="media-row full-width">
+
+        {/* ================= IMAGES ================= */}
+        <div className="media-box">
+          <h3>Images</h3>
+
+          {imageMedia.length === 0 ? (
+            <div className="media-empty">
+              No images right now
+            </div>
+          ) : (
+            <>
+              <div className="gallery-image-container">
+                <div
+                  className="gallery-track"
+                  style={{
+                    transform: `translateX(-${currentImage * 100}%)`,
+                  }}
+                >
+                  {imageMedia.map((url, i) => (
+                    <img key={i} src={url} className="gallery-image" />
+                  ))}
+                </div>
+
+                {imageMedia.length > 1 && (
+                  <>
+                    <button className="gallery-nav left" onClick={prevImage}>‹</button>
+                    <button className="gallery-nav right" onClick={nextImage}>›</button>
+                  </>
+                )}
+              </div>
+
+              {imageMedia.length > 1 && (
+                <div className="gallery-dots">
+                  {imageMedia.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`dot ${i === currentImage ? "active" : ""}`}
+                      onClick={() => setCurrentImage(i)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* ================= VIDEOS ================= */}
+        <div className="media-box">
+          <h3>Videos</h3>
+
+          {videoMedia.length === 0 ? (
+            <div className="media-empty">
+              No videos right now
+            </div>
+          ) : (
+            <>
+              <div className="gallery-image-container">
+                <div
+                  className="gallery-track"
+                  style={{
+                    transform: `translateX(-${currentVideo * 100}%)`,
+                  }}
+                >
+                  {videoMedia.map((v, i) => (
+                    <div className="video-box" key={i}>
+                      <iframe src={`${v.embedUrl}?rel=0`} allowFullScreen />
+                    </div>
+                  ))}
+                </div>
+
+                {videoMedia.length > 1 && (
+                  <>
+                    <button className="gallery-nav left" onClick={prevVideo}>‹</button>
+                    <button className="gallery-nav right" onClick={nextVideo}>›</button>
+                  </>
+                )}
+              </div>
+
+              {videoMedia.length > 1 && (
+                <div className="gallery-dots">
+                  {videoMedia.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`dot ${i === currentVideo ? "active" : ""}`}
+                      onClick={() => setCurrentVideo(i)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* ================= UPDATES ================= */}
+      <section className="campaign-updates-section">
+
+        <h3>Updates</h3>
+
+        {updates.length > 0 ? (
+          <>
+            <div className="updates-list">
+
+              {(showAllUpdates ? updates : updates.slice(0, 2)).map((update) => (
+                <div className="update-item" key={update.id}>
+
+                  <div className="update-header">
+                    <strong>{update.title}</strong>
+
+                    <span className="update-date">
+                      {new Date(update.createdAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+
+                  <p className="update-content">
+                    {update.content.split("\n").map((line, i) => (
+                      <React.Fragment key={i}>
+                        {line}
+                        <br />
+                      </React.Fragment>
+                    ))}
+                  </p>
+
+                </div>
+              ))}
+
+            </div>
+
+            {/* READ MORE BUTTON */}
+            {updates.length > 2 && (
+              <div className="updates-read-more-wrap">
+                <button
+                  className="read-more-btn"
+                  onClick={() => setShowAllUpdates((prev) => !prev)}
+                >
+                  {showAllUpdates ? "Show less" : "Show more"}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="updates-empty">
+            No updates posted by fundraiser yet.
+          </p>
+        )}
+
+      </section>
+
+
+      {/* FUND UTILIZATION */}
+      <section className="full-width">
+        <PayoutSummary fundraiserId={id} />
+      </section>
+
+      <DonateModal
+        fundraiserId={campaign.id}
+        isOpen={openDonate}
+        onClose={() => setOpenDonate(false)}
+      />
+
+    </div>
+
+  );
+}

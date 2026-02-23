@@ -1,0 +1,27 @@
+{{!-- fundraisers/admincomplete.hbs --}}
+<h1>✅ Campaign Completed - Action Required</h1>
+
+<p>Hello Admin,</p>
+
+<p>
+  The fundraiser <strong>{{title}}</strong> has been marked as
+  <strong>completed</strong>.
+</p>
+
+<span class="badge">COMPLETED</span>
+
+<div class="summary-box">
+  <p style="margin: 0;"><strong>Fundraiser ID:</strong> {{fundraiserId}}</p>
+  <p style="margin: 8px 0 0;"><strong>Creator Name:</strong> {{creatorName}}</p>
+  <p style="margin: 8px 0 0;"><strong>Creator Email:</strong> {{creatorEmail}}</p>
+  <p style="margin: 8px 0 0;"><strong>Goal Amount:</strong> ₹{{goalAmount}}</p>
+  <p style="margin: 8px 0 0;"><strong>Raised Amount:</strong> ₹{{raisedAmount}}</p>
+</div>
+
+<p>
+  <strong>Next step:</strong> Please review this fundraiser and proceed with payout processing if applicable.
+</p>
+
+<p>
+  — RaiseAPlayer System
+</p>

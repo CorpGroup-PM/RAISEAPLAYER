@@ -1,0 +1,429 @@
+/* ====== BASE NAVBAR ====== */
+.rp-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-bottom: 1px solid #ececec;
+  z-index: 1000;
+}
+
+/* Logo */
+.rp-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-logo-icon {
+  font-size: 24px;
+  color: #0057b8; /* blue accent */
+}
+
+.rp-logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0057b8;
+}
+
+/* Desktop menu */
+/* Make UL behave like horizontal menu */
+.rp-menu {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+}
+
+/* LI styling (your style) */
+.rp-menu li {
+  font-size: 15px;
+  font-weight: 500;
+  color: #222;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+/* Hover same as your original orange accent */
+.rp-menu li:hover {
+  color: #ff7a21;
+}
+
+/* Ensure Link text inherits LI color */
+.rp-menu li a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.rp-menu li.active {
+  color: #ff7a21;           
+  font-weight: 600;
+}
+
+.rp-mobile-links li.active {
+  color: #ff7a21;
+  font-weight: 600;
+}
+
+/* Right side */
+.rp-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.rp-start-btn {
+  background: #ff7a21;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 6px 14px rgba(255, 122, 33, 0.35);
+}
+
+.rp-start-btn:hover {
+  background: #f26e13;
+  box-shadow: 0 4px 10px rgba(255, 122, 33, 0.3);
+}
+
+/* Profile */
+.rp-profile-icon {
+  cursor: pointer;
+}
+
+.rp-user-circle {
+  font-size: 24px;
+  color: #0057b8;
+}
+
+.rp-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Dropdown */
+.rp-dropdown {
+  position: absolute;
+  top: 75px;
+  right: 24px;
+  width: 210px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 18px 40px rgba(15, 24, 40, 0.18);
+  padding: 10px 12px 12px;
+  animation: rp-fade-in 0.18s ease;
+}
+
+@keyframes rp-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rp-dd-user {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 4px 0 8px;
+  color: #111827;
+  padding: 0px 8px;
+}
+
+.rp-dd-btn {
+  width: 100%;
+  padding: 9px 10px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  background: #f4f5fb;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rp-dd-btn:hover {
+  background: #e5e7f5;
+}
+
+.rp-logout {
+  color: #b91c1c;
+}
+
+/* Currency switch */
+.rp-currency-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.rp-toggle-pill {
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  position: relative;
+}
+
+.rp-toggle-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0057b8;
+  position: absolute;
+  top: 1px;
+  left: 1px;
+}
+
+/* ====== MOBILE STYLES ====== */
+.rp-hamburger {
+  display: none;
+  width: 36px;
+  height: 36px;
+  background: #ffffff;
+  padding: 6px;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.rp-hamburger span {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: #111827;
+}
+
+/* Drawer */
+.rp-mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  max-width: 360px;
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 1500;
+  transition: width 0.25s ease;
+}
+
+.rp-mobile-menu.open {
+  width: 80%;
+}
+
+.rp-mobile-header {
+  height: 64px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.rp-back {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+  color: #111827;
+}
+
+.rp-mobile-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Mobile Links Container */
+.rp-mobile-links {
+  list-style: none;
+  padding: 12px 18px 8px;
+  margin: 0;
+}
+
+/* Each Menu Item */
+.rp-mobile-links li {
+  padding: 11px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #222;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+/* Remove last border */
+.rp-mobile-links li:last-child {
+  border-bottom: none;
+}
+
+/* Hover orange accent */
+.rp-mobile-links li:hover {
+  color: #ff7a21;
+}
+
+/* Make <Link> text inherit li color */
+.rp-mobile-links li a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.rp-mobile-section {
+  padding: 12px 18px;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* Mobile auth buttons */
+.rp-mobile-auth {
+  padding-bottom: 24px;
+}
+
+.rp-mobile-bottom {
+  margin-top: auto;
+  padding: 20px 18px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.rp-bottom-auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rp-mobile-primary,
+.rp-mobile-secondary,
+.rp-mobile-logout {
+  width: 100%;
+  padding: 12px 0;
+  border-radius: 999px;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+
+/* Login */
+.rp-mobile-primary {
+  background: #ff7a21;
+  color: white;
+}
+
+/* Register */
+.rp-mobile-secondary {
+  background: #eef2ff;
+  color: #111827;
+}
+
+/* Logout */
+.rp-mobile-logout {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Mobile user info */
+.rp-mobile-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.rp-mobile-user img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.rp-mobile-user-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.rp-mobile-user-email {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Dark overlay */
+.rp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 1400;
+}
+
+/* ====== BREAKPOINTS ====== */
+@media (max-width: 960px) {
+  .rp-menu {
+    display: none;
+  }
+
+  .rp-hamburger {
+    display: flex;
+  }
+}
+@media (max-width: 960px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: flex !important;
+  }
+}
+
+/* Logo container */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Icon container */
+.logo-icon img {
+  height: 50px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+}
+
+/* Text logo container */
+.logo-text img {
+  height: 50px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* Hide text logo on mobile */
+@media (max-width: 768px) {
+  .logo-text {
+    display: none;
+  }
+}

@@ -1,0 +1,618 @@
+/* ================= ROOT ================= */
+
+.admin-payouts {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 0 0 1px #e5e7eb;
+}
+
+/* ================= HEADER ================= */
+
+.admin-payouts-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-payouts h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.admin-payout-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-status-filter {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 14px;
+}
+
+/* ================= TABLE ================= */
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-table thead {
+  background: #f3f4f6;
+}
+
+.admin-table th {
+  padding: 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.admin-table td {
+  padding: 12px;
+  font-size: 14px;
+  color: #111827;
+  border-top: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.admin-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.admin-empty {
+  text-align: center;
+  padding: 20px;
+  color: #6b7280;
+}
+
+/* ================= BUTTONS ================= */
+
+.admin-payouts button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-payouts button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Custom action colors (non-bootstrap) */
+.btn-approve {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.btn-process {
+  background: #f59e0b;
+  color: #111827;
+}
+
+.btn-reject {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* ================= STATUS COLUMN ================= */
+
+.admin-status-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ================= TOOLTIP ================= */
+
+.admin-reason-tooltip-wrapper {
+  position: relative;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.admin-reason-tooltip {
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 260px;
+  white-space: normal;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.admin-reason-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #111827 transparent transparent transparent;
+}
+
+.admin-reason-tooltip-wrapper:hover .admin-reason-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+/* ================= PROCESSING COLUMN ================= */
+
+.admin-processing-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ================= ADMIN PROCESS FORM ================= */
+
+.admin-process-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-process-form input,
+.admin-process-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.admin-process-form textarea {
+  resize: none;
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 900px) {
+  .admin-payouts {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    min-width: 900px;
+  }
+}
+/* ================= ACTION BUTTON GROUP ================= */
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ================= BASE BUTTON ================= */
+
+.admin-actions button,
+.admin-actions .btn {
+  height: 34px;
+  padding: 0 14px;
+
+  border-radius: 6px;
+  border: none;
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+}
+
+/* Click feedback */
+.admin-actions button:active,
+.admin-actions .btn:active {
+  transform: translateY(1px);
+}
+
+/* Disabled */
+.admin-actions button:disabled,
+.admin-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ================= BUTTON VARIANTS ================= */
+
+/* Approve / Primary */
+.admin-btn-approve,
+.admin-actions .btn-primary {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.admin-btn-approve:hover,
+.admin-actions .btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+/* Processing / Warning */
+.admin-btn-processing {
+  background-color: #f59e0b;
+  color: #111827;
+}
+
+.admin-btn-processing:hover {
+  background-color: #d97706;
+}
+
+/* Reject / Fail / Danger */
+.admin-btn-danger,
+.admin-actions .btn-danger {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.admin-btn-danger:hover,
+.admin-actions .btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+/* Secondary (Close / Cancel) */
+.admin-actions .btn-secondary {
+  background-color: #6b7280;
+  color: #ffffff;
+}
+
+.admin-actions .btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+/* ================= ICON SUPPORT (OPTIONAL) ================= */
+
+.admin-actions button svg,
+.admin-actions .btn svg {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+}
+
+/* =====================================================
+   ROOT
+===================================================== */
+
+.admin-payouts-root {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.admin-payouts-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-payouts-head h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.admin-payouts-head select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+/* =====================================================
+   TABLE
+===================================================== */
+
+.admin-payouts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-payouts-table thead {
+  background: #f3f4f6;
+}
+
+.admin-payouts-table th {
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.admin-payouts-table td {
+  padding: 12px;
+  font-size: 14px;
+  color: #111827;
+  border-top: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.admin-payouts-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* =====================================================
+   FUNDRAISER CELL
+===================================================== */
+
+.fundraiser-cell {
+  cursor: pointer;
+}
+
+.fundraiser-cell:hover strong {
+  color: #2563eb;
+}
+
+.fundraiser-owner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fundraiser-id {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* =====================================================
+   INPUT (REASON)
+===================================================== */
+
+.admin-payouts-table input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  outline: none;
+}
+
+.admin-payouts-table input:focus {
+  border-color: #2563eb;
+}
+
+/* =====================================================
+   ACTION BUTTONS
+===================================================== */
+
+.admin-payouts-table td:last-child {
+  white-space: nowrap;
+}
+
+.admin-payouts-table button {
+  height: 32px;
+  padding: 0 14px;
+  margin-right: 6px;
+
+  border-radius: 6px;
+  border: none;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.05s ease;
+}
+
+.admin-payouts-table button:active {
+  transform: translateY(1px);
+}
+
+.admin-payouts-table button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Approve */
+.admin-payouts-table button:nth-child(1) {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.admin-payouts-table button:nth-child(1):hover {
+  background: #15803d;
+}
+
+/* Reject */
+.admin-payouts-table button:nth-child(2) {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.admin-payouts-table button:nth-child(2):hover {
+  background: #b91c1c;
+}
+
+/* Processing */
+.admin-payouts-table button:nth-child(1):only-child {
+  background: #f59e0b;
+  color: #111827;
+}
+
+.admin-payouts-table button:nth-child(1):only-child:hover {
+  background: #d97706;
+}
+
+/* =====================================================
+   STATUS TEXT
+===================================================== */
+
+.admin-payouts-table span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+/* =====================================================
+   LOADING TEXT
+===================================================== */
+
+.admin-payouts-root p {
+  margin-top: 14px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 900px) {
+  .admin-payouts-root {
+    overflow-x: auto;
+  }
+
+  .admin-payouts-table {
+    min-width: 900px;
+  }
+}
+
+.view-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #ff7a18;
+  cursor: pointer;
+}
+
+.view-btn:hover {
+  background: #f9fafb;
+  font-size: 13px;
+}
+
+/* MODAL */
+.rp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.rp-modal {
+  width: 420px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.modal-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.modal-row .label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.modal-row .value {
+  color: #111827;
+}
+
+.rp-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.action-btn{
+  background-color: #ff7a18;
+   padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.modal-proof {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.proof-preview {
+  width: 100%;
+  max-width: 420px;
+  max-height: 260px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.proof-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.view-full-btn,
+.download-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  text-decoration: none;
+  color: #111827;
+}
+
+.view-full-btn:hover,
+.download-btn:hover {
+  background: #f3f4f6;
+}
+
+

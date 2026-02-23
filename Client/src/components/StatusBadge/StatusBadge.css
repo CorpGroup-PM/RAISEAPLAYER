@@ -1,0 +1,36 @@
+.status-pill {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ACTIVE */
+.status-green {
+  background: #e6f9f0;
+  color: #16a34a;
+}
+
+/* PENDING_REVIEW */
+.status-yellow {
+  background: #fff4e5;
+  color: #e0c113;
+}
+
+/* REJECTED / SUSPENDED */
+.status-red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* FALLBACK */
+.status-gray {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-blue{
+  background:#e6f9f0;
+  color: rgb(32, 152, 203);
+}

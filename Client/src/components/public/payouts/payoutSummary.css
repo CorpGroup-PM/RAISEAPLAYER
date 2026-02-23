@@ -1,0 +1,224 @@
+/* =====================================================
+   PAYOUT SUMMARY CARD
+===================================================== */
+
+.payout-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  margin: 32px 16px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Title */
+.payout-card h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 16px;
+  color: #111827;
+}
+
+/* =====================================================
+   SUMMARY GRID
+===================================================== */
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.summary-grid div {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-grid span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.summary-grid strong {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* Available highlight */
+.summary-grid .available {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.summary-grid .available strong {
+  color: #16a34a;
+}
+
+/* Info icon */
+.summary-grid i {
+  font-style: normal;
+  margin-left: 4px;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+/* =====================================================
+   SUMMARY FOOTER
+===================================================== */
+
+.summary-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+/* =====================================================
+   PAYOUT TABLE
+===================================================== */
+
+.payout-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payout-table thead {
+  background: #f9fafb;
+}
+
+.payout-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-transform: uppercase;
+}
+
+.payout-table td {
+  padding: 12px;
+  font-size: 14px;
+  color: #111827;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.payout-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* =====================================================
+   EMPTY STATE
+===================================================== */
+
+.empty {
+  font-size: 14px;
+  color: #9ca3af;
+  padding: 12px 0;
+}
+
+/* =====================================================
+   SKELETON LOADER
+===================================================== */
+
+.payout-skeleton {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 32px;
+  border: 1px solid #e5e7eb;
+}
+
+.payout-skeleton .skel-row {
+  height: 16px;
+  background: linear-gradient(
+    90deg,
+    #e5e7eb 25%,
+    #f3f4f6 37%,
+    #e5e7eb 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.payout-skeleton .skel-table {
+  height: 90px;
+  background: linear-gradient(
+    90deg,
+    #e5e7eb 25%,
+    #f3f4f6 37%,
+    #e5e7eb 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border-radius: 8px;
+  margin-top: 14px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+/* Tablets */
+@media (max-width: 900px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .payout-table th,
+  .payout-table td {
+    padding: 10px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .payout-card {
+    padding: 16px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid strong {
+    font-size: 16px;
+  }
+
+  .summary-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Horizontal scroll table */
+  .payout-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

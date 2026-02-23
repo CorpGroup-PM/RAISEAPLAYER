@@ -1,0 +1,351 @@
+.admin-user-details-page {
+  padding: 24px;
+  font-family: Inter, sans-serif;
+}
+
+/* ===== TOPBAR ===== */
+.admin-user-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.admin-user-title h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.muted {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.back-btn,
+.refresh-btn {
+  border: none;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 13px;
+  transition: 0.2s ease;
+}
+
+.back-btn {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+}
+
+.back-btn:hover {
+  background: #f9fafb;
+}
+
+.refresh-btn {
+  background: linear-gradient(135deg, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
+}
+
+.refresh-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ===== STATES ===== */
+.state-box {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  font-weight: 800;
+  color: #111827;
+}
+
+.state-box.error {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #9f1239;
+}
+
+/* ===== TAB BASE ===== */
+.tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0 12px;
+}
+
+.tab {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 10px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 13px;
+  color: #111827;
+  transition: 0.2s ease;
+  position: relative;
+}
+
+/* hover */
+.tab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+}
+
+/* active base */
+.tab.active {
+  color: #ffffff;
+  border-color: transparent;
+}
+
+/* ===== TAB COLORS ===== */
+
+/* PROFILE (Blue) */
+.tab-profile.active {
+  background: linear-gradient(135deg, #e7bf11);
+  box-shadow: 0 12px 26px rgba(235, 195, 37, 0.35);
+}
+
+/* CAMPAIGNS (Green) */
+.tab-campaigns.active {
+  background: linear-gradient(135deg, #16a34a );
+  box-shadow: 0 12px 26px rgba(22, 163, 74, 0.35);
+}
+
+/* DONATIONS (Purple) */
+.tab-donations.active {
+  background: linear-gradient(135deg, #9333ea);
+  box-shadow: 0 12px 26px rgba(124, 58, 237, 0.35);
+}
+
+/* PAYOUTS (Orange) */
+.tab-payouts.active {
+  background: linear-gradient(135deg, #f97316);
+  box-shadow: 0 12px 26px rgba(249, 115, 22, 0.35);
+}
+
+/* ===== OPTIONAL: nice outline color when NOT active ===== */
+.tab-profile {
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.tab-campaigns {
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+.tab-donations {
+  border-color: rgba(124, 58, 237, 0.25);
+}
+
+.tab-payouts {
+  border-color: rgba(249, 115, 22, 0.25);
+}
+
+
+/* ===== CONTENT ===== */
+.tab-content {
+  margin-top: 10px;
+}
+
+/* ===== CARD ===== */
+.card {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border-radius: 20px;
+  padding: 18px;
+  border: 1px solid #eef2ff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06),
+    0 18px 35px rgba(15, 23, 42, 0.06);
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #111827;
+}
+
+/* ===== GRID INFO BOXES ===== */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.info {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.title {
+  font-weight: 900;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.bold {
+  font-weight: 950;
+  color: #111827;
+  font-size: 14px;
+}
+
+/* ===== AMOUNT COLORS ===== */
+.bold {
+  color: #16a34a; /* Green for amount highlight */
+}
+
+.right .muted {
+  font-size: 12px;
+}
+
+/* ===== BUTTON ===== */
+.small-btn {
+  margin-top: 10px;
+  border: none;
+  cursor: pointer;
+  padding: 9px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 900;
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
+  transition: 0.2s ease;
+}
+
+.small-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ===== OPTIONAL: STATUS CHIP COLORS (if you show status in rows) ===== */
+.status-pill {
+  display: inline-flex;          
+  align-items: center;
+  justify-content: center;
+  width: fit-content;          
+  max-width: 100%;
+  padding: 6px 12px;            
+  border-radius: 999px;
+  font-size: 12px;              
+  font-weight: 900;
+  border: 1px solid transparent;
+  line-height: 1;                
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+
+.status-pill.ACTIVE {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.status-pill.PENDING_REVIEW,.status-pill.PENDING{
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.status-pill.SUCCESS {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.status-pill.REJECTED,.status-pill.FAILED, .status-pill.SUSPENDED{
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .row {
+    flex-direction: column;
+  }
+}
+
+
+/* ✅ 2 cards per row grid */
+.grid-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+/* Each item becomes card-like */
+.grid-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px;
+  background: #ffffff;
+  transition: 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.grid-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* inside item */
+.grid-item-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid-item-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.grid-item-right {
+  text-align: right;
+}
+
+/* ✅ Responsive -> 1 column on mobile */
+@media (max-width: 900px) {
+  .grid-list {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-item-right {
+    text-align: left;
+  }
+}
+

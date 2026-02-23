@@ -1,0 +1,253 @@
+.error-text {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: -10px;
+  margin-bottom: 10px;
+}
+
+
+/* =========================
+   PAGE BACKGROUND
+   ========================= */
+.wizard-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fdfdfd;
+  /* background: linear-gradient(135deg, #b44c8c, #3b5bdc); */
+
+  padding: 16px;
+}
+
+/* =========================
+   CARD
+   ========================= */
+.wizard-card {
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* =========================
+   TITLE
+   ========================= */
+.wizard-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* =========================
+   INPUTS
+   ========================= */
+.wizard-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+/* =========================
+   FOOTER
+   ========================= */
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* User story text */
+.wizard-user-story {
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 18px;
+  line-height: 1.4;
+}
+
+
+/* =========================
+   BUTTONS
+   ========================= */
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #ffb36b;
+  color: #fff;
+  border: none;
+}
+
+.btn-secondary {
+  background: #eee;
+  border: none;
+}
+
+.btn-primary:disabled {
+  background: #e1b6cc;
+  cursor: not-allowed;
+}
+
+/* =========================
+   STEP INDICATOR
+   ========================= */
+
+/* Scrollable container */
+.indicator {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 28px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.indicator::-webkit-scrollbar {
+  display: none;
+}
+
+/* Each step (circle + line) */
+.indicator-step {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 64px;
+}
+
+/* Circle */
+.indicator-circle {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  background: #fff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Active */
+.indicator-circle.active {
+  border-color: #ffb36b;
+}
+
+/* Completed */
+.indicator-circle.completed {
+  background: #ffb36b;
+  border-color: #ffb36b;
+  color: #fff;
+}
+
+/* Line between circles */
+.indicator-line {
+  width: 36px;
+  height: 2px;
+  background: #ccc;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+/* Completed line */
+.indicator-line.completed {
+  background: #ffb36b;
+}
+
+
+/* =========================
+   PROGRESS BAR
+   ========================= */
+
+.progress-wrapper {
+  margin-bottom: 20px;
+}
+
+.progress-track {
+  height: 8px;
+  width: 100%;
+  background: #e5e5e5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #ffb36b; /* same as primary button */
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+  text-align: right;
+}
+
+/* Skill chip container */
+.skill-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Individual skill box */
+.skill-chip {
+  /* background: #e6f0ff; */
+  /* color: #2079e6; */
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #0a0a0a;
+}
+
+.skill-chip.removable {
+  cursor: pointer;
+  /* transition: background 0.2s ease, transform 0.15s ease; */
+}
+
+/* .skill-chip.removable:hover {
+   background: #ffdede;
+  color: #d11a2a;
+  transform: scale(0.97);
+} */
+
+/* =========================
+   MOBILE TWEAKS
+   ========================= */
+@media (max-width: 480px) {
+  .wizard-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .wizard-title {
+    font-size: 18px;
+  }
+
+  .wizard-footer {
+    flex-direction: column;
+  }
+}
