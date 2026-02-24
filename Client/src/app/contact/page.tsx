@@ -42,7 +42,7 @@ export default function ContactPage() {
       <div className="contact-container">
         {/* LEFT */}
         <div className="contact-left">
-          <h1 className="contact-heading">Get In Touch With Us</h1>
+          <h1 className="contact-heading">Get In Touch With Us.</h1>
 
           <p className="contact-description">
             Have questions or want to collaborate with RaiseaPlayer Foundation?
