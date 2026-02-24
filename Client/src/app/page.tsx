@@ -325,8 +325,7 @@ export default function Home() {
             ]
           ).map((x, idx) => (
             <div className="hiwCard" key={idx}>
-              {/* <div className="hiwStepCircle">{x.num}</div> */}
-
+              <div className="hiwStepNum">{x.num}</div>
               <h3 className="hiwCardTitle">{x.title}</h3>
               <p className="hiwCardDesc">{x.desc}</p>
             </div>
@@ -339,6 +338,9 @@ export default function Home() {
       <section className="keySourceSection">
 
         <h2 className="keySourceTitle">Our Key Focus Areas</h2>
+        <p className="keySourceSubtitle">
+          Driving impact through sports promotion, talent development, and community engagement.
+        </p>
 
         <div className="keySourceGrid">
           {/* CARD 1 */}
