@@ -74,6 +74,7 @@ export class MailService {
     }[],
   ) {
     await this.transporter.sendMail({
+      from: `"RaiseAPlayer" <${process.env.MAIL_USER}>`,
       to,
       subject,
       html,
