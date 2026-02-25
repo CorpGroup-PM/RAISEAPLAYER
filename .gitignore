@@ -22,7 +22,8 @@ npm-debug.log*
 yarn-debug.log*
 
 Server/dist/
-Client/package-lock.json
-Server/package-lock.json
+# Lock files are intentionally tracked so `npm ci` works in Docker builds
+# Client/package-lock.json
+# Server/package-lock.json
 Server/src/prisma/prisma.service.ts
 Server/prisma/migrations/.../migration.sql
