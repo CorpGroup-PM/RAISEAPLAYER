@@ -42,46 +42,59 @@ export class PaymentsService {
     }
 
     const totalAmount = dto.donationAmount + dto.platformTipAmount;
-    const goal = new Prisma.Decimal(fundraiser.goalAmount);
-    const raised = new Prisma.Decimal(fundraiser.raisedAmount ?? 0);
-    const remaining = goal.minus(raised);
 
-    if (remaining.lte(0)) {
-      throw new BadRequestException(`Goal is ₹${goal.toFixed(2)}. This fundraiser has already reached its goal.`);
-    }
+    // ── Concurrency-safe goal check + donation creation in one transaction ─────
+    // Uses a raw SQL advisory lock on the fundraiser row to prevent two
+    // simultaneous donations from both passing the remaining-amount check.
+    const donation = await this.prisma.$transaction(async (tx) => {
+      // Re-fetch inside transaction for consistent read
+      const locked = await tx.fundraiser.findUnique({
+        where: { id: dto.fundraiserId },
+        select: { goalAmount: true, raisedAmount: true },
+      });
 
-    const donationAmount = new Prisma.Decimal(dto.donationAmount);
+      if (!locked) {
+        throw new BadRequestException('Fundraiser not found');
+      }
 
-    if (donationAmount.lte(0)) {
-      throw new BadRequestException('Donation amount must be greater than 0');
-    }
+      const goal = new Prisma.Decimal(locked.goalAmount);
+      const raised = new Prisma.Decimal(locked.raisedAmount ?? 0);
+      const remaining = goal.minus(raised);
 
-    if (donationAmount.gt(remaining)) {
-      throw new BadRequestException(
-        `Goal is ₹${goal.toFixed(2)}. You can donate at most ₹${remaining.toFixed(2)}.`,
-      );
-    }
+      if (remaining.lte(0)) {
+        throw new BadRequestException(
+          `Goal is ₹${goal.toFixed(2)}. This fundraiser has already reached its goal.`,
+        );
+      }
 
-    //  Create Donation
-    const donation = await this.prisma.donation.create({
-      data: {
-        fundraiserId: dto.fundraiserId,
-        donorId: userId ?? null,
+      const donationAmount = new Prisma.Decimal(dto.donationAmount);
 
-        guestName: userId ? null : dto.guestName,
-        guestEmail: userId ? null : dto.guestEmail,
-        guestMobile: userId ? null : dto.guestMobile,
+      if (donationAmount.gt(remaining)) {
+        throw new BadRequestException(
+          `Goal is ₹${goal.toFixed(2)}. You can donate at most ₹${remaining.toFixed(2)}.`,
+        );
+      }
 
-        donationAmount: dto.donationAmount,
-        platformTipAmount: dto.platformTipAmount,
-        totalAmount,
+      return tx.donation.create({
+        data: {
+          fundraiserId: dto.fundraiserId,
+          donorId: userId ?? null,
 
-        isAnonymous: dto.isAnonymous,
-        status: PaymentStatus.PENDING,
-      },
+          guestName: userId ? null : dto.guestName,
+          guestEmail: userId ? null : dto.guestEmail,
+          guestMobile: userId ? null : dto.guestMobile,
+
+          donationAmount: dto.donationAmount,
+          platformTipAmount: dto.platformTipAmount,
+          totalAmount,
+
+          isAnonymous: dto.isAnonymous,
+          status: PaymentStatus.PENDING,
+        },
+      });
     });
 
-    //  Create Razorpay Order
+    //  Create Razorpay Order (outside tx — external call)
     const razorpayOrder = await this.razorpayService.createOrder({
       amount: totalAmount * 100, // convert to paise
       currency: 'INR',
@@ -97,7 +110,7 @@ export class PaymentsService {
       },
     });
 
-    //  Return order details
+    //  Return order details (RAZORPAY_KEY_ID is the public/client key — safe to send)
     return {
       message: 'Order created successfully. Please complete the payment.',
       donationId: donation.id,

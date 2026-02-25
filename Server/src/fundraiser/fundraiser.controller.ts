@@ -318,9 +318,11 @@ export class FundraiserController {
   async createUpdate(
     @Param('fundraiserId') fundraiserId: string,
     @Body() dto: CreateUpdateDto,
+    @Req() req: any,
   ) {
     return await this.fundraiserService.createUpdate(
       fundraiserId,
+      req.user.sub,
       dto,
     );
   }

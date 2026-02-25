@@ -1,63 +1,76 @@
 "use client";
 
-const ACCESS_TOKEN = "access_token";
-const REFRESH_TOKEN = "refresh_token";
-const AUTH_USER = "user"
+/**
+ * auth-manager — token storage strategy
+ *
+ * ACCESS  token → memory only (never persisted).
+ *   Short-lived (~15 min). Survives page JS but not hard refresh — that's
+ *   intentional: a hard refresh triggers bootstrapAuth() which calls the
+ *   /profile API to re-hydrate, issuing a new access token via the refresh
+ *   token stored in localStorage.
+ *
+ * REFRESH token → localStorage only.
+ *   Longer-lived. Required to re-issue access tokens after hard refresh /
+ *   tab reopen without forcing a full login.
+ *
+ * USER object → NOT persisted.
+ *   Always fetched fresh from the API on bootstrap (AuthContext.refreshUser).
+ *   This prevents stale PAN / role data being read from storage.
+ */
 
-let accessTokenMemory: string | null = null;
-let refreshTokenMemory: string | null = null;
+const REFRESH_TOKEN_KEY = "refresh_token";
+
+let _accessToken: string | null = null;
 
 export const authManager = {
-  /* Save tokens */
+  // ── Write ───────────────────────────────────────────────────────────────────
   setTokens(access: string, refresh?: string) {
-    accessTokenMemory = access;
-    localStorage.setItem(ACCESS_TOKEN, access);
+    _accessToken = access; // memory only
 
     if (refresh) {
-      refreshTokenMemory = refresh;
-      localStorage.setItem(REFRESH_TOKEN, refresh);
+      try {
+        localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+      } catch {
+        // Silently fail in environments where localStorage is unavailable
+      }
     }
   },
 
-  /* Login helper */
-  setAuth(tokens: any, user: any) {
+  setAuth(tokens: { access_token: string; refresh_token: string }) {
     if (typeof window === "undefined") return;
-
-    localStorage.setItem(ACCESS_TOKEN, tokens.access_token);
-    localStorage.setItem(REFRESH_TOKEN, tokens.refresh_token);
-    localStorage.setItem(AUTH_USER, JSON.stringify(user));
+    this.setTokens(tokens.access_token, tokens.refresh_token);
   },
 
-  /* Get tokens */
-  getAccessToken() {
-    if (accessTokenMemory) return accessTokenMemory;
-    const stored = localStorage.getItem(ACCESS_TOKEN);
-    if (stored) accessTokenMemory = stored;
-    return stored;
+  // ── Read ────────────────────────────────────────────────────────────────────
+  getAccessToken(): string | null {
+    return _accessToken;
   },
 
-  getRefreshToken() {
-    if (refreshTokenMemory) return refreshTokenMemory;
-    const stored = localStorage.getItem(REFRESH_TOKEN);
-    if (stored) refreshTokenMemory = stored;
-    return stored;
+  getRefreshToken(): string | null {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem(REFRESH_TOKEN_KEY);
+    } catch {
+      return null;
+    }
   },
 
-  /* Logout — triggers global event */
+  // ── Destroy ─────────────────────────────────────────────────────────────────
   logout() {
-    accessTokenMemory = null;
-    refreshTokenMemory = null;
-
-    localStorage.removeItem(ACCESS_TOKEN);
-    localStorage.removeItem(REFRESH_TOKEN);
-    localStorage.removeItem(AUTH_USER);
-
-    window.dispatchEvent(new Event("auth-logout"));
-    window.location.href = "/login";
+    _accessToken = null;
+    try {
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    } catch {
+      // ignore
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("auth-logout"));
+    }
   },
 
-  /* Auth check */
-  isAuthenticated() {
-    return !!this.getAccessToken();
+  // ── Utils ───────────────────────────────────────────────────────────────────
+  isAuthenticated(): boolean {
+    // Has an in-memory token OR has a refresh token (can silently refresh)
+    return !!_accessToken || !!this.getRefreshToken();
   },
 };

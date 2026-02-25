@@ -34,7 +34,7 @@ type Fundraiser = {
   state: string;
   story?: string;
   media?: any[];
-  status: "ACTIVE" | "INACTIVE" | "REJECTED";
+  status: "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "ACTIVE" | "SUSPENDED" | "COMPLETED";
 
   campaignFor?: "SELF" | "OTHER";
   beneficiaryUser?: BeneficiaryUser;
@@ -113,14 +113,11 @@ export default function ExploreFundraiserDetailsPage() {
         setLoading(true);
         const res = await api.get(`/fundraiser/${id}/public`);
 
-        const campaign = res?.data?.data;
-        setCampaign(campaign);
+        const data = res?.data?.data;
+        setCampaign(data);
 
-        console.log("campaign details", campaign);
-        console.log("updates from be", campaign?.fundraiserupdates);
-
-        const updatesFromBE = Array.isArray(campaign?.fundraiserupdates)
-          ? campaign.fundraiserupdates
+        const updatesFromBE = Array.isArray(data?.fundraiserupdates)
+          ? data.fundraiserupdates
           : [];
 
         setUpdates(
@@ -129,8 +126,7 @@ export default function ExploreFundraiserDetailsPage() {
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
         );
-      } catch (err) {
-        console.error("Failed to fetch campaign", err);
+      } catch {
         setCampaign(null);
       } finally {
         setLoading(false);
@@ -138,7 +134,7 @@ export default function ExploreFundraiserDetailsPage() {
     };
 
     fetchCampaign();
-  }, [id, openDonate]);
+  }, [id]); // openDonate intentionally removed — modal open/close should NOT re-fetch
 
 
   /* ================= MEDIA NORMALIZATION ================= */

@@ -26,10 +26,9 @@ export class WebhooksService {
         if (!isValid) {
             throw new BadRequestException('Invalid Razorpay signature');
         }
-        console.log(payload);
 
-        const event = payload.event;
-        console.log(event);
+        const event = payload.event as string;
+        this.logger.log(`Razorpay webhook received: ${event}`);
 
         if (event === 'payment.captured') {
             await this.handlePaymentCaptured(payload);
@@ -180,8 +179,17 @@ export class WebhooksService {
 
 
     private async handlePaymentFailed(payload: any) {
-        const paymentEntity = payload.payload.payment.entity;
-        const razorpayOrderId = paymentEntity.order_id;
+        const paymentEntity = payload?.payload?.payment?.entity;
+        if (!paymentEntity) {
+            this.logger.warn('handlePaymentFailed: missing payment entity in payload');
+            return;
+        }
+
+        const razorpayOrderId: string = paymentEntity.order_id;
+        if (!razorpayOrderId) {
+            this.logger.warn('handlePaymentFailed: missing order_id');
+            return;
+        }
 
         const payment = await this.prisma.payment.findUnique({
             where: { razorpayOrderId },
@@ -191,22 +199,27 @@ export class WebhooksService {
             return;
         }
 
-        await this.prisma.$transaction([
-            this.prisma.payment.update({
-                where: { id: payment.id },
-                data: {
-                    status: PaymentStatus.FAILED,
-                    rawResponse: payload,
-                },
-            }),
-
-            this.prisma.donation.update({
-                where: { id: payment.donationId },
-                data: {
-                    status: PaymentStatus.FAILED,
-                },
-            }),
-        ]);
+        try {
+            await this.prisma.$transaction([
+                this.prisma.payment.update({
+                    where: { id: payment.id },
+                    data: {
+                        status: PaymentStatus.FAILED,
+                        rawResponse: payload,
+                    },
+                }),
+                this.prisma.donation.update({
+                    where: { id: payment.donationId },
+                    data: { status: PaymentStatus.FAILED },
+                }),
+            ]);
+        } catch (error) {
+            this.logger.error(
+                `handlePaymentFailed: DB transaction failed for payment ${payment.id}`,
+                error,
+            );
+            throw error;
+        }
     }
 
 }

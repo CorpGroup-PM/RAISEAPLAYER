@@ -1,46 +1,55 @@
-"use client";
-
 import "./globals.css";
+import type { Metadata } from "next";
 import { AppProviders } from "./providers";
 import { ToastProvider } from "@/components/toast/ToastContext";
 import { GlobalLoader } from "@/components/loading/GlobalLoader";
 import { AuthProvider } from "@/context/AuthContext";
-import Navbar from "@/components/UserNavbar/Navbar";
-import Footer from "@/components/Footer/Footer";
-import { usePathname } from "next/navigation";
-//import "bootstrap/dist/css/bootstrap.min.css";
+import LayoutShell from "@/components/LayoutShell/LayoutShell";
 
-// Routes where Navbar AND Footer should NOT appear
-const HIDE_CHROME_ROUTES = ["/login", "/register", "/forgot-password"];
-
-function LayoutContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
-  const isAdminRoute = pathname.startsWith("/admin");
-  const shouldHideNavbar =
-    HIDE_CHROME_ROUTES.includes(pathname) || isAdminRoute;
-  const shouldHideFooter =
-    HIDE_CHROME_ROUTES.includes(pathname) || isAdminRoute;
-
-  return (
-    <>
-      <GlobalLoader />
-
-      {!shouldHideNavbar && <Navbar />}
-
-      <main
-        style={{
-          paddingTop: shouldHideNavbar ? "0px" : "70px",
-          minHeight: "100vh",
-        }}
-      >
-        {children}
-      </main>
-
-      {!shouldHideFooter && <Footer />}
-    </>
-  );
-}
+export const metadata: Metadata = {
+  title: {
+    default: "Raise A Player — Fundraising Platform for Athletes",
+    template: "%s — Raise A Player",
+  },
+  description:
+    "Raise A Player helps young athletes across India raise funds for training, equipment, tournaments, and more. Every rupee counts toward a champion's journey.",
+  keywords: [
+    "athlete fundraising",
+    "sports crowdfunding India",
+    "raise a player",
+    "fundraiser for athletes",
+    "sports donation",
+  ],
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://raiseaplayer.org"
+  ),
+  openGraph: {
+    type: "website",
+    siteName: "Raise A Player",
+    title: "Raise A Player — Fundraising Platform for Athletes",
+    description:
+      "Empowering young athletes across India through community-backed fundraising.",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Raise A Player",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Raise A Player",
+    description:
+      "Empowering young athletes across India through community-backed fundraising.",
+    images: ["/logo.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default function RootLayout({
   children,
@@ -53,14 +62,11 @@ export default function RootLayout({
         <AppProviders>
           <ToastProvider>
             <AuthProvider>
-              <LayoutContent>{children}</LayoutContent>
+              <GlobalLoader />
+              <LayoutShell>{children}</LayoutShell>
             </AuthProvider>
           </ToastProvider>
         </AppProviders>
-        {/* <script
-          src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-          async
-        ></script> */}
       </body>
     </html>
   );

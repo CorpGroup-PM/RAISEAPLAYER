@@ -73,13 +73,22 @@ export class MailService {
       contentType: string;
     }[],
   ) {
-    await this.transporter.sendMail({
-      from: `"RaiseAPlayer" <${process.env.MAIL_USER}>`,
-      to,
-      subject,
-      html,
-      attachments,
-    });
+    try {
+      await this.transporter.sendMail({
+        from: `"RaiseAPlayer" <${process.env.MAIL_USER}>`,
+        to,
+        subject,
+        html,
+        attachments,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to send email to "${to}" with subject "${subject}"`,
+        error instanceof Error ? error.stack : error,
+      );
+      // Re-throw so callers can decide to handle (e.g. webhook wraps in its own try/catch)
+      throw error;
+    }
   }
 
 
@@ -553,13 +562,17 @@ a{color:#b42318;text-decoration:none;font-weight:900}
     },
   ) {
     const adminEmail = process.env.CONTACT_US_EMAIL;
+    if (!adminEmail) {
+      this.logger.warn('CONTACT_US_EMAIL is not set — skipping contact form email');
+      return;
+    }
 
     const body = `
     <h2>New Contact Us Submission</h2>
     <p><strong>Name:</strong> ${data.name}</p>
     <p><strong>Email:</strong> ${data.email}</p>
     <p><strong>Phone:</strong> ${data.phoneNumber}</p>
-    <p><strong>Message:</strong>${data.message}</p>
+    <p><strong>Message:</strong> ${data.message}</p>
     <hr />
     <p>Sent from RaiseAPlayer Contact Us form.</p>
   `;
@@ -570,11 +583,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
       css: '',
     });
 
-    await this.sendMail(
-      adminEmail!,
-      '📩 New Contact Us Form Submission',
-      html,
-    );
+    await this.sendMail(adminEmail, '📩 New Contact Us Form Submission', html);
   }
 
   async sendFundraiserCompletedMail(
