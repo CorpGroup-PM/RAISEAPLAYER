@@ -7,7 +7,6 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CampaignStatus, Prisma, UserRole } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
-import { CreateReviewDto } from 'src/fundraiser/dto/review.dto';
 
 @Injectable()
 export class AdminFundraiserService {
@@ -65,8 +64,33 @@ export class AdminFundraiserService {
     };
   }
 
-  async getAllCampaigns() {
-    return await this.prisma.fundraiser.findMany();
+  async getAllCampaigns(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [campaigns, total] = await this.prisma.$transaction([
+      this.prisma.fundraiser.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          goalAmount: true,
+          raisedAmount: true,
+          createdAt: true,
+          creator: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+        },
+      }),
+      this.prisma.fundraiser.count(),
+    ]);
+
+    return {
+      success: true,
+      data: campaigns,
+      meta: { total, page, limit, pages: Math.ceil(total / limit) },
+    };
   }
 
 
@@ -600,9 +624,20 @@ export class AdminFundraiserService {
       );
     }
 
-    const updated = await this.prisma.fundraiser.update({
-      where: { id },
+    // Atomic conditional update: only completes if still ACTIVE (prevents race condition)
+    const result = await this.prisma.fundraiser.updateMany({
+      where: { id, status: CampaignStatus.ACTIVE },
       data: { status: CampaignStatus.COMPLETED },
+    });
+
+    if (result.count === 0) {
+      throw new BadRequestException(
+        'Campaign is no longer in ACTIVE status. It may have been completed by another request.',
+      );
+    }
+
+    const updated = await this.prisma.fundraiser.findUnique({
+      where: { id },
       select: { id: true, status: true, goalAmount: true, raisedAmount: true },
     });
 
@@ -642,10 +677,10 @@ export class AdminFundraiserService {
       success: true,
       message: 'Campaign completed successfully',
       data: {
-        id: updated.id,
-        status: updated.status,
-        goalAmount: new Prisma.Decimal(updated.goalAmount).toFixed(2),
-        raisedAmount: new Prisma.Decimal(updated.raisedAmount).toFixed(2),
+        id: updated!.id,
+        status: updated!.status,
+        goalAmount: new Prisma.Decimal(updated!.goalAmount).toFixed(2),
+        raisedAmount: new Prisma.Decimal(updated!.raisedAmount).toFixed(2),
       },
     };
   }

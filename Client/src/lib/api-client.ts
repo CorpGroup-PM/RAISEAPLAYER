@@ -6,11 +6,24 @@ import { loadingManager } from "@/lib/loading-manager";
 import { authManager } from "@/lib/auth-manager";
 
 /* ----------------------------------------------
+   ENV VALIDATION
+---------------------------------------------- */
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error(
+    "[api-client] NEXT_PUBLIC_API_URL is not set. " +
+    "Add it to your .env.local file."
+  );
+}
+
+/* ----------------------------------------------
    AXIOS INSTANCE
 ---------------------------------------------- */
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
+  timeout: 30_000, // 30 s — prevents requests hanging indefinitely
 });
 
 /* ----------------------------------------------
@@ -59,6 +72,12 @@ async function refreshAccessToken(): Promise<string | null> {
 
     return null;
   } catch (err) {
+    // Network failure or 401 — refresh token is invalid/expired
+    const status = (err as AxiosError)?.response?.status;
+    if (status !== 401) {
+      // Log unexpected errors (not normal token-expired 401s)
+      console.warn("[api-client] Token refresh failed:", (err as Error).message);
+    }
     return null;
   }
 }

@@ -4,9 +4,6 @@ import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class ContactusService {
-
-    private readonly contactEmail = String;
-
     constructor(private readonly mailService: MailService,) { }
 
     async createContactUs(dto: ContactUsDto) {

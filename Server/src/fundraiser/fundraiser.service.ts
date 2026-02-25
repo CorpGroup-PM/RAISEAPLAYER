@@ -51,16 +51,6 @@ export class FundraiserService {
       );
     }
 
-    const fundraisers = await this.prisma.fundraiser.count({
-      where: {
-        creatorId,
-      }
-    })
-
-    if (fundraisers >= 3) {
-      throw new ForbiddenException('Maximum 3 fundraisers allowed');
-    }
-
     // -------------------------
     // VALIDATION
     // -------------------------
@@ -118,13 +108,17 @@ export class FundraiserService {
     }
 
     // -------------------------
-    // CREATE
+    // CREATE — atomic count check + insert to prevent race condition
     // -------------------------
-    const fundraiser = await this.prisma.fundraiser.create({
-      data,
-      include: {
-        beneficiaryOther: true,
-      },
+    const fundraiser = await this.prisma.$transaction(async (tx) => {
+      const count = await tx.fundraiser.count({ where: { creatorId } });
+      if (count >= 3) {
+        throw new ForbiddenException('Maximum 3 fundraisers allowed');
+      }
+      return tx.fundraiser.create({
+        data,
+        include: { beneficiaryOther: true },
+      });
     });
 
     // -------------------------
@@ -929,25 +923,23 @@ export class FundraiserService {
     };
   }
 
-  async createUpdate(fundraiserId: string,
-    dto: CreateUpdateDto,
-  ) {
+  async createUpdate(fundraiserId: string, creatorId: string, dto: CreateUpdateDto) {
     const fundraiser = await this.prisma.fundraiser.findUnique({
       where: { id: fundraiserId },
-      select: {
-        id: true,
-        status: true,
-      },
+      select: { id: true, status: true, creatorId: true },
     });
 
     if (!fundraiser) {
       throw new BadRequestException('Fundraiser not found');
     }
 
-    if (fundraiser.status !== CampaignStatus.ACTIVE) {
-      throw new BadRequestException('Updates allowed only for ACTIVE fundraisers',);
+    if (fundraiser.creatorId !== creatorId) {
+      throw new ForbiddenException('You are not authorized to post updates for this fundraiser');
     }
 
+    if (fundraiser.status !== CampaignStatus.ACTIVE) {
+      throw new BadRequestException('Updates allowed only for ACTIVE fundraisers');
+    }
 
     const create = await this.prisma.fundraiserUpdate.create({
       data: {
@@ -963,22 +955,14 @@ export class FundraiserService {
     };
   }
 
-  async getUpdate(fundraiserId: string,
-  ) {
+  async getUpdate(fundraiserId: string) {
     const fundraiser = await this.prisma.fundraiser.findUnique({
       where: { id: fundraiserId },
-      select: {
-        id: true,
-        status: true,
-      },
+      select: { id: true },
     });
 
     if (!fundraiser) {
       throw new BadRequestException('Fundraiser not found');
-    }
-
-    if (fundraiser.status !== CampaignStatus.ACTIVE) {
-      throw new BadRequestException('Updates allowed only for ACTIVE fundraisers',);
     }
 
     return this.prisma.fundraiserUpdate.findMany({
@@ -1015,47 +999,55 @@ export class FundraiserService {
       },
     });
 
-    return Promise.all(
-      fundraisers.map(async f => {
-        const registeredSupporters = await this.prisma.donation.groupBy({
-          by: ['donorId'],
-          where: {
-            fundraiserId: f.id,
-            donorId: { not: null },
-            status: 'SUCCESS',
-          },
-        });
+    // Fetch all donations for these 6 fundraisers in one query (eliminates N+1)
+    const fundraiserIds = fundraisers.map(f => f.id);
+    const allDonations = await this.prisma.donation.findMany({
+      where: {
+        fundraiserId: { in: fundraiserIds },
+        status: 'SUCCESS',
+      },
+      select: {
+        fundraiserId: true,
+        donorId: true,
+        guestEmail: true,
+        isAnonymous: true,
+        guestName: true,
+      },
+    });
 
-        const guestSupporters = await this.prisma.donation.groupBy({
-          by: ['guestEmail'],
-          where: {
-            fundraiserId: f.id,
-            donorId: null,
-            guestEmail: { not: null },
-            status: 'SUCCESS',
-          },
-        });
+    // Build supporter map: fundraiserId → unique supporter count
+    const supporterMap = new Map<string, Set<string>>();
+    for (const d of allDonations) {
+      if (!supporterMap.has(d.fundraiserId)) {
+        supporterMap.set(d.fundraiserId, new Set());
+      }
+      const set = supporterMap.get(d.fundraiserId)!;
+      if (d.donorId) {
+        set.add(`USER_${d.donorId}`);
+      } else if (!d.isAnonymous && d.guestEmail) {
+        set.add(`GUEST_${d.guestEmail.toLowerCase()}`);
+      } else {
+        // anonymous — each donation counts as one unique supporter
+        set.add(`ANON_${crypto.randomUUID()}`);
+      }
+    }
 
-        const totalSupporters = registeredSupporters.length + guestSupporters.length;
-
-        return {
-          id: f.id,
-          title: f.title,
-          creator: {
-            firstName: f.creator.firstName,
-            lastName: f.creator.lastName,
-          },
-          shortDescription: f.shortDescription,
-          coverImageURL: f.coverImageURL,
-          sport: f.sport,
-          city: f.city,
-          state: f.state,
-          goalAmount: f.goalAmount.toString(),
-          raisedAmount: f.raisedAmount.toString(),
-          totalSupporters,
-        };
-      }),
-    );
+    return fundraisers.map(f => ({
+      id: f.id,
+      title: f.title,
+      creator: {
+        firstName: f.creator.firstName,
+        lastName: f.creator.lastName,
+      },
+      shortDescription: f.shortDescription,
+      coverImageURL: f.coverImageURL,
+      sport: f.sport,
+      city: f.city,
+      state: f.state,
+      goalAmount: f.goalAmount.toString(),
+      raisedAmount: f.raisedAmount.toString(),
+      totalSupporters: supporterMap.get(f.id)?.size ?? 0,
+    }));
   }
 
   async review(dto: CreateReviewDto) {

@@ -3,14 +3,22 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, } from '@aws-sdk/clien
 import { randomUUID } from 'crypto';
 import { Multer } from 'multer';
 
+const ALLOWED_IMAGE_MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+};
+
 @Injectable()
 export class AwsS3Service {
   private s3: S3Client;
   private bucket = process.env.AWS_S3_BUCKET!;
+  private region = process.env.AWS_REGION!;
 
   constructor() {
     this.s3 = new S3Client({
-      region: process.env.AWS_REGION!,
+      region: this.region,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
@@ -20,7 +28,10 @@ export class AwsS3Service {
 
   /** Upload profile image to S3 */
   async uploadProfileImage(file: Express.Multer.File, folder = 'profile'): Promise<string> {
-    const fileExt = file.originalname.split('.').pop();
+    const fileExt = ALLOWED_IMAGE_MIME_TO_EXT[file.mimetype];
+    if (!fileExt) {
+      throw new BadRequestException('Unsupported image type. Allowed: JPEG, PNG, GIF, WEBP');
+    }
     const fileName = `${folder}/${randomUUID()}.${fileExt}`;
 
     const params = {
@@ -33,7 +44,7 @@ export class AwsS3Service {
     await this.s3.send(new PutObjectCommand(params));
 
     // Return public image URL
-    return `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+    return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${fileName}`;
   }
 
 
@@ -63,7 +74,7 @@ export class AwsS3Service {
 
   await this.s3.send(new PutObjectCommand(params));
 
-  return `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+  return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${fileName}`;
 }
 
 
@@ -72,6 +83,13 @@ export class AwsS3Service {
     if (!fileUrl) {
       return;
     }
+
+    // Validate the URL belongs to our bucket to prevent arbitrary deletions
+    const expectedPrefix = `https://${this.bucket}.s3.${this.region}.amazonaws.com/`;
+    if (!fileUrl.startsWith(expectedPrefix)) {
+      throw new BadRequestException('Invalid file URL: does not belong to expected bucket');
+    }
+
     const parsedUrl = new URL(fileUrl);
     const key = parsedUrl.pathname.replace(/^\//, '');
 

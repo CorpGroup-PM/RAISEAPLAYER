@@ -17,7 +17,6 @@ const loginSchema = z.object({
 });
 
 const GOOGLE_OAUTH_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
-console.log(GOOGLE_OAUTH_URL);
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -44,14 +43,11 @@ export default function LoginPage() {
 const onSubmit = async (values: any) => {
   try {
     const response = await AuthService.login(values);
-    
-    // Role is now directly available in response.data.user.role
-    const userRole = response.data.user.role;
-    
-    authManager.setAuth(response.data.tokens, response.data.user);
-    
-    // Redirect based on role
-    if (userRole === 'ADMIN') {
+    const userRole = response.data?.user?.role;
+
+    authManager.setAuth(response.data.tokens);
+
+    if (userRole === "ADMIN") {
       window.location.href = "/admin";
     } else {
       window.location.href = "/dashboard";
@@ -59,7 +55,7 @@ const onSubmit = async (values: any) => {
   } catch (error: any) {
     const message =
       error?.response?.data?.message || "Login failed. Try again.";
-    // addToast(message, "error");
+    addToast(message, "error");
   }
 };
 

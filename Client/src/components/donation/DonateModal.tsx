@@ -73,6 +73,20 @@ export default function DonateModal({
             }
         }
 
+        // Validate amounts
+        if (amount < 1) {
+            alert("Donation amount must be at least ₹1");
+            return;
+        }
+        if (tip < 0) {
+            alert("Tip amount cannot be negative");
+            return;
+        }
+        if (amount > 1_000_000) {
+            alert("Donation amount cannot exceed ₹10,00,000");
+            return;
+        }
+
         try {
             setLoading(true);
 
@@ -95,18 +109,14 @@ export default function DonateModal({
                         isAuthenticated ? undefined : guestMobile,
             });
 
-
-            console.log("Create order response:", res.data);
-
             const razorpay = res.data?.razorpay;
 
             if (!razorpay?.key || !razorpay?.orderId) {
-                console.error("Invalid Razorpay data", razorpay);
                 alert("Unable to start payment. Please try again.");
                 return;
             }
 
-            // 🔥 LOAD SDK BEFORE USING
+            // Load SDK before using
             const isLoaded = await loadRazorpay();
             if (!isLoaded) {
                 alert("Razorpay SDK failed to load. Please try again.");
@@ -121,21 +131,17 @@ export default function DonateModal({
                 currency: razorpay.currency || "INR",
                 name: "Raise A Player",
 
-                handler: function (response: any) {
-                    console.log("Payment success:", response);
-                    onClose(); // temporary — after verification, redirect to success
+                handler: function (_response: any) {
+                    onClose();
                 },
 
                 modal: {
-                    ondismiss: function () {
-                        console.log("Razorpay closed by user");
-                    },
+                    ondismiss: function () { },
                 },
             });
 
             rzp.open();
-        } catch (err) {
-            console.error("Create order failed", err);
+        } catch (_err) {
             alert("Payment initiation failed. Please try again.");
         } finally {
             setLoading(false);

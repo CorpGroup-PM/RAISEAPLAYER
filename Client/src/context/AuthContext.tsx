@@ -59,30 +59,31 @@ useEffect(() => {
   if (typeof window === "undefined") return;
 
   const bootstrapAuth = async () => {
-    const hasToken = authManager.isAuthenticated();
-
-    if (!hasToken) {
+    if (!authManager.isAuthenticated()) {
       setIsLoaded(true);
       return;
     }
 
     try {
-      // 🔥 ALWAYS fetch user from backend on app load
       await refreshUser();
       setIsAuthenticated(true);
-    } catch (err) {
-      logout();
+    } catch {
+      // Token invalid or network error — clear tokens and show unauthenticated
+      authManager.logout();
+      setIsAuthenticated(false);
+      setUser(null);
     } finally {
       setIsLoaded(true);
     }
   };
 
   bootstrapAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
 
   /* ------------------------------------------------------------------
-     LOGIN — uses authManager.setAuth(tokens, user)
+     LOGIN — saves tokens, hydrates user from the server response
   ------------------------------------------------------------------ */
   const login = ({ tokens, user }: { tokens: any; user: User }) => {
     if (!tokens?.access_token) {
@@ -90,8 +91,7 @@ useEffect(() => {
       return;
     }
 
-    // 🔥 Save tokens + user to localStorage
-    authManager.setAuth(tokens, user);
+    authManager.setAuth(tokens);
 
     setUser(user);
     setIsAuthenticated(true);
@@ -101,33 +101,20 @@ useEffect(() => {
   };
 
   /* ------------------------------------------------------------------
-     LOGOUT — triggers global cleanup + redirects
+     LOGOUT — clears tokens, state, then redirects
   ------------------------------------------------------------------ */
   const logout = async () => {
-  try {
-    // ✅ if authManager.logout() does API call, wait for it
-    await authManager.logout();
-  } catch (e) {
-    console.error("logout failed:", e);
-  } finally {
-    setIsAuthenticated(false);
-    setUser(null);
-
-    // ✅ clear EVERYTHING related to auth (important)
-    localStorage.removeItem("user");
-    localStorage.removeItem("tokens");        // ✅ add (common)
-    localStorage.removeItem("access_token");  // ✅ add (common)
-    localStorage.removeItem("refresh_token"); // ✅ add (common)
-
-    // ✅ immediate navigation
-    router.replace("/");
-
-    // ✅ hard fallback if something else keeps bouncing you back
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 50);
-  }
-};
+    try {
+      await api.post("/auth/logout").catch(() => {
+        // Best-effort — don't block local logout if server is unreachable
+      });
+    } finally {
+      authManager.logout();
+      setIsAuthenticated(false);
+      setUser(null);
+      router.replace("/");
+    }
+  };
 
 
   /* ------------------------------------------------------------------
@@ -148,24 +135,18 @@ useEffect(() => {
      REFRESH USER DETAILS
   -------------------------- */
 
- const refreshUser = async () => {
-   try {
-     const res = await UserService.getProfile();
-     const data = res.data;
+  const refreshUser = async () => {
+    const res = await UserService.getProfile();
+    const data = res.data;
 
-     // 🔥 NORMALIZE BACKEND RESPONSE
-     const normalizedUser = {
-       ...data,
-       profilePicture: data.profileImageUrl ?? null,
-     };
+    const normalizedUser: User = {
+      ...data,
+      profilePicture: data.profileImageUrl ?? null,
+    };
 
-     setUser(normalizedUser);
-     localStorage.setItem("user", JSON.stringify(normalizedUser));
-   } catch (err) {
-     console.error("Failed to refresh user:", err);
-     logout();
-   }
- };
+    setUser(normalizedUser);
+    // User data is NOT persisted to localStorage — always fetched fresh from API
+  };
 
 
   return (

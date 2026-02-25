@@ -420,6 +420,10 @@ model Donation {
   donor      User?      @relation("RegisteredDonor", fields: [donorId], references: [id])
   payment    Payment?
 
+  @@index([fundraiserId])
+  @@index([donorId])
+  @@index([status])
+  @@index([createdAt])
   @@map("donations")
 }
 
@@ -428,7 +432,7 @@ model Payment {
   donationId String          @unique @map("donation_id")
   provider   PaymentProvider @default(RAZORPAY)
 
-  //Razopay identifiers
+  //Razorpay identifiers
   razorpayOrderId   String? @unique
   razorpayPaymentId String?
   razorpaySignature String?
@@ -439,6 +443,8 @@ model Payment {
 
   donation Donation @relation(fields: [donationId], references: [id])
 
+  @@index([status])
+  @@index([createdAt])
   @@map("payments")
 }
 

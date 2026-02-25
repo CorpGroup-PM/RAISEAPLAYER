@@ -56,10 +56,11 @@ export class AuthController {
   }
 
   // ------------------------------------------------------------------
-  // SEND OTP
+  // SEND OTP  -- rate limited: max 3 per minute per IP
   // ------------------------------------------------------------------
   @Post('send-otp')
-  @SkipThrottle()
+  @UseGuards(OtpThrottlerGuard)
+  @Throttle({ short: { limit: 3, ttl: 60000 } })
   @ApiOperation({
     summary: 'Send OTP (email / phone)',
     description: 'Sending OTP To Email.'
@@ -70,13 +71,14 @@ export class AuthController {
   }
 
   // ------------------------------------------------------------------
-  // VERIFY EMAIL OTP
+  // VERIFY EMAIL OTP -- rate limited: max 5 per minute per IP
   // ------------------------------------------------------------------
   @Post('verify-email')
-  @SkipThrottle()
+  @UseGuards(OtpThrottlerGuard)
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: 'Verify email using OTP',
-    description: 'Validates OTP to confirm the user’s email address.'
+    description: 'Validates OTP to confirm the user\'s email address.'
   })
   @ApiBody({ type: VerifyEmailDto })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
@@ -160,17 +162,23 @@ export class AuthController {
       await this.authService.googleOAuthLogin(req.user);
 
     const baseUrl = process.env.FRONTEND_SOCIAL_SUCCESS_URL;
+    if (!baseUrl) {
+      return res.status(500).json({ message: 'FRONTEND_SOCIAL_SUCCESS_URL is not configured' });
+    }
 
-    const redirectUrl =
-      `${baseUrl}?` +
-      `access_token=${tokens.access_token}&` +
-      `refresh_token=${tokens.refresh_token}&` +
+    // Use URL fragment (#) instead of query string (?).
+    // Fragments are never sent to the server in HTTP requests, never appear in
+    // server logs, and are not captured by referrer headers -- reducing the risk
+    // of tokens leaking via browser history or proxy/CDN logs.
+    const fragment =
+      `access_token=${encodeURIComponent(tokens.access_token)}&` +
+      `refresh_token=${encodeURIComponent(tokens.refresh_token)}&` +
       `email=${encodeURIComponent(user.email)}&` +
       `first_name=${encodeURIComponent(user.firstName || '')}&` +
       `last_name=${encodeURIComponent(user.lastName || '')}&` +
       `picture=${encodeURIComponent(user.profileImageUrl || '')}`;
 
-    return res.redirect(redirectUrl);
+    return res.redirect(`${baseUrl}#${fragment}`);
   }
 
   // ------------------------------------------------------------------
@@ -182,7 +190,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Send password reset OTP',
-    description: 'Sends an OTP to the user’s email for password reset.',
+    description: "Sends an OTP to the user's email for password reset.",
   })
 
   @ApiBody({ type: ForgotPasswordDto })

@@ -23,8 +23,6 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { OtpType, UserRole, AuthProvider } from '@prisma/client';
 import { SendOtpDto } from './dto/send-otp.dto';
-import { use } from 'passport';
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -60,6 +58,15 @@ export class AuthService {
     if (!verifiedOtp) {
       throw new BadRequestException(
         'Email not verified. Please verify your email before signup.',
+      );
+    }
+
+    // Reject stale verifications — OTP must have been verified within a grace window
+    const OTP_SIGNUP_GRACE_MS = 15 * 60 * 1000; // 15 min after OTP expiry
+    if (Date.now() > verifiedOtp.expiresAt.getTime() + OTP_SIGNUP_GRACE_MS) {
+      await this.prisma.emailOtp.deleteMany({ where: { email: normalizedEmail } });
+      throw new BadRequestException(
+        'Email verification has expired. Please verify your email again.',
       );
     }
 
@@ -227,18 +234,16 @@ export class AuthService {
 
     // const normalizedEmail = email.toLowerCase();
     const user = await this.usersService.findByEmail(email);
-    if (!user) throw new UnauthorizedException('Invalid Email');
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
     if (!user.isEmailVerified)
       throw new ForbiddenException('Please verify your email first');
 
     if (!user.passwordHash)
-      throw new UnauthorizedException(
-        'Invalid credentials (try Google login?)',
-      );
+      throw new UnauthorizedException('Invalid credentials');
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) throw new UnauthorizedException('Invalid Password');
+    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
     // Tokens
     const tokens = await this.getTokens(user.id, user.email, user.role);
@@ -268,7 +273,7 @@ export class AuthService {
         { sub: userId, email, role },
         {
           secret: this.configService.get('JWT_ACCESS_SECRET'),
-          expiresIn: '1d',//changed for 15min to 1 day
+          expiresIn: '15m',
         },
       ),
       this.jwtService.signAsync(
@@ -391,8 +396,8 @@ export class AuthService {
     });
 
     //otp generation
-
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = CryptoHelper.generateOtp();
+    const otpHash = await CryptoHelper.hashOtp(otpCode);
 
     const expiresAt = new Date(
       Date.now() + AppConstants.OTP_REST_EXPIR_MINUTES * 60 * 1000,
@@ -402,7 +407,7 @@ export class AuthService {
       data: {
         email: user.email,
         otpCode,
-        otpHash: await bcrypt.hash(otpCode, 10),
+        otpHash,
         type: OtpType.PASSWORD_RESET,
         expiresAt,
         userId: user.id,
