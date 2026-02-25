@@ -4,6 +4,8 @@ import "./home.css";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FundraiserService } from "@/services/fundraiser.service";
+import { useStartFundraiser } from "@/hooks/useStartFundraiser";
+import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
 
 type FundraiserTop = {
   id: string;
@@ -38,8 +40,14 @@ const formatMoney = (n?: number) => {
 
 export default function Home() {
   const router = useRouter();
+  const {
+    handleStartFundraiser,
+    kycCheckLoading,
+    isKycModalOpen,
+    closeKycModal,
+  } = useStartFundraiser();
   const [trustTab, setTrustTab] = useState<"FUNDRAISERS" | "DONORS">(
-    "FUNDRAISERS"
+    "FUNDRAISERS",
   );
   const [hiwTab, setHiwTab] = useState<"FUNDRAISERS" | "DONORS">("FUNDRAISERS");
   const [topCampaigns, setTopCampaigns] = useState<FundraiserTop[]>([]);
@@ -50,14 +58,12 @@ export default function Home() {
   const [expandedReviews, setExpandedReviews] = useState<string[]>([]);
 
 
+
   const toggleExpand = (id: string) => {
-    setExpandedReviews(prev =>
-      prev.includes(id)
-        ? prev.filter(x => x !== id)
-        : [...prev, id]
+    setExpandedReviews((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
-
 
   const loadTopCampaigns = async () => {
     try {
@@ -65,7 +71,7 @@ export default function Home() {
 
       const res = await FundraiserService.fundRaisedTopSix();
 
-      const list = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      const list = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
 
       setTopCampaigns(list.slice(0, 6));
     } catch (err) {
@@ -75,16 +81,12 @@ export default function Home() {
     }
   };
 
-
-
   const loadPublicReviews = async () => {
     try {
       setLoadingReviews(true);
 
       const res = await FundraiserService.publicReviews();
-      const list = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data ?? [];
+      const list = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
 
       setReviews(list.slice(0, 4)); // show only 4 cards
     } catch (err) {
@@ -108,15 +110,12 @@ export default function Home() {
     loadPublicReviews();
   }, []);
 
-
   const renderStars = (rating?: number) => {
     const total = 5;
     const value = rating || 0;
 
     return "★".repeat(value) + "☆".repeat(total - value);
   };
-
-
 
   return (
     <div className="home-page">
@@ -132,7 +131,9 @@ export default function Home() {
                 Crowdfunding for Athletes
                 <br />
                 with{" "}
-                <span className="home-titleHighlight">Trust & Transparency</span>
+                <span className="home-titleHighlight">
+                  Trust & Transparency
+                </span>
               </h1>
 
               <p className="home-subtitle">
@@ -151,9 +152,10 @@ export default function Home() {
 
                 <button
                   className="home-secondaryBtn"
-                  onClick={() => router.push("/start-fundraiser")}
+                  onClick={handleStartFundraiser}
+                  disabled={kycCheckLoading}
                 >
-                  Start a fundraiser
+                  {kycCheckLoading ? "Checking..." : "Start a fundraiser"}
                 </button>
               </div>
             </div>
@@ -163,10 +165,8 @@ export default function Home() {
         </div>
       </div>
 
-
       {/* ✅ ACTIVE CAMPAIGNS SECTION */}
       <section className="activeCampaignsSection">
-
         <div>
           <h2 className="activeCampaignsTitle">Active Campaigns</h2>
           <p className="activeCampaignsSubtitle">
@@ -175,7 +175,9 @@ export default function Home() {
         </div>
 
         {loadingTop ? (
-          <p style={{ textAlign: "center", marginTop: "20px", color: "#64748b" }}>
+          <p
+            style={{ textAlign: "center", marginTop: "20px", color: "#64748b" }}
+          >
             Loading campaigns...
           </p>
         ) : (
@@ -183,24 +185,23 @@ export default function Home() {
             {topCampaigns.map((c) => {
               const raised = Number(c.raisedAmount || 0);
               const goal = Number(c.goalAmount || 0);
-              const progress = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
+              const progress =
+                goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
 
               return (
-                <div
-                  className="campaignCard" key={c.id}
-                >
+                <div className="campaignCard" key={c.id}>
                   <div className="campaignImageWrap">
                     <span className="campaignVerified">Verified</span>
 
                     <img
-                      src={c.coverImageURL ? c.coverImageURL : "/background.png"}
+                      src={
+                        c.coverImageURL ? c.coverImageURL : "/background.png"
+                      }
                       alt="Campaign cover"
                       className="campaignImage"
                       loading="lazy"
                     />
-
                   </div>
-
 
                   <div className="campaignBody">
                     <h3 className="campaignTitle">{c.title}</h3>
@@ -212,7 +213,9 @@ export default function Home() {
                       <span className="campaignRaised">
                         Raised: {formatMoney(raised)}
                       </span>
-                      <span className="campaignGoal">Goal: {formatMoney(goal)}</span>
+                      <span className="campaignGoal">
+                        Goal: {formatMoney(goal)}
+                      </span>
                     </div>
 
                     <div className="campaignProgressTrack">
@@ -232,7 +235,8 @@ export default function Home() {
 
                     <div className="campaignFooterRow">
                       <span className="campaignSupporters">
-                        {(c.totalSupporters || 0).toLocaleString("en-IN")} supporters
+                        {(c.totalSupporters || 0).toLocaleString("en-IN")}{" "}
+                        supporters
                       </span>
 
                       <button
@@ -266,7 +270,8 @@ export default function Home() {
       <section className="hiwSection">
         <h2 className="hiwTitle">How It Works</h2>
         <p className="hiwSubtitle">
-          Simple steps for fundraisers and donors — built specifically for athletes.
+          Simple steps for fundraisers and donors — built specifically for
+          athletes.
         </p>
 
         {/* Tabs */}
@@ -290,39 +295,39 @@ export default function Home() {
         <div className="hiwGrid">
           {(hiwTab === "FUNDRAISERS"
             ? [
-              {
-                num: "1",
-                title: "Create your campaign",
-                desc: "Tell your story, add proofs (images/links), set a realistic goal.",
-              },
-              {
-                num: "2",
-                title: "Get reviewed",
-                desc: "Our team checks completeness, authenticity signals, and policy compliance before approval.",
-              },
-              {
-                num: "3",
-                title: "Go live & share",
-                desc: "Campaign becomes discoverable; donors support; withdrawals are tracked transparently.",
-              },
-            ]
+                {
+                  num: "1",
+                  title: "Create your campaign",
+                  desc: "Tell your story, add proofs (images/links), set a realistic goal.",
+                },
+                {
+                  num: "2",
+                  title: "Get reviewed",
+                  desc: "Our team checks completeness, authenticity signals, and policy compliance before approval.",
+                },
+                {
+                  num: "3",
+                  title: "Go live & share",
+                  desc: "Campaign becomes discoverable; donors support; withdrawals are tracked transparently.",
+                },
+              ]
             : [
-              {
-                num: "1",
-                title: "Explore verified campaigns",
-                desc: "Browse athlete fundraisers and choose a cause you believe in.",
-              },
-              {
-                num: "2",
-                title: "Donate securely",
-                desc: "Make a contribution in seconds with a fast, safe checkout experience.",
-              },
-              {
-                num: "3",
-                title: "Track progress",
-                desc: "See campaign updates, utilization summary, and goal progress transparently.",
-              },
-            ]
+                {
+                  num: "1",
+                  title: "Explore verified campaigns",
+                  desc: "Browse athlete fundraisers and choose a cause you believe in.",
+                },
+                {
+                  num: "2",
+                  title: "Donate securely",
+                  desc: "Make a contribution in seconds with a fast, safe checkout experience.",
+                },
+                {
+                  num: "3",
+                  title: "Track progress",
+                  desc: "See campaign updates, utilization summary, and goal progress transparently.",
+                },
+              ]
           ).map((x, idx) => (
             <div className="hiwCard" key={idx}>
               <div className="hiwStepNum">{x.num}</div>
@@ -336,10 +341,10 @@ export default function Home() {
       {/* key sources  */}
 
       <section className="keySourceSection">
-
         <h2 className="keySourceTitle">Our Key Focus Areas</h2>
         <p className="keySourceSubtitle">
-          Driving impact through sports promotion, talent development, and community engagement.
+          Driving impact through sports promotion, talent development, and
+          community engagement.
         </p>
 
         <div className="keySourceGrid">
@@ -347,7 +352,8 @@ export default function Home() {
           <div className="keySourceCard">
             <h3 className="keySourceName">Sports Promotion & Fitness</h3>
             <p className="keySourceQuote">
-              “Organizing programs to promote physical fitness and health awareness among children, youth, and communities”
+              “Organizing programs to promote physical fitness and health
+              awareness among children, youth, and communities”
             </p>
           </div>
 
@@ -355,7 +361,8 @@ export default function Home() {
           <div className="keySourceCard">
             <h3 className="keySourceName">Talent Development</h3>
             <p className="keySourceQuote">
-              “Providing access to quality coaching, infrastructure, and development programs for emerging athletes.”
+              “Providing access to quality coaching, infrastructure, and
+              development programs for emerging athletes.”
             </p>
           </div>
 
@@ -363,7 +370,8 @@ export default function Home() {
           <div className="keySourceCard">
             <h3 className="keySourceName">Community Building</h3>
             <p className="keySourceQuote">
-              “Organizing tournaments and events that encourage participation, teamwork, and active lifestyles.”
+              “Organizing tournaments and events that encourage participation,
+              teamwork, and active lifestyles.”
             </p>
           </div>
 
@@ -371,34 +379,34 @@ export default function Home() {
           <div className="keySourceCard">
             <h3 className="keySourceName">Inclusive Support</h3>
             <p className="keySourceQuote">
-              “Supporting underprivileged and deserving athletes through donations, grants, and sponsorship mobilization.”
+              “Supporting underprivileged and deserving athletes through
+              donations, grants, and sponsorship mobilization.”
             </p>
           </div>
         </div>
       </section>
 
-
       {/* ✅ TRUST SECTION (NEW) */}
       <section className="trustSection">
         <h2 className="trustTitle">Why People Trust RaiseAPlayer</h2>
         <p className="trustSubtitle">
-          Built for sports crowdfunding with verification, moderation, and public
-          payout transparency.
+          Built for sports crowdfunding with verification, moderation, and
+          public payout transparency.
         </p>
 
         {/* Tabs */}
         <div className="trustTabs">
           <button
-            className={`trustTabBtn ${trustTab === "FUNDRAISERS" ? "active" : ""
-              }`}
+            className={`trustTabBtn ${
+              trustTab === "FUNDRAISERS" ? "active" : ""
+            }`}
             onClick={() => setTrustTab("FUNDRAISERS")}
           >
             For Fundraisers
           </button>
 
           <button
-            className={`trustTabBtn ${trustTab === "DONORS" ? "active" : ""
-              }`}
+            className={`trustTabBtn ${trustTab === "DONORS" ? "active" : ""}`}
             onClick={() => setTrustTab("DONORS")}
           >
             For Donors
@@ -409,41 +417,41 @@ export default function Home() {
         <div className="trustGrid">
           {(trustTab === "FUNDRAISERS"
             ? [
-              {
-                title: "Admin-reviewed campaigns",
-                desc: "Every campaign is reviewed for completeness, legitimacy, and safety before it can go live.",
-              },
-              {
-                title: "Transparent withdrawals",
-                desc: "Public “Fund Utilization” summary shows total withdrawals and timing without exposing sensitive data.",
-              },
-              {
-                title: "Verified profiles & documents",
-                desc: "Email verification + profile gating helps reduce fraud and improve donor confidence.",
-              },
-              {
-                title: "Dedicated support",
-                desc: "Fast help via email/WhatsApp for campaign setup, edits, and verification follow-ups (MVP support hours).",
-              },
-            ]
+                {
+                  title: "Admin-reviewed campaigns",
+                  desc: "Every campaign is reviewed for completeness, legitimacy, and safety before it can go live.",
+                },
+                {
+                  title: "Transparent withdrawals",
+                  desc: "Public “Fund Utilization” summary shows total withdrawals and timing without exposing sensitive data.",
+                },
+                {
+                  title: "Verified profiles & documents",
+                  desc: "Email verification + profile gating helps reduce fraud and improve donor confidence.",
+                },
+                {
+                  title: "Dedicated support",
+                  desc: "Fast help via email/WhatsApp for campaign setup, edits, and verification follow-ups (MVP support hours).",
+                },
+              ]
             : [
-              {
-                title: "Verified fundraising journeys",
-                desc: "Donors support real athletes with verified profiles and moderated campaigns.",
-              },
-              {
-                title: "Clear utilization visibility",
-                desc: "Donors can view fund utilization summaries for better trust and transparency.",
-              },
-              {
-                title: "Safer contributions",
-                desc: "Checks and verification reduce fake campaigns and improve donation safety.",
-              },
-              {
-                title: "Document checks + moderation",
-                desc: "Verification + moderation checks help prevent fraud and keep campaigns genuine and safe for donors.",
-              },
-            ]
+                {
+                  title: "Verified fundraising journeys",
+                  desc: "Donors support real athletes with verified profiles and moderated campaigns.",
+                },
+                {
+                  title: "Clear utilization visibility",
+                  desc: "Donors can view fund utilization summaries for better trust and transparency.",
+                },
+                {
+                  title: "Safer contributions",
+                  desc: "Checks and verification reduce fake campaigns and improve donation safety.",
+                },
+                {
+                  title: "Document checks + moderation",
+                  desc: "Verification + moderation checks help prevent fraud and keep campaigns genuine and safe for donors.",
+                },
+              ]
           ).map((x, idx) => (
             <div className="trustCard" key={idx}>
               <h3 className="trustCardTitle">{x.title}</h3>
@@ -476,8 +484,6 @@ export default function Home() {
           Stories from donors, athletes, and parents who trust RaiseAPlayer.
         </p>
 
-
-
         <div className="testiGrid">
           {loadingReviews ? (
             <p style={{ textAlign: "center", width: "100%" }}>
@@ -490,19 +496,23 @@ export default function Home() {
                   <h3 className="testiName">{r.name}</h3>
                   <p className="testiStars">
                     {[1, 2, 3, 4, 5].map((n) => (
-                      <span key={n} className={n <= (r.rating || 0) ? "starFilled" : "starEmpty"}>
+                      <span
+                        key={n}
+                        className={
+                          n <= (r.rating || 0) ? "starFilled" : "starEmpty"
+                        }
+                      >
                         ★
                       </span>
                     ))}
                   </p>
-
                 </div>
-
 
                 <div className="testiMessageWrap">
                   <p
-                    className={`testiQuote ${expandedReviews.includes(r.id) ? "expanded" : ""
-                      }`}
+                    className={`testiQuote ${
+                      expandedReviews.includes(r.id) ? "expanded" : ""
+                    }`}
                   >
                     “{r.message}”
                   </p>
@@ -518,7 +528,6 @@ export default function Home() {
                     </button>
                   )}
                 </div>
-
 
                 <div className="reviewFooter">
                   <span>Verified user</span>
@@ -536,14 +545,14 @@ export default function Home() {
             Read more reviews
           </button>
         </div>
-
       </section>
 
       {/* ✅ OBJECTIVES SECTION */}
       <section className="objSection">
         <h2 className="objTitle">Our Comprehensive Objectives</h2>
         <p className="objSubtitle">
-          Building a robust sports ecosystem through multi-dimensional initiatives and community-focused programs
+          Building a robust sports ecosystem through multi-dimensional
+          initiatives and community-focused programs
         </p>
 
         {/* Chips */}
@@ -647,8 +656,7 @@ export default function Home() {
           ))}
         </div>
       </section>
-
-
+      <PanKycModal isOpen={isKycModalOpen} onClose={closeKycModal} />
     </div>
   );
 }

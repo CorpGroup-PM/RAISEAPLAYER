@@ -27,9 +27,7 @@ import { createFileInterceptorOptions } from 'src/common/upload/file-upload.help
 @ApiBearerAuth()
 @Controller('user')
 export class UserprofileController {
-  constructor(
-    private readonly userProfileService: UserprofileService,
-  ) { }
+  constructor(private readonly userProfileService: UserprofileService) {}
 
   // @UseGuards(AccessTokenGuard)
   // @Post('pan-profile')
@@ -72,9 +70,28 @@ export class UserprofileController {
   })
   async getUserProfile(@Req() req: any) {
     const userId = req.user.sub;
-    return this.userProfileService.getUserProfilewithPan(
-      userId,
-    );
+    return this.userProfileService.getUserProfilewithPan(userId);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('kyc-status')
+  @ApiOperation({
+    summary: 'Get KYC (PAN) completion status',
+    description:
+      'Returns whether the authenticated user has completed PAN KYC. Never exposes the full PAN number.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'KYC status returned successfully',
+    example: {
+      panCompleted: true,
+      panNumberMasked: 'XXXXX234F',
+      kycStatus: 'COMPLETE',
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getKycStatus(@Req() req: any) {
+    return this.userProfileService.getKycStatus(req.user.sub);
   }
 
   // ------------------------------------------------------------------
@@ -91,15 +108,9 @@ export class UserprofileController {
     status: 200,
     description: 'Profile updated successfully',
   })
-  async updateUserProfile(
-    @Req() req: any,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  async updateUserProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
     const userId = req.user.sub;
-    return this.userProfileService.updateProfile(
-      userId,
-      dto,
-    );
+    return this.userProfileService.updateProfile(userId, dto);
   }
 
   // ------------------------------------------------------------------
@@ -109,8 +120,7 @@ export class UserprofileController {
   @Put('profile-picture')
   @ApiOperation({
     summary: 'Update profile picture',
-    description:
-      'Upload or replace user profile picture (JPEG / PNG, max 5MB)',
+    description: 'Upload or replace user profile picture (JPEG / PNG, max 5MB)',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -129,11 +139,7 @@ export class UserprofileController {
     FileInterceptor(
       'file',
       createFileInterceptorOptions({
-        allowedMimeTypes: [
-          'image/png',
-          'image/jpg',
-          'image/jpeg',
-        ],
+        allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg'],
         maxFileSizeMB: 5,
       }),
     ),
@@ -142,8 +148,7 @@ export class UserprofileController {
     status: 200,
     description: 'Profile picture updated successfully',
     example: {
-      profileImageUrl:
-        'https://cdn.example.com/users/profile.png',
+      profileImageUrl: 'https://cdn.example.com/users/profile.png',
     },
   })
   @ApiResponse({
@@ -155,9 +160,6 @@ export class UserprofileController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     const userId = req.user.sub;
-    return this.userProfileService.updateProfilePicture(
-      userId,
-      file,
-    );
+    return this.userProfileService.updateProfilePicture(userId, file);
   }
 }

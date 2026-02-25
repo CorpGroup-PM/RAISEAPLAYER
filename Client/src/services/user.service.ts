@@ -24,6 +24,10 @@ export const UserService = {
     return api.put("/user/profile", payload);
   },
 
+  getKycStatus() {
+    return api.get("/user/kyc-status");
+  },
+
   updateProfilePicture(file: File) {
     const formData = new FormData();
     formData.append("file", file); // must be `file`

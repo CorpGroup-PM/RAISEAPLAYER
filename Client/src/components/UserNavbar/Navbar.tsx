@@ -6,7 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import "./Navbar.css";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-
+import { useStartFundraiser } from "@/hooks/useStartFundraiser";
+import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout, isLoaded } = useAuth();
@@ -16,15 +17,20 @@ export default function Navbar() {
   const profileRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const {
+    handleStartFundraiser,
+    kycCheckLoading,
+    isKycModalOpen,
+    closeKycModal,
+  } = useStartFundraiser();
 
   const handleLogout = () => {
-    logout();              // clear auth
+    logout(); // clear auth
     setProfileOpen(false);
     setMenuOpen(false);
 
-    router.replace("/");   // ✅ redirect to home
+    router.replace("/"); // ✅ redirect to home
   };
-
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -82,9 +88,13 @@ export default function Navbar() {
 
         <div className="rp-right">
           {/* Start Fundraiser */}
-          <Link href="/start-fundraiser" className="desktop-only">
-            <button className="rp-start-btn">Start a fundraiser</button>
-          </Link>
+          <button
+            className="rp-start-btn desktop-only"
+            onClick={handleStartFundraiser}
+            disabled={kycCheckLoading}
+          >
+            {kycCheckLoading ? "Checking..." : "Start a fundraiser"}
+          </button>
 
           <div ref={profileRef} className="desktop-only">
             {/* Profile Icon */}
@@ -300,6 +310,8 @@ export default function Navbar() {
       {menuOpen && (
         <div className="rp-overlay" onClick={() => setMenuOpen(false)} />
       )}
+
+      <PanKycModal isOpen={isKycModalOpen} onClose={closeKycModal} />
     </>
   );
 }

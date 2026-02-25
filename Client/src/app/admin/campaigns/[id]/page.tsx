@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./admin.css";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 import StatusBadge from "@/components/StatusBadge/StatusBadge";
@@ -39,6 +39,8 @@ export default function AdminCampaignDetailsPage() {
 
   const [imageMedia, setImageMedia] = useState<string[]>([]);
   const [videoMedia, setVideoMedia] = useState<VideoMedia[]>([]);
+  const [currentImage, setCurrentImage] = useState(0);
+    const [currentVideo, setCurrentVideo] = useState(0);
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -47,6 +49,10 @@ export default function AdminCampaignDetailsPage() {
 
   const [documents, setDocuments] = useState<any[]>([]);
   const [updates, setUpdates] = useState<CampaignUpdate[]>([]);
+  const [showAllUpdates, setShowAllUpdates] = useState(false);
+  const [expandedUpdates, setExpandedUpdates] = useState<Record<string, boolean>>({});
+    const updateRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
+    const [overflowingUpdates, setOverflowingUpdates] = useState<Record<string, boolean>>({});
 
   const [showPan, setShowPan] = useState(false);
 
@@ -107,6 +113,30 @@ export default function AdminCampaignDetailsPage() {
     fetchCampaign();
   }, [id]);
 
+  const nextImage = () => {
+    setCurrentImage((prev) =>
+      prev === imageMedia.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const prevImage = () => {
+    setCurrentImage((prev) =>
+      prev === 0 ? imageMedia.length - 1 : prev - 1
+    );
+  };
+
+  const nextVideo = () => {
+    setCurrentVideo((prev) =>
+      prev === videoMedia.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const prevVideo = () => {
+    setCurrentVideo((prev) =>
+      prev === 0 ? videoMedia.length - 1 : prev - 1
+    );
+  };
+
   /* ================= MEDIA NORMALIZATION ================= */
   useEffect(() => {
     if (!campaign?.media) return;
@@ -138,6 +168,20 @@ export default function AdminCampaignDetailsPage() {
     setImageMedia(images);
     setVideoMedia(videos);
   }, [campaign?.media]);
+
+  useEffect(() => {
+      const newOverflowState: Record<string, boolean> = {};
+  
+      updates.forEach((update) => {
+        const el = updateRefs.current[update.id];
+        if (!el) return;
+  
+        const isOverflowing = el.scrollHeight > el.clientHeight;
+        newOverflowState[update.id] = isOverflowing;
+      });
+  
+      setOverflowingUpdates(newOverflowState);
+    }, [updates]);
 
   /* ================= ACTION HANDLERS ================= */
   const handleApprove = async () => {
@@ -521,36 +565,100 @@ export default function AdminCampaignDetailsPage() {
         </section>
 
         {/* ================= MEDIA ================= */}
-        <section className="admin-media">
-          <h3>Media</h3>
+        <section className="media-row full-width">
 
-          {imageMedia.length > 0 && (
-            <div className="admin-media-grid">
-              {imageMedia.map((img) => (
-                <img key={img} src={img} alt="Campaign media" />
-              ))}
+        {/* ================= IMAGES ================= */}
+        <div className="media-box">
+          <h3>Images</h3>
+
+          {imageMedia.length === 0 ? (
+            <div className="media-empty">
+              No images right now
             </div>
-          )}
-
-          {videoMedia.length > 0 && (
-            <div className="admin-video">
-              {videoMedia.map((video) => (
-                <div className="admin-video-box" key={video.originalUrl}>
-                  <iframe
-                    src={`${video.embedUrl}?rel=0&modestbranding=1`}
-                    allowFullScreen
-                  />
+          ) : (
+            <>
+              <div className="gallery-image-container">
+                <div
+                  className="gallery-track"
+                  style={{
+                    transform: `translateX(-${currentImage * 100}%)`,
+                  }}
+                >
+                  {imageMedia.map((url, i) => (
+                    <img key={i} src={url} className="gallery-image" />
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
 
-          {imageMedia.length === 0 && videoMedia.length === 0 && (
-            <p style={{ color: "#9ca3af" }}>
-              No media uploaded for this campaign.
-            </p>
+                {imageMedia.length > 1 && (
+                  <>
+                    <button className="gallery-nav left" onClick={prevImage}>‹</button>
+                    <button className="gallery-nav right" onClick={nextImage}>›</button>
+                  </>
+                )}
+              </div>
+
+              {imageMedia.length > 1 && (
+                <div className="gallery-dots">
+                  {imageMedia.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`dot ${i === currentImage ? "active" : ""}`}
+                      onClick={() => setCurrentImage(i)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
-        </section>
+        </div>
+
+        {/* ================= VIDEOS ================= */}
+        <div className="media-box">
+          <h3>Videos</h3>
+
+          {videoMedia.length === 0 ? (
+            <div className="media-empty">
+              No videos right now
+            </div>
+          ) : (
+            <>
+              <div className="gallery-image-container">
+                <div
+                  className="gallery-track"
+                  style={{
+                    transform: `translateX(-${currentVideo * 100}%)`,
+                  }}
+                >
+                  {videoMedia.map((v, i) => (
+                    <div className="video-box" key={i}>
+                      <iframe src={`${v.embedUrl}?rel=0`} allowFullScreen />
+                    </div>
+                  ))}
+                </div>
+
+                {videoMedia.length > 1 && (
+                  <>
+                    <button className="gallery-nav left" onClick={prevVideo}>‹</button>
+                    <button className="gallery-nav right" onClick={nextVideo}>›</button>
+                  </>
+                )}
+              </div>
+
+              {videoMedia.length > 1 && (
+                <div className="gallery-dots">
+                  {videoMedia.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`dot ${i === currentVideo ? "active" : ""}`}
+                      onClick={() => setCurrentVideo(i)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
         {/* ================= DOCUMENTS ================= */}
         <section className="admin-documents">
           <h3 className="admin-documents-title">Documents</h3>
@@ -681,37 +789,82 @@ export default function AdminCampaignDetailsPage() {
         )}
         {/* campaign updates */}
         <section className="campaign-updates-section">
-          <h3 className="updates-title">Campaign Updates</h3>
-
-          {updates.length > 0 ? (
-            <div className="updates-list">
-              {updates.map((update) => (
-                <div className="update-item" key={update.id}>
-                  <div className="update-header">
-                    <strong>{update.title}</strong>
-                    <span className="update-date">
-                      {new Date(update.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  <p className="update-content">
-                    {update.content.split("\n").map((line, i) => (
-                      <React.Fragment key={i}>
-                        {line}
-
-
-                      </React.Fragment>
-                    ))}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p style={{ color: "#9ca3af" }}>
-              No updates posted by fundraiser yet.
-            </p>
-          )}
-        </section>
+       
+               <h3>Updates</h3>
+       
+               {updates.length > 0 ? (
+                           <>
+                             <div className="updates-list">
+               
+                               {(showAllUpdates ? updates : updates.slice(0, 2)).map((update) => (
+                                 <div className="update-item" key={update.id}>
+               
+                                   <div className="update-header">
+                                     <strong>{update.title}</strong>
+               
+                                     <span className="update-date">
+                                       {new Date(update.createdAt).toLocaleDateString("en-IN", {
+                                         day: "numeric",
+                                         month: "short",
+                                         year: "numeric",
+                                       })}
+                                     </span>
+                                   </div>
+               
+                                   <p
+                                     ref={(el) => {
+                                       updateRefs.current[update.id] = el;
+                                     }}
+                                     className={`update-content ${expandedUpdates[update.id] ? "expanded" : "collapsed"
+                                       }`}
+                                   >
+                                     {update.content.split("\n").map((line, i) => (
+                                       <React.Fragment key={i}>
+                                         {line}
+                                         <br />
+                                       </React.Fragment>
+                                     ))}
+                                   </p>
+               
+                                   {overflowingUpdates[update.id] && (
+                                     <button
+                                       className="read-more-story-btn"
+                                       onClick={() =>
+                                         setExpandedUpdates((prev) => ({
+                                           ...prev,
+                                           [update.id]: !prev[update.id],
+                                         }))
+                                       }
+                                     >
+                                       {expandedUpdates[update.id] ? "Read less" : "Read more"}
+                                     </button>
+               
+                                   )}
+               
+                                 </div>
+                               ))}
+               
+                             </div>
+               
+                             {/* READ MORE BUTTON */}
+                             {updates.length > 2 && (
+                               <div className="updates-read-more-wrap">
+                                 <button
+                                   className="read-more-btn"
+                                   onClick={() => setShowAllUpdates((prev) => !prev)}
+                                 >
+                                   {showAllUpdates ? "Show less" : "Show more"}
+                                 </button>
+                               </div>
+                             )}
+                           </>
+                         ) : (
+                           <p className="updates-empty">
+                             No updates posted by fundraiser yet.
+                           </p>
+                         )}
+       
+             </section>
 
         <DonorsList
           title="Recent Donors"

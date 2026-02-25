@@ -92,7 +92,7 @@ export default function MyDonationsPage() {
             <tr>
               <th>Fundraiser</th>
               <th>Donation</th>
-              <th>Platform Fund</th>
+              <th>Foundation Fund</th>
               <th>Total Paid</th>
               <th>Status</th>
               <th>Date</th>

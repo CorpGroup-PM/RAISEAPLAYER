@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import "../../dashboard/campaigns/[id]/campaign-details.css";
@@ -71,6 +71,12 @@ export default function ExploreFundraiserDetailsPage() {
 
   const [showAllUpdates, setShowAllUpdates] = useState(false);
   const [expandedStory, setExpandedStory] = useState(false);
+  const [showReadMore, setShowReadMore] = useState(false);
+  const storyRef = useRef<HTMLParagraphElement | null>(null);
+
+  const [expandedUpdates, setExpandedUpdates] = useState<Record<string, boolean>>({});
+  const updateRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
+  const [overflowingUpdates, setOverflowingUpdates] = useState<Record<string, boolean>>({});
 
 
   const nextImage = () => {
@@ -167,6 +173,35 @@ export default function ExploreFundraiserDetailsPage() {
     setVideoMedia(videos);
   }, [campaign]);
 
+  useEffect(() => {
+    if (!campaign?.story) {
+      setShowReadMore(false);
+      return;
+    }
+
+    const el = storyRef.current;
+    if (!el) return;
+
+    requestAnimationFrame(() => {
+      const isOverflowing = el.scrollHeight > el.clientHeight;
+      setShowReadMore(isOverflowing);
+    });
+  }, [campaign?.story]);
+
+  useEffect(() => {
+    const newOverflowState: Record<string, boolean> = {};
+
+    updates.forEach((update) => {
+      const el = updateRefs.current[update.id];
+      if (!el) return;
+
+      const isOverflowing = el.scrollHeight > el.clientHeight;
+      newOverflowState[update.id] = isOverflowing;
+    });
+
+    setOverflowingUpdates(newOverflowState);
+  }, [updates]);
+
   /* ================= STATES ================= */
   if (loading) {
     return <div className="dashboard-center">Loading campaign...</div>;
@@ -191,7 +226,6 @@ export default function ExploreFundraiserDetailsPage() {
         >
           ← Back to Explore
         </button>
-        <span className="manage-text">Manage</span>
         <StatusBadge status={campaign.status} />
       </header>
 
@@ -220,22 +254,22 @@ export default function ExploreFundraiserDetailsPage() {
           <section className="highlights-card">
 
             <div className="highlight-item">
-              <span>Sport</span>
+              <span>SPORT</span>
               <strong>{campaign.sport}</strong>
             </div>
 
             <div className="highlight-item">
-              <span>Level</span>
+              <span>LEVEL</span>
               <strong>{campaign.level}</strong>
             </div>
 
             <div className="highlight-item">
-              <span>Location</span>
+              <span>LOCATION</span>
               <strong>{campaign.city}, {campaign.state}</strong>
             </div>
 
             <div className="highlight-item">
-              <span>Discipline</span>
+              <span>DISCIPLINE</span>
               <strong>{campaign.discipline || "—"}</strong>
             </div>
 
@@ -304,20 +338,27 @@ export default function ExploreFundraiserDetailsPage() {
           <section className="story-card">
             <h3>My Journey</h3>
 
-            <p
-              className={`story-text ${expandedStory ? "expanded" : "collapsed"
-                }`}
-            >
-              {campaign.story}
-            </p>
+            {campaign?.story ? (
+              <>
+                <p
+                  ref={storyRef}
+                  className={`story-text ${expandedStory ? "expanded" : "collapsed"
+                    }`}
+                >
+                  {campaign.story}
+                </p>
 
-            {campaign.story && (
-              <button
-                className="read-more-story-btn"
-                onClick={() => setExpandedStory((prev) => !prev)}
-              >
-                {expandedStory ? "Read less" : "Read more"}
-              </button>
+                {showReadMore && (
+                  <button
+                    className="read-more-story-btn"
+                    onClick={() => setExpandedStory((prev) => !prev)}
+                  >
+                    {expandedStory ? "Read less" : "Read more"}
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="story-empty">No story added yet.</p>
             )}
           </section>
 
@@ -484,7 +525,13 @@ export default function ExploreFundraiserDetailsPage() {
                     </span>
                   </div>
 
-                  <p className="update-content">
+                  <p
+                    ref={(el) => {
+                      updateRefs.current[update.id] = el;
+                    }}
+                    className={`update-content ${expandedUpdates[update.id] ? "expanded" : "collapsed"
+                      }`}
+                  >
                     {update.content.split("\n").map((line, i) => (
                       <React.Fragment key={i}>
                         {line}
@@ -492,6 +539,20 @@ export default function ExploreFundraiserDetailsPage() {
                       </React.Fragment>
                     ))}
                   </p>
+
+                  {overflowingUpdates[update.id] && (
+                    <button
+                      className="read-more-story-btn"
+                      onClick={() =>
+                        setExpandedUpdates((prev) => ({
+                          ...prev,
+                          [update.id]: !prev[update.id],
+                        }))
+                      }
+                    >
+                      {expandedUpdates[update.id] ? "Read less" : "Read more"}
+                    </button>
+                  )}
 
                 </div>
               ))}

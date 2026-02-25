@@ -455,10 +455,32 @@ button {
 
 .update-content {
   font-size: 14px;
+  line-height: 1.65;
   color: #374151;
-  line-height: 1.6;
+  margin-top: 6px;
 }
 
+.update-content.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;              /* for compatibility warning fix */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.update-content.expanded {
+  display: block;
+}
+.read-more-updates-btn {
+  margin-top: 12px;
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
 
 
 /* ================= BENEFICIARY SECTION ================= */
@@ -873,7 +895,7 @@ button {
   background: #ffffff;
   border-radius: 14px;
   padding: 24px;
-  margin: 0px;
+  margin: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 

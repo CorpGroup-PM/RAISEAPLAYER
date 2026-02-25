@@ -114,12 +114,9 @@ export default function UserProfile() {
 
       await refreshUser(); // single source of truth
       reset(data); // reset dirty state
-    } catch (err: any) {
-      addToast(
-        err.response?.data?.message || "Failed to update profile",
-        "error"
-      );
-    }
+    } catch (err) {
+  console.error("Profile update failed", err);
+}
   };
 
   /* ----------------------- PROFILE PICTURE ----------------------- */

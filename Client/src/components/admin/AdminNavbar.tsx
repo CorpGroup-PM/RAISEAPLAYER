@@ -78,13 +78,13 @@ export default function AdminNavbar() {
 
           <li
             className={
-              pathname.startsWith("/admin/PlatformTips") ? "active" : ""
+              pathname.startsWith("/admin/FoundationFunds") ? "active" : ""
             }
           >
-            <Link href="/admin/PlatformTips">Platform Tips</Link>
+            <Link href="/admin/FoundationFunds">Foundation Funds</Link>
           </li>
           <li
-            className={pathname.startsWith("/admin/Review Verification") ? "active" : ""}
+            className={pathname.startsWith("/admin/ReviewVerification") ? "active" : ""}
             onClick={() => setMenuOpen(false)}
           >
             <Link href="/admin/ReviewVerification">Review Verification</Link>
@@ -184,10 +184,10 @@ export default function AdminNavbar() {
           </li>
 
           <li
-            className={pathname.startsWith("/admin/PlatformTips") ? "active" : ""}
+            className={pathname.startsWith("/admin/FoundationFunds") ? "active" : ""}
             onClick={() => setMenuOpen(false)}
           >
-            <Link href="/admin/PlatformTips">PlatformTips</Link>
+            <Link href="/admin/FoundationFunds">Foundation Funds</Link>
           </li>
 
            <li

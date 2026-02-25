@@ -20,21 +20,27 @@ export default function ReviewsPage() {
     const router = useRouter();
 
     const loadReviews = async () => {
-        try {
-            setLoading(true);
-            const res = await FundraiserService.publicReviews();
+  try {
+    setLoading(true);
+    const res = await FundraiserService.publicReviews();
 
-            const list = Array.isArray(res.data)
-                ? res.data
-                : res.data?.data ?? [];
+    const list = Array.isArray(res.data)
+      ? res.data
+      : res.data?.data ?? [];
 
-            setReviews(list);
-        } catch (err) {
-            console.error("Failed to load reviews", err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const sorted = [...list].sort((a: PublicReview, b: PublicReview) => {
+      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return db - da; // ✅ newest first
+    });
+
+    setReviews(sorted);
+  } catch (err) {
+    console.error("Failed to load reviews", err);
+  } finally {
+    setLoading(false);
+  }
+};
     const toggleExpand = (id: string) => {
         setExpandedReviews(prev =>
             prev.includes(id)

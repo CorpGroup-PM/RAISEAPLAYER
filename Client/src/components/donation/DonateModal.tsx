@@ -163,7 +163,7 @@ export default function DonateModal({
 
                 {/* TIP */}
                 <div className="donate-box">
-                    <label>Platform Development Fund(PDF) (₹)</label>
+                    <label>Foundation Development Fund (₹)</label>
                     <input
                         type="number"
                         value={tip}

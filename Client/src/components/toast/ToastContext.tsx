@@ -12,7 +12,7 @@ import { ToastContainer } from "./ToastContainer";
 import { toastManager } from "@/lib/toast-manager";
 
 export interface Toast {
-  id: number;
+  id: string;
   message: string;
   type: "success" | "error" | "info";
 }
@@ -27,12 +27,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = (message: string, type: Toast["type"] = "info") => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
-  };
+  const id = crypto.randomUUID(); // ✅ guaranteed unique
+
+  setToasts((prev) => [...prev, { id, message, type }]);
+
+  setTimeout(() => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, 3000);
+};
 
   // 🔗 Bind the addToast to toastManager (so Axios can call it)
   useEffect(() => {

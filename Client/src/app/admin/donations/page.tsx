@@ -72,7 +72,7 @@ export default function AdminAllDonationsPage() {
                 <th>Contact</th>
 
                 <th>Donation</th>
-                <th>Platform Fund</th>
+                <th>Foundation Fund</th>
                 <th>Total Paid</th>
                 <th>Date</th>
                 <th>Fundraiser</th>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FundraiserService } from "@/services/fundraiser.service";
 import "./campaign-details.css";
@@ -57,6 +57,12 @@ export default function CampaignDetailsPage() {
   const [addingUpdate, setAddingUpdate] = useState(false);
   const [expandedStory, setExpandedStory] = useState(false);
   const [showAllUpdates, setShowAllUpdates] = useState(false);
+  const [showReadMore, setShowReadMore] = useState(false);
+  const storyRef = useRef<HTMLParagraphElement | null>(null);
+
+  const [expandedUpdates, setExpandedUpdates] = useState<Record<string, boolean>>({});
+  const updateRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
+  const [overflowingUpdates, setOverflowingUpdates] = useState<Record<string, boolean>>({});
 
   const nextImage = () => {
     setCurrentImage((prev) =>
@@ -217,6 +223,17 @@ export default function CampaignDetailsPage() {
   }, [campaign?.media]);
 
   useEffect(() => {
+    const el = storyRef.current;
+    if (!el) return;
+
+    // Small delay to ensure layout is calculated
+    requestAnimationFrame(() => {
+      const isOverflowing = el.scrollHeight > el.clientHeight;
+      setShowReadMore(isOverflowing);
+    });
+  }, [campaign?.story]);
+
+  useEffect(() => {
     if (!campaign) return;
 
     const raw = campaign?.fundraiserupdates;
@@ -241,6 +258,20 @@ export default function CampaignDetailsPage() {
         )
     );
   }, [campaign]);
+
+  useEffect(() => {
+    const newOverflowState: Record<string, boolean> = {};
+
+    updates.forEach((update) => {
+      const el = updateRefs.current[update.id];
+      if (!el) return;
+
+      const isOverflowing = el.scrollHeight > el.clientHeight;
+      newOverflowState[update.id] = isOverflowing;
+    });
+
+    setOverflowingUpdates(newOverflowState);
+  }, [updates]);
 
 
   useEffect(() => {
@@ -505,194 +536,197 @@ export default function CampaignDetailsPage() {
         <p className="subtitle">{campaign.shortDescription}</p>
       </section>
 
-     {/* ================= RESPONSIVE CAMPAIGN LAYOUT ================= */}
-<div className="campaign-main-grid">
+      {/* ================= RESPONSIVE CAMPAIGN LAYOUT ================= */}
+      <div className="campaign-main-grid">
 
-  {/* LEFT COLUMN */}
-  <div className="campaign-left-column">
+        {/* LEFT COLUMN */}
+        <div className="campaign-left-column">
 
-    {/* COVER */}
-    <section className="cover-section">
-      <div className="cover-box">
-        <img
-          src={campaign.coverImageURL || "/background.png"}
-          alt="Campaign cover"
-          className="cover-image"
-        />
-
-        <div className="cover-overlay">
-          {!isRejected && (
-            <label className="cover-btn">
-              {uploadingCover ? "Uploading..." : "Add / Edit Cover Image"}
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) =>
-                  e.target.files &&
-                  handleCoverUpload(e.target.files[0])
-                }
+          {/* COVER */}
+          <section className="cover-section">
+            <div className="cover-box">
+              <img
+                src={campaign.coverImageURL || "/background.png"}
+                alt="Campaign cover"
+                className="cover-image"
               />
-            </label>
-          )}
-        </div>
-      </div>
-    </section>
 
-    {/* HIGHLIGHTS */}
-    <section className="highlights-card">
-
-      {/* Sport Row */}
-      <div className="highlight-row top">
-        <div className="highlight-item">
-          <span className="highlight-label">Sport</span>
-          <span className="highlight-value">{campaign.sport}</span>
-        </div>
-
-        <div className="highlight-item">
-          <span className="highlight-label">Level</span>
-          <span className="highlight-value">{campaign.level}</span>
-        </div>
-
-        <div className="highlight-item">
-          <span className="highlight-label">Location</span>
-          <span className="highlight-value">
-            {campaign.city}, {campaign.state}
-          </span>
-        </div>
-
-        <div className="highlight-item">
-          <span className="highlight-label">Discipline</span>
-          <span className="highlight-value">
-            {campaign.discipline || "—"}
-          </span>
-        </div>
-      </div>
-
-      {/* Skills */}
-      {Array.isArray(campaign.skills) &&
-        campaign.skills.length > 0 && (
-          <>
-            <div className="highlight-item full">
-              <span className="highlight-label">Skills</span>
-              <div className="skill-chip-row">
-                {campaign.skills.map((skill: string, idx: number) => (
-                  <span className="skill-chip" key={idx}>
-                    {skill}
-                  </span>
-                ))}
+              <div className="cover-overlay">
+                {!isRejected && (
+                  <label className="cover-btn">
+                    {uploadingCover ? "Uploading..." : "Add / Edit Cover Image"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) =>
+                        e.target.files &&
+                        handleCoverUpload(e.target.files[0])
+                      }
+                    />
+                  </label>
+                )}
               </div>
             </div>
-          </>
-        )}
+          </section>
 
-      {/* Beneficiary */}
-      <div className="highlight-divider" />
+          {/* HIGHLIGHTS */}
+          <section className="highlights-card">
 
-      <div className="highlight-beneficiary-row">
-        <span className="highlight-label">Beneficiary</span>
-
-        {campaign.campaignFor === "SELF" &&
-          campaign.beneficiaryUser && (
-            <div className="beneficiary-inline">
-              <div className="beneficiary-avatar">
-                {campaign.beneficiaryUser.firstName?.[0]}
+            {/* Sport Row */}
+            <div className="highlight-row top">
+              <div className="highlight-item">
+                <span className="highlight-label">Sport</span>
+                <span className="highlight-value">{campaign.sport}</span>
               </div>
 
-              <div className="beneficiary-info">
-                <strong>
-                  {campaign.beneficiaryUser.firstName}{" "}
-                  {campaign.beneficiaryUser.lastName}
-                </strong>
+              <div className="highlight-item">
+                <span className="highlight-label">Level</span>
+                <span className="highlight-value">{campaign.level}</span>
+              </div>
 
-                <span className="beneficiary-meta">
-                  Organizer • Self
+              <div className="highlight-item">
+                <span className="highlight-label">Location</span>
+                <span className="highlight-value">
+                  {campaign.city}, {campaign.state}
+                </span>
+              </div>
+
+              <div className="highlight-item">
+                <span className="highlight-label">Discipline</span>
+                <span className="highlight-value">
+                  {campaign.discipline || "—"}
                 </span>
               </div>
             </div>
-          )}
 
-        {campaign.campaignFor === "OTHER" &&
-          campaign.beneficiaryOther && (
-            <div className="beneficiary-inline">
-              <div className="beneficiary-avatar">
-                {campaign.beneficiaryOther.fullName?.[0]}
-              </div>
+            {/* Skills */}
+            {Array.isArray(campaign.skills) &&
+              campaign.skills.length > 0 && (
+                <>
+                  <div className="highlight-item full">
+                    <span className="highlight-label">Skills</span>
+                    <div className="skill-chip-row">
+                      {campaign.skills.map((skill: string, idx: number) => (
+                        <span className="skill-chip" key={idx}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
-              <div className="beneficiary-info">
-                <strong>
-                  {campaign.beneficiaryOther.fullName}
-                </strong>
+            {/* Beneficiary */}
+            <div className="highlight-divider" />
 
-                <span className="beneficiary-meta">
-                  {campaign.beneficiaryOther.relationshipToCreator}
-                </span>
-              </div>
+            <div className="highlight-beneficiary-row">
+              <span className="highlight-label">Beneficiary</span>
+
+              {campaign.campaignFor === "SELF" &&
+                campaign.beneficiaryUser && (
+                  <div className="beneficiary-inline">
+                    <div className="beneficiary-avatar">
+                      {campaign.beneficiaryUser.firstName?.[0]}
+                    </div>
+
+                    <div className="beneficiary-info">
+                      <strong>
+                        {campaign.beneficiaryUser.firstName}{" "}
+                        {campaign.beneficiaryUser.lastName}
+                      </strong>
+
+                      <span className="beneficiary-meta">
+                        Organizer • Self
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+              {campaign.campaignFor === "OTHER" &&
+                campaign.beneficiaryOther && (
+                  <div className="beneficiary-inline">
+                    <div className="beneficiary-avatar">
+                      {campaign.beneficiaryOther.fullName?.[0]}
+                    </div>
+
+                    <div className="beneficiary-info">
+                      <strong>
+                        {campaign.beneficiaryOther.fullName}
+                      </strong>
+
+                      <span className="beneficiary-meta">
+                        {campaign.beneficiaryOther.relationshipToCreator}
+                      </span>
+                    </div>
+                  </div>
+                )}
             </div>
-          )}
-      </div>
-    </section>
+          </section>
 
-    {/* STORY */}
-    <section className="story-section">
-      {campaign.story ? (
-        <>
-          <p
-            className={`story-text ${
-              expandedStory ? "expanded" : "collapsed"
-            }`}
-          >
-            {campaign.story}
-          </p>
+          {/* STORY */}
+          <section className="story-section">
+            <h3>My Journey</h3>
+            {campaign.story ? (
+              <>
+                <p
+                  ref={storyRef}
+                  className={`story-text ${expandedStory ? "expanded" : "collapsed"
+                    }`}
+                >
+                  {campaign.story}
+                </p>
 
-          <button
-            className="read-more-story-btn"
-            onClick={() => setExpandedStory((prev) => !prev)}
-          >
-            {expandedStory ? "Read less" : "Read more"}
-          </button>
-        </>
-      ) : (
-        <p className="story-empty">No story added yet.</p>
-      )}
-    </section>
+                {showReadMore && (
+                  <button
+                    className="read-more-story-btn"
+                    onClick={() => setExpandedStory((prev) => !prev)}
+                  >
+                    {expandedStory ? "Read less" : "Read more"}
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="story-empty">No story added yet.</p>
+            )}
+          </section>
 
-  </div>
-
-  {/* RIGHT COLUMN */}
-  <div className="campaign-right-column">
-
-    {/* PROGRESS */}
-    <section className="progress-card">
-      <div className="progress-card-header">
-        <div>
-          <div className="total-raised">
-            ₹{raised.toLocaleString()}
-          </div>
-          <div className="goal-text">
-            of ₹{goal.toLocaleString()}
-          </div>
         </div>
-        <div className="progress-percent">{progress}%</div>
+
+        {/* RIGHT COLUMN */}
+        <div className="campaign-right-column">
+
+          {/* PROGRESS */}
+          <section className="progress-card">
+            <div className="progress-card-header">
+              <div>
+                <div className="total-raised">
+                  ₹{raised.toLocaleString()}
+                </div>
+                <div className="goal-text">
+                  of ₹{goal.toLocaleString()}
+                </div>
+              </div>
+              <div className="progress-percent">{progress}%</div>
+            </div>
+
+            <div className="progress-bar">
+              <div style={{ width: `${progress}%` }} />
+            </div>
+          </section>
+
+          {/* DONORS */}
+          {campaign.donations && (
+            <DonorsList
+              donations={campaign.donations}
+              fundraiserId={campaign.id}
+              maxItems={5}
+            />
+          )}
+
+
+        </div>
       </div>
-
-      <div className="progress-bar">
-        <div style={{ width: `${progress}%` }} />
-      </div>
-    </section>
-
-    {/* DONORS */}
-    {campaign.donations && campaign.donations.length > 0 && (
-  <DonorsList
-    donations={campaign.donations}
-    fundraiserId={campaign.id}
-    maxItems={5}
-  />
-)}
-
-
-  </div>
-</div>
 
 
       {/* =====================================================
@@ -782,25 +816,25 @@ export default function CampaignDetailsPage() {
         <div className="media-box">
           <div className="media-box-header">
             <h3>Videos</h3>
-           {!isRejected && !showYoutubeInput && (
-  <button
-    className="media-add-btn"
-    onClick={() => setShowYoutubeInput(true)}
-  >
-    + Add Video Link
-  </button>
-)}
+            {!isRejected && !showYoutubeInput && (
+              <button
+                className="media-add-btn"
+                onClick={() => setShowYoutubeInput(true)}
+              >
+                + Add Video Link
+              </button>
+            )}
 
-{!isRejected && showYoutubeInput && (
-  <div className="youtube-row">
-    <input
-      value={youtubeUrl}
-      onChange={(e) => setYoutubeUrl(e.target.value)}
-      placeholder="Paste YouTube link"
-    />
-    <button onClick={handleYoutubeAdd}>Add</button>
-  </div>
-)}
+            {!isRejected && showYoutubeInput && (
+              <div className="youtube-row">
+                <input
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  placeholder="Paste YouTube link"
+                />
+                <button onClick={handleYoutubeAdd}>Add</button>
+              </div>
+            )}
 
           </div>
 
@@ -1005,7 +1039,13 @@ export default function CampaignDetailsPage() {
                       </span>
                     </div>
 
-                    <p className="update-content">
+                    <p
+                      ref={(el) => {
+                        updateRefs.current[update.id] = el;
+                      }}
+                      className={`update-content ${expandedUpdates[update.id] ? "expanded" : "collapsed"
+                        }`}
+                    >
                       {update.content.split("\n").map((line, i) => (
                         <React.Fragment key={i}>
                           {line}
@@ -1013,6 +1053,21 @@ export default function CampaignDetailsPage() {
                         </React.Fragment>
                       ))}
                     </p>
+
+                    {overflowingUpdates[update.id] && (
+                      <button
+                        className="read-more-story-btn"
+                        onClick={() =>
+                          setExpandedUpdates((prev) => ({
+                            ...prev,
+                            [update.id]: !prev[update.id],
+                          }))
+                        }
+                      >
+                        {expandedUpdates[update.id] ? "Read less" : "Read more"}
+                      </button>
+
+                    )}
 
                   </div>
                 ))}
@@ -1168,7 +1223,7 @@ export default function CampaignDetailsPage() {
           )}
         </section>
       </section>
-      
+
 
       <CreateWithdrawalModal
         fundraiserId={id}
