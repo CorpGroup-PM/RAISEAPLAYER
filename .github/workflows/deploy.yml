@@ -27,14 +27,11 @@ jobs:
             echo "--- Pulling latest code ---"
             git pull origin main
 
-            echo "--- Freeing disk space before build ---"
-            docker system prune -f
-
             echo "--- Building and starting containers ---"
             docker compose up -d --build --remove-orphans
 
-            echo "--- Pruning unused images after build ---"
-            docker image prune -a -f
+            echo "--- Pruning unused images ---"
+            docker image prune -f
 
             echo "--- Deployment complete ---"
             docker compose ps
