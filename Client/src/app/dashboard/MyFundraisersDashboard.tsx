@@ -5,11 +5,19 @@ import "./dashboard.css";
 import { FundraiserService } from "@/services/fundraiser.service";
 import { useRouter } from "next/navigation";
 import StatusBadge from "@/components/StatusBadge/StatusBadge";
+import { useStartFundraiser } from "@/hooks/useStartFundraiser";
+import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
 
 const MyFundraisersDashboard: React.FC = () => {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const {
+    handleStartFundraiser,
+    kycCheckLoading,
+    isKycModalOpen,
+    closeKycModal,
+  } = useStartFundraiser();
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -50,9 +58,10 @@ const MyFundraisersDashboard: React.FC = () => {
             </p>
             <button
               className="primary-btn large"
-              onClick={() => router.push("/start-fundraiser")}
+              onClick={handleStartFundraiser}
+              disabled={kycCheckLoading}
             >
-              Start Your First Fundraiser
+              {kycCheckLoading ? "Checking..." : "Start Your First Fundraiser"}
             </button>
           </section>
         )}
@@ -73,7 +82,7 @@ const MyFundraisersDashboard: React.FC = () => {
                 const goal = Number(campaign.goalAmount || 1);
                 const progress = Math.min(
                   Math.round((raised / goal) * 100),
-                  100
+                  100,
                 );
 
                 return (
@@ -108,7 +117,6 @@ const MyFundraisersDashboard: React.FC = () => {
                       </p>
 
                       <div className="progress-box">
-                      
                         <div className="progress-row">
                           <div>
                             <strong style={{ color: "orange" }}>
@@ -145,6 +153,8 @@ const MyFundraisersDashboard: React.FC = () => {
           </section>
         )}
       </main>
+
+      <PanKycModal isOpen={isKycModalOpen} onClose={closeKycModal} />
     </div>
   );
 };
