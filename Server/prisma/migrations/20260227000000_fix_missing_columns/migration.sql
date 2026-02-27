@@ -126,15 +126,21 @@ CREATE TABLE IF NOT EXISTS "FundTransferRequest" (
 );
 
 DO $$ BEGIN
-  ALTER TABLE "FundTransferRequest"
-    ADD CONSTRAINT "FundTransferRequest_payout_id_key" UNIQUE ("payout_id");
-EXCEPTION WHEN duplicate_object THEN NULL;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'FundTransferRequest_payout_id_key'
+  ) THEN
+    ALTER TABLE "FundTransferRequest"
+      ADD CONSTRAINT "FundTransferRequest_payout_id_key" UNIQUE ("payout_id");
+  END IF;
 END $$;
 
 DO $$ BEGIN
-  ALTER TABLE "FundTransferRequest"
-    ADD CONSTRAINT "FundTransferRequest_idempotency_key_key" UNIQUE ("idempotency_key");
-EXCEPTION WHEN duplicate_object THEN NULL;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'FundTransferRequest_idempotency_key_key'
+  ) THEN
+    ALTER TABLE "FundTransferRequest"
+      ADD CONSTRAINT "FundTransferRequest_idempotency_key_key" UNIQUE ("idempotency_key");
+  END IF;
 END $$;
 
 DO $$ BEGIN
