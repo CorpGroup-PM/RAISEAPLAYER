@@ -1,5 +1,4 @@
 import PDFDocument from 'pdfkit';
-import * as path from 'path';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -17,10 +16,6 @@ export class ReceiptService {
     const buffers: Buffer[] = [];
 
     doc.on('data', (chunk) => buffers.push(chunk));
-
-    // 📍 LOGO
-   const logoPath = path.join(__dirname, 'logo.png');
-    doc.image(logoPath, 50, 45, { width: 120 });
 
     // 📍 PLATFORM NAME
     doc
