@@ -1,48 +1,115 @@
 -- =============================================================================
 -- FIX: Missing columns on existing tables + ensure new tables exist
---
--- Root cause: The production `donations` table was created before guest-donor
--- and platform-tip columns were added to the schema. The previous catch-up
--- migration (20260225000000) only created NEW tables — it never patched
--- existing ones. This migration is fully idempotent (IF NOT EXISTS everywhere).
---
--- Fixes:
---   1. donations      — add guestName, guestEmail, guestMobile,
---                        donationAmount, platformTipAmount, totalAmount,
---                        isAnonymous, message  (if missing)
---   2. FundTransferRequest — ensure table exists (re-run CREATE IF NOT EXISTS
---                             in case the previous migration was not applied)
---   3. payouts        — ensure all snapshot columns exist
+-- Fully idempotent — safe to run on any DB state.
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
--- 1. donations: add all columns that may be missing
+-- 0. Ensure required enums exist (in case catch-up migration missed them)
 -- ---------------------------------------------------------------------------
+DO $$ BEGIN
+  CREATE TYPE "TransferStatus" AS ENUM (
+    'PENDING', 'APPROVED', 'REJECTED', 'PROCESSING', 'PAID', 'FAILED', 'CANCELLED'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Guest donor fields (added when guest-donation feature was shipped)
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "guestName"   TEXT;
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "guestEmail"  TEXT;
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "guestMobile" TEXT;
+DO $$ BEGIN
+  CREATE TYPE "RecipientType" AS ENUM ('SELF', 'PARENT_GUARDIAN', 'COACH', 'ACADEMY');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Split-amount fields (originally the table may have had a single "amount" col)
--- We use DEFAULT 0 so existing rows satisfy the NOT NULL constraint.
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "donationAmount"    DECIMAL(15,2) NOT NULL DEFAULT 0;
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "platformTipAmount" DECIMAL(15,2) NOT NULL DEFAULT 0;
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "totalAmount"       DECIMAL(15,2) NOT NULL DEFAULT 0;
+DO $$ BEGIN
+  CREATE TYPE "SportsDocumentType" AS ENUM (
+    'ATHLETE_IDENTITY', 'ACADEMY_CONFIRMATION', 'COACH_CONFIRMATION',
+    'EQUIPMENT_QUOTE', 'TOURNAMENT_INVITE', 'TRAINING_RECEIPT',
+    'SPORTS_FEDERATION_PROOF', 'OTHER'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Anonymous + message fields
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "isAnonymous" BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "message"     TEXT;
+DO $$ BEGIN
+  CREATE TYPE "DocumentVerificationStatus" AS ENUM ('PENDING', 'VERIFIED', 'REJECTED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- currency (may be missing on older DB)
-ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "currency" TEXT NOT NULL DEFAULT 'INR';
+ALTER TYPE "CampaignStatus" ADD VALUE IF NOT EXISTS 'COMPLETED';
 
 -- ---------------------------------------------------------------------------
--- 2. FundTransferRequest: create if it was never applied
+-- 1. donations: add columns that may be missing
+-- ---------------------------------------------------------------------------
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "guestName"          TEXT;
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "guestEmail"         TEXT;
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "guestMobile"        TEXT;
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "donationAmount"     DECIMAL(15,2) NOT NULL DEFAULT 0;
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "platformTipAmount"  DECIMAL(15,2) NOT NULL DEFAULT 0;
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "totalAmount"        DECIMAL(15,2) NOT NULL DEFAULT 0;
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "isAnonymous"        BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "message"            TEXT;
+ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "currency"           TEXT NOT NULL DEFAULT 'INR';
+
+-- ---------------------------------------------------------------------------
+-- 2. payouts: add snapshot columns — wrapped in a check so we skip entirely
+--    if the table doesn't exist yet (it will be created by migration 3 below)
+-- ---------------------------------------------------------------------------
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'payouts'
+  ) THEN
+    ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "accountHolderName"   TEXT NOT NULL DEFAULT '';
+    ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "maskedAccountNumber" TEXT NOT NULL DEFAULT '';
+    ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "transferredToLabel"  TEXT NOT NULL DEFAULT '';
+    ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "bankName"            TEXT;
+    ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "ifscCode"            TEXT;
+    ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "transactionId"       TEXT NOT NULL DEFAULT '';
+    ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "proofImageUrl"       TEXT;
+    ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "notes"               TEXT;
+  END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- 3. payouts table: create if it doesn't exist
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS "payouts" (
+  "id"                  TEXT          NOT NULL DEFAULT gen_random_uuid()::text,
+  "fundraiser_id"       TEXT          NOT NULL,
+  "amount"              DECIMAL(15,2) NOT NULL,
+  "currency"            TEXT          NOT NULL DEFAULT 'INR',
+  "accountHolderName"   TEXT          NOT NULL DEFAULT '',
+  "maskedAccountNumber" TEXT          NOT NULL DEFAULT '',
+  "transferredToLabel"  TEXT          NOT NULL DEFAULT '',
+  "bankName"            TEXT,
+  "ifscCode"            TEXT,
+  "transactionId"       TEXT          NOT NULL DEFAULT '',
+  "payment_date"        TIMESTAMP(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "proofImageUrl"       TEXT,
+  "notes"               TEXT,
+  "processed_by_id"     TEXT          NOT NULL,
+  "created_at"          TIMESTAMP(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "payouts_pkey" PRIMARY KEY ("id")
+);
+
+DO $$ BEGIN
+  ALTER TABLE "payouts"
+    ADD CONSTRAINT "payouts_fundraiser_id_fkey"
+    FOREIGN KEY ("fundraiser_id") REFERENCES "Fundraiser"("id")
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "payouts"
+    ADD CONSTRAINT "payouts_processed_by_id_fkey"
+    FOREIGN KEY ("processed_by_id") REFERENCES "users"("id")
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- 4. FundTransferRequest: create if it doesn't exist
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "FundTransferRequest" (
   "id"              TEXT             NOT NULL DEFAULT gen_random_uuid()::text,
-  -- @map("createdAt") — column name is camelCase to match Prisma @map
   "createdAt"       TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at"      TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "fundraiserId"    TEXT             NOT NULL,
@@ -59,7 +126,6 @@ CREATE TABLE IF NOT EXISTS "FundTransferRequest" (
   CONSTRAINT "FundTransferRequest_pkey" PRIMARY KEY ("id")
 );
 
--- Unique constraints (safe to run even if table already existed correctly)
 DO $$ BEGIN
   ALTER TABLE "FundTransferRequest"
     ADD CONSTRAINT "FundTransferRequest_payout_id_key" UNIQUE ("payout_id");
@@ -72,7 +138,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- Foreign keys
 DO $$ BEGIN
   ALTER TABLE "FundTransferRequest"
     ADD CONSTRAINT "FundTransferRequest_fundraiserId_fkey"
@@ -107,15 +172,3 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS "FundTransferRequest_fundraiserId_idx" ON "FundTransferRequest"("fundraiserId");
 CREATE INDEX IF NOT EXISTS "FundTransferRequest_status_idx"       ON "FundTransferRequest"("status");
-
--- ---------------------------------------------------------------------------
--- 3. payouts: add snapshot columns that may be missing
--- ---------------------------------------------------------------------------
-ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "accountHolderName"   TEXT NOT NULL DEFAULT '';
-ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "maskedAccountNumber" TEXT NOT NULL DEFAULT '';
-ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "transferredToLabel"  TEXT NOT NULL DEFAULT '';
-ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "bankName"            TEXT;
-ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "ifscCode"            TEXT;
-ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "transactionId"       TEXT NOT NULL DEFAULT '';
-ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "proofImageUrl"       TEXT;
-ALTER TABLE "payouts" ADD COLUMN IF NOT EXISTS "notes"               TEXT;
