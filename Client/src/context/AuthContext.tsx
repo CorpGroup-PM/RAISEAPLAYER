@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 import { authManager } from "@/lib/auth-manager";
-import { api } from "@/lib/api-client";
+import { api, refreshAccessToken } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import { toastManager } from "@/lib/toast-manager";
 import { UserService } from "@/services/user.service";
@@ -62,6 +62,20 @@ useEffect(() => {
     if (!authManager.isAuthenticated()) {
       setIsLoaded(true);
       return;
+    }
+
+    // On hard refresh the access token is wiped from memory. Proactively
+    // exchange the refresh token before calling /user/profile so the request
+    // goes out with a valid Bearer token and avoids a visible 401 in the
+    // network tab (the interceptor would handle it anyway, but this is cleaner).
+    if (!authManager.getAccessToken() && authManager.getRefreshToken()) {
+      const newToken = await refreshAccessToken();
+      if (!newToken) {
+        // Refresh token invalid/expired — bail out immediately
+        authManager.logout();
+        setIsLoaded(true);
+        return;
+      }
     }
 
     try {

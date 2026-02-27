@@ -47,7 +47,7 @@ const processQueue = (error: any, token: string | null = null) => {
    REFRESH ACCESS TOKEN (✔ FIXED)
    🔑 Sends refresh token in Authorization header
 ---------------------------------------------- */
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   try {
     const refreshToken = authManager.getRefreshToken();
     if (!refreshToken) return null;
