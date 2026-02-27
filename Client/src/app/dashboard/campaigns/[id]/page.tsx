@@ -24,13 +24,19 @@ type CampaignUpdate = {
 
 type FundraiserDocument = {
   id: string;
-  type: string; // ATHLETE_IDENTITY, etc
+  type: string;
   fileUrl: string;
   verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
   isPublic: boolean;
   verifiedAt?: string | null;
   createdAt?: string;
 };
+
+/** Appends a cache-busting param to a URL without breaking existing query strings. */
+function addCacheBust(url: string): string {
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}v=${Date.now()}`;
+}
 
 export default function CampaignDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,10 +47,12 @@ export default function CampaignDetailsPage() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
+  // Separate cover URL state so we can bust the browser cache on re-upload
+  const [coverUrl, setCoverUrl] = useState<string>("");
+
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
 
-  /** ✅ DELETE-ABLE STATES */
   const [imageMedia, setImageMedia] = useState<string[]>([]);
   const [videoMedia, setVideoMedia] = useState<VideoMedia[]>([]);
 
@@ -64,30 +72,14 @@ export default function CampaignDetailsPage() {
   const updateRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
   const [overflowingUpdates, setOverflowingUpdates] = useState<Record<string, boolean>>({});
 
-  const nextImage = () => {
-    setCurrentImage((prev) =>
-      prev === imageMedia.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevImage = () => {
-    setCurrentImage((prev) =>
-      prev === 0 ? imageMedia.length - 1 : prev - 1
-    );
-  };
-
-  const nextVideo = () => {
-    setCurrentVideo((prev) =>
-      prev === videoMedia.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevVideo = () => {
-    setCurrentVideo((prev) =>
-      prev === 0 ? videoMedia.length - 1 : prev - 1
-    );
-  };
-
+  const nextImage = () =>
+    setCurrentImage((prev) => (prev === imageMedia.length - 1 ? 0 : prev + 1));
+  const prevImage = () =>
+    setCurrentImage((prev) => (prev === 0 ? imageMedia.length - 1 : prev - 1));
+  const nextVideo = () =>
+    setCurrentVideo((prev) => (prev === videoMedia.length - 1 ? 0 : prev + 1));
+  const prevVideo = () =>
+    setCurrentVideo((prev) => (prev === 0 ? videoMedia.length - 1 : prev - 1));
 
   const [recipientForm, setRecipientForm] = useState({
     recipientType: "PARENT_GUARDIAN",
@@ -103,44 +95,110 @@ export default function CampaignDetailsPage() {
 
   const [documents, setDocuments] = useState<FundraiserDocument[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
-
   const [docType, setDocType] = useState("ATHLETE_IDENTITY");
   const [docTitle, setDocTitle] = useState("");
-  const [openPreviewId, setOpenPreviewId] = useState<string | null>(null);
 
   const isRejected = campaign?.status === "REJECTED";
 
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
   const [availableAmount, setAvailableAmount] = useState(0);
-  const [showWithdraw, setShowWithdraw] = useState(false);
 
+  /* ================= FETCH HELPERS ================= */
 
   const fetchDocuments = async () => {
     if (!id) return;
-
     try {
       const res = await FundraiserDocumentsService.getDocuments(id);
-      const docs = Array.isArray(res?.data)
-        ? res.data
-        : [];
-      setDocuments(docs);
-
-    } catch (err) {
-      console.error("Failed to fetch documents", err);
-      setDocuments([]); // 🔐 safety fallback
+      setDocuments(Array.isArray(res?.data) ? res.data : []);
+    } catch {
+      setDocuments([]);
     }
-
   };
+
+  const fetchPayouts = async () => {
+    if (!id) return;
+    try {
+      const res = await PayoutRequestsService.list(id as string);
+      setPayoutRequests(res.data.data);
+    } catch {
+      setPayoutRequests([]);
+    }
+  };
+
+  /**
+   * Refresh only the media state (images + videos) without triggering
+   * the full-page loading spinner. Used after image uploads.
+   */
+  const refreshMedia = async () => {
+    if (!id) return;
+    try {
+      const res = await FundraiserService.getCampaignById(id);
+      const data = res.data.data;
+
+      const images: string[] = [];
+      const videos: VideoMedia[] = [];
+
+      data.media?.forEach((item: any) => {
+        if (Array.isArray(item.playerImages)) {
+          images.push(...item.playerImages);
+        }
+        if (Array.isArray(item.youTubeUrl)) {
+          item.youTubeUrl.forEach((originalUrl: string) => {
+            const videoId = originalUrl.includes("youtu.be/")
+              ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
+              : originalUrl.split("v=")[1]?.split("&")[0];
+            if (videoId) {
+              videos.push({
+                embedUrl: `https://www.youtube.com/embed/${videoId}`,
+                originalUrl,
+              });
+            }
+          });
+        }
+      });
+
+      setImageMedia(images);
+      setVideoMedia(videos);
+      setCurrentImage(0);
+    } catch (err) {
+      console.error("Failed to refresh media", err);
+    }
+  };
+
+  const fetchCampaign = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const res = await FundraiserService.getCampaignById(id);
+      const data = res.data.data;
+      setCampaign(data);
+      // Keep coverUrl in sync; don't overwrite if we already cache-busted it
+      if (data.coverImageURL) {
+        setCoverUrl((prev) => prev || data.coverImageURL);
+      }
+    } catch (err) {
+      console.error("Failed to fetch campaign", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= INITIAL LOAD ================= */
+
+  useEffect(() => {
+    if (!id) return;
+    const load = async () => {
+      await fetchCampaign();
+      await fetchPayouts();
+    };
+    load();
+  }, [id]);
 
   useEffect(() => {
     fetchDocuments();
   }, [id]);
 
-  //campaign payment
-  const fetchPayouts = async () => {
-    const res = await PayoutRequestsService.list(id as string);
-    setPayoutRequests(res.data.data);
-  };
+  /* ================= AVAILABLE AMOUNT ================= */
 
   useEffect(() => {
     if (!campaign) return;
@@ -153,42 +211,11 @@ export default function CampaignDetailsPage() {
       .filter((r) => r.status === "PAID")
       .reduce((s, r) => s + Number(r.amount), 0);
 
-    const raised = Number(campaign.raisedAmount || 0);
-
-    setAvailableAmount(raised - reserved - paid);
+    setAvailableAmount(Number(campaign.raisedAmount || 0) - reserved - paid);
   }, [campaign, payoutRequests]);
 
+  /* ================= MEDIA NORMALIZATION ================= */
 
-
-  /* ================= FETCH CAMPAIGN ================= */
-  const fetchCampaign = async () => {
-    if (!id) return;
-
-    try {
-      setLoading(true);
-      const res = await FundraiserService.getCampaignById(id);
-      console.log(res);
-      setCampaign(res.data.data);
-    } catch (err) {
-      console.error("Failed to fetch campaign", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!id) return;
-
-    const load = async () => {
-      await fetchCampaign();
-      await fetchPayouts();
-    };
-
-    load();
-  }, [id]);
-
-
-  /* ================= MEDIA NORMALIZATION (ONCE) ================= */
   useEffect(() => {
     if (!campaign?.media) return;
 
@@ -196,18 +223,14 @@ export default function CampaignDetailsPage() {
     const videos: VideoMedia[] = [];
 
     campaign.media.forEach((item: any) => {
-      // images
       if (Array.isArray(item.playerImages)) {
         images.push(...item.playerImages);
       }
-
-      // youtube
       if (Array.isArray(item.youTubeUrl)) {
         item.youTubeUrl.forEach((originalUrl: string) => {
           const videoId = originalUrl.includes("youtu.be/")
             ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
             : originalUrl.split("v=")[1]?.split("&")[0];
-
           if (videoId) {
             videos.push({
               embedUrl: `https://www.youtube.com/embed/${videoId}`,
@@ -222,35 +245,31 @@ export default function CampaignDetailsPage() {
     setVideoMedia(videos);
   }, [campaign?.media]);
 
+  /* ================= STORY READ-MORE ================= */
+
   useEffect(() => {
     const el = storyRef.current;
     if (!el) return;
-
-    // Small delay to ensure layout is calculated
     requestAnimationFrame(() => {
-      const isOverflowing = el.scrollHeight > el.clientHeight;
-      setShowReadMore(isOverflowing);
+      setShowReadMore(el.scrollHeight > el.clientHeight);
     });
   }, [campaign?.story]);
 
+  /* ================= UPDATES NORMALIZATION ================= */
+
   useEffect(() => {
     if (!campaign) return;
-
     const raw = campaign?.fundraiserupdates;
-
     const normalized: CampaignUpdate[] = Array.isArray(raw)
       ? raw
       : raw && typeof raw === "object"
         ? [raw]
         : [];
-
     setUpdates(
       normalized
         .filter(
           (u: any): u is CampaignUpdate =>
-            u &&
-            typeof u.title === "string" &&
-            typeof u.content === "string"
+            u && typeof u.title === "string" && typeof u.content === "string"
         )
         .sort(
           (a, b) =>
@@ -259,26 +278,22 @@ export default function CampaignDetailsPage() {
     );
   }, [campaign]);
 
-  useEffect(() => {
-    const newOverflowState: Record<string, boolean> = {};
+  /* ================= UPDATE OVERFLOW DETECTION ================= */
 
+  useEffect(() => {
+    const newState: Record<string, boolean> = {};
     updates.forEach((update) => {
       const el = updateRefs.current[update.id];
-      if (!el) return;
-
-      const isOverflowing = el.scrollHeight > el.clientHeight;
-      newOverflowState[update.id] = isOverflowing;
+      if (el) newState[update.id] = el.scrollHeight > el.clientHeight;
     });
-
-    setOverflowingUpdates(newOverflowState);
+    setOverflowingUpdates(newState);
   }, [updates]);
 
+  /* ================= RECIPIENT FORM PREFILL ================= */
 
   useEffect(() => {
     if (!campaign?.recipientAccount) return;
-
     const acc = campaign.recipientAccount;
-
     setRecipientForm({
       recipientType: acc.recipientType,
       firstName: acc.firstName,
@@ -290,35 +305,35 @@ export default function CampaignDetailsPage() {
     });
   }, [campaign?.recipientAccount]);
 
+  /* ================= LOADING / ERROR ================= */
 
   if (loading) {
-    return <div className="dashboard-center">Loading campaign...</div>;
+    return <div className="dashboard-center">Loading campaign…</div>;
   }
 
   if (!campaign) {
-    return <div className="dashboard-center">Campaign not found</div>;
+    return <div className="dashboard-center">Campaign not found.</div>;
   }
 
+  /* ================= DERIVED VALUES ================= */
 
-  /* ================= PROGRESS ================= */
   const raised = Math.max(0, Number(campaign?.raisedAmount) || 0);
-  const goal = Math.max(0, Number(campaign?.goalAmount) || 0);
-
-  const progress =
-    goal === 0 ? 0 : Math.min(Math.round((raised / goal) * 100), 100);
+  const goal   = Math.max(0, Number(campaign?.goalAmount)   || 0);
+  const progress = goal === 0 ? 0 : Math.min(Math.round((raised / goal) * 100), 100);
 
   /* ================= COVER UPLOAD ================= */
+
   const handleCoverUpload = async (file: File) => {
     if (!id) return;
-
     try {
       setUploadingCover(true);
       const res = await FundraiserService.uploadCoverImage(id, file);
-
-      setCampaign((prev: any) => ({
-        ...prev,
-        coverImageURL: res?.data?.coverImageURL || prev.coverImageURL,
-      }));
+      const newUrl = res?.data?.fundraiser?.coverImageURL;
+      if (newUrl) {
+        // Cache-bust so the browser re-fetches the new image immediately
+        setCoverUrl(addCacheBust(newUrl));
+        setCampaign((prev: any) => ({ ...prev, coverImageURL: newUrl }));
+      }
     } catch (err) {
       console.error("Cover upload failed", err);
     } finally {
@@ -327,13 +342,14 @@ export default function CampaignDetailsPage() {
   };
 
   /* ================= IMAGE UPLOAD ================= */
+
   const handleImageUpload = async (files: FileList) => {
     if (!id) return;
-
     try {
       setUploadingMedia(true);
       await FundraiserService.uploadPlayerMedia(id, Array.from(files));
-      await fetchCampaign(); // ✅ ok to refetch after upload
+      // Refresh only media state — no loading spinner, no full page reload
+      await refreshMedia();
     } catch (err) {
       console.error("Image upload failed", err);
     } finally {
@@ -342,69 +358,48 @@ export default function CampaignDetailsPage() {
   };
 
   /* ================= ADD YOUTUBE ================= */
+
   const handleYoutubeAdd = async () => {
     if (!youtubeUrl.trim() || !id) return;
-
     try {
       await FundraiserService.addYoutubeMedia(id, [youtubeUrl]);
-
-      // ✅ update UI without refetch
       const originalUrl = youtubeUrl;
       const videoId = originalUrl.includes("youtu.be/")
         ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
         : originalUrl.split("v=")[1]?.split("&")[0];
-
       if (videoId) {
         setVideoMedia((prev) => [
           ...prev,
-          {
-            embedUrl: `https://www.youtube.com/embed/${videoId}`,
-            originalUrl,
-          },
+          { embedUrl: `https://www.youtube.com/embed/${videoId}`, originalUrl },
         ]);
       }
-
       setYoutubeUrl("");
       setShowYoutubeInput(false);
     } catch (err) {
       console.error("Add YouTube failed", err);
     }
   };
-  //update
+
+  /* ================= ADD UPDATE ================= */
+
   const handleAddUpdate = async () => {
     if (!updateTitle.trim() || !updateContent.trim() || !id) return;
-
     try {
       setAddingUpdate(true);
-
       const res = await FundraiserService.addCampaignUpdate(id, {
         title: updateTitle,
         content: updateContent,
       });
-
       const responseData = res.data?.data;
-
       let newUpdate: CampaignUpdate | null = null;
-
       if (responseData?.updates) {
-        if (Array.isArray(responseData.updates)) {
-          newUpdate = responseData.updates[0];
-        } else {
-          newUpdate = responseData.updates;
-        }
+        newUpdate = Array.isArray(responseData.updates)
+          ? responseData.updates[0]
+          : responseData.updates;
       }
-
-      // ✅ Instant UI update
       if (newUpdate && typeof newUpdate.title === "string") {
-        setUpdates((prev) => [newUpdate, ...prev]);
+        setUpdates((prev) => [newUpdate!, ...prev]);
       }
-      setCampaign((prev: any) => ({
-        ...prev,
-        updates: Array.isArray(prev?.updates)
-          ? [newUpdate, ...prev.updates]
-          : newUpdate,
-      }));
-
       setUpdateTitle("");
       setUpdateContent("");
     } catch (err) {
@@ -414,15 +409,11 @@ export default function CampaignDetailsPage() {
     }
   };
 
-
   /* ================= DELETE IMAGE ================= */
-  const handleImageDelete = async (url: string) => {
-    const scrollY = window.scrollY;
 
+  const handleImageDelete = async (url: string) => {
     try {
       await FundraiserService.deletePlayerMedia(id as string, url);
-
-      // ✅ remove image from state (NO refetch)
       setImageMedia((prev) => prev.filter((img) => img !== url));
     } catch (err) {
       console.error("Failed to delete image", err);
@@ -430,32 +421,23 @@ export default function CampaignDetailsPage() {
   };
 
   /* ================= DELETE YOUTUBE ================= */
+
   const handleYoutubeDelete = async (originalUrl: string) => {
     try {
       await FundraiserService.deleteYoutubeMedia(id as string, originalUrl);
-
-      // ✅ remove from state (NO refetch)
-      setVideoMedia((prev) =>
-        prev.filter((v) => v.originalUrl !== originalUrl)
-      );
+      setVideoMedia((prev) => prev.filter((v) => v.originalUrl !== originalUrl));
     } catch (err) {
       console.error("Delete YouTube failed", err);
     }
   };
 
+  /* ================= RECIPIENT ACCOUNT ================= */
+
   const handleSaveRecipientAccount = async () => {
     if (!id) return;
-
     try {
       setSavingRecipient(true);
-
-      const res = await RecipientAccountService.upsert(
-        id,
-        recipientForm
-      );
-      console.log(res);
-
-      // ✅ update embedded object (NO refetch)
+      const res = await RecipientAccountService.upsert(id, recipientForm);
       setCampaign((prev: any) => ({
         ...prev,
         recipientAccount: res.data.data,
@@ -467,30 +449,24 @@ export default function CampaignDetailsPage() {
     }
   };
 
+  /* ================= DOCUMENTS ================= */
+
   const handleAddDocument = async (file: File) => {
     if (!id || !file) return;
-
     if (file.type !== "application/pdf") {
       alert("Only PDF files are allowed");
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       alert("PDF must be less than 5MB");
       return;
     }
-
     try {
       setUploadingDoc(true);
-
       const formData = new FormData();
       formData.append("document", file);
-      formData.append("type", docType); // enum string
-
-      if (docTitle?.trim()) {
-        formData.append("title", docTitle);
-      }
-
+      formData.append("type", docType);
+      if (docTitle?.trim()) formData.append("title", docTitle);
       await FundraiserDocumentsService.addDocument(id, formData);
       await fetchDocuments();
     } catch (err) {
@@ -500,43 +476,47 @@ export default function CampaignDetailsPage() {
     }
   };
 
-
-
   const handleDeleteDocument = async (documentId: string) => {
     try {
       await FundraiserDocumentsService.deleteDocument(documentId);
-      setDocuments((prev) =>
-        prev.filter((doc) => doc.id !== documentId)
-      );
+      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
     } catch (err) {
       console.error("Delete failed", err);
     }
   };
 
-
+  /* ================= RENDER ================= */
 
   return (
-
     <div className="campaign-page">
 
-      {/* ================= TOP BAR ================= */}
+      {/* TOP BAR */}
       <header className="campaign-topbar">
-        <button
-          className="back-btn"
-          onClick={() => router.push("/dashboard")}
-        >
+        <button className="back-btn" onClick={() => router.push("/dashboard")}>
           ← My Fundraisers
         </button>
-
         <span className="manage-text">Manage</span>
         <StatusBadge status={campaign.status} />
       </header>
+
+      {/* REJECTION BANNER — shown near the top so users see it immediately */}
+      {campaign.status === "REJECTED" && campaign.rejectionReason && (
+        <section className="rejection-banner">
+          <div className="rejection-icon">❌</div>
+          <div className="rejection-content">
+            <h4>Campaign Rejected</h4>
+            <p className="rejection-reason">{campaign.rejectionReason}</p>
+          </div>
+        </section>
+      )}
+
+      {/* HEADER */}
       <section className="campaign-header">
         <h1>{campaign.title}</h1>
         <p className="subtitle">{campaign.shortDescription}</p>
       </section>
 
-      {/* ================= RESPONSIVE CAMPAIGN LAYOUT ================= */}
+      {/* ================= TWO-COLUMN GRID ================= */}
       <div className="campaign-main-grid">
 
         {/* LEFT COLUMN */}
@@ -546,22 +526,20 @@ export default function CampaignDetailsPage() {
           <section className="cover-section">
             <div className="cover-box">
               <img
-                src={campaign.coverImageURL || "/background.png"}
+                src={coverUrl || campaign.coverImageURL || "/background.png"}
                 alt="Campaign cover"
                 className="cover-image"
               />
-
               <div className="cover-overlay">
                 {!isRejected && (
                   <label className="cover-btn">
-                    {uploadingCover ? "Uploading..." : "Add / Edit Cover Image"}
+                    {uploadingCover ? "Uploading…" : "Add / Edit Cover Image"}
                     <input
                       type="file"
                       accept="image/*"
                       hidden
                       onChange={(e) =>
-                        e.target.files &&
-                        handleCoverUpload(e.target.files[0])
+                        e.target.files && handleCoverUpload(e.target.files[0])
                       }
                     />
                   </label>
@@ -572,26 +550,21 @@ export default function CampaignDetailsPage() {
 
           {/* HIGHLIGHTS */}
           <section className="highlights-card">
-
-            {/* Sport Row */}
             <div className="highlight-row top">
               <div className="highlight-item">
                 <span className="highlight-label">Sport</span>
                 <span className="highlight-value">{campaign.sport}</span>
               </div>
-
               <div className="highlight-item">
                 <span className="highlight-label">Level</span>
-                <span className="highlight-value">{campaign.level}</span>
+                <span className="highlight-value">{campaign.level || "—"}</span>
               </div>
-
               <div className="highlight-item">
                 <span className="highlight-label">Location</span>
                 <span className="highlight-value">
                   {campaign.city}, {campaign.state}
                 </span>
               </div>
-
               <div className="highlight-item">
                 <span className="highlight-label">Discipline</span>
                 <span className="highlight-value">
@@ -600,67 +573,50 @@ export default function CampaignDetailsPage() {
               </div>
             </div>
 
-            {/* Skills */}
-            {Array.isArray(campaign.skills) &&
-              campaign.skills.length > 0 && (
-                <>
-                  <div className="highlight-item full">
-                    <span className="highlight-label">Skills</span>
-                    <div className="skill-chip-row">
-                      {campaign.skills.map((skill: string, idx: number) => (
-                        <span className="skill-chip" key={idx}>
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
+            {Array.isArray(campaign.skills) && campaign.skills.length > 0 && (
+              <div className="highlight-item full">
+                <span className="highlight-label">Skills</span>
+                <div className="skill-chip-row">
+                  {campaign.skills.map((skill: string, idx: number) => (
+                    <span className="skill-chip" key={idx}>{skill}</span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {/* Beneficiary */}
             <div className="highlight-divider" />
 
             <div className="highlight-beneficiary-row">
               <span className="highlight-label">Beneficiary</span>
 
-              {campaign.campaignFor === "SELF" &&
-                campaign.beneficiaryUser && (
-                  <div className="beneficiary-inline">
-                    <div className="beneficiary-avatar">
-                      {campaign.beneficiaryUser.firstName?.[0]}
-                    </div>
-
-                    <div className="beneficiary-info">
-                      <strong>
-                        {campaign.beneficiaryUser.firstName}{" "}
-                        {campaign.beneficiaryUser.lastName}
-                      </strong>
-
-                      <span className="beneficiary-meta">
-                        Organizer • Self
-                      </span>
-                    </div>
+              {campaign.campaignFor === "SELF" && campaign.beneficiaryUser && (
+                <div className="beneficiary-inline">
+                  <div className="beneficiary-avatar">
+                    {campaign.beneficiaryUser.firstName?.[0]}
                   </div>
-                )}
-
-              {campaign.campaignFor === "OTHER" &&
-                campaign.beneficiaryOther && (
-                  <div className="beneficiary-inline">
-                    <div className="beneficiary-avatar">
-                      {campaign.beneficiaryOther.fullName?.[0]}
-                    </div>
-
-                    <div className="beneficiary-info">
-                      <strong>
-                        {campaign.beneficiaryOther.fullName}
-                      </strong>
-
-                      <span className="beneficiary-meta">
-                        {campaign.beneficiaryOther.relationshipToCreator}
-                      </span>
-                    </div>
+                  <div className="beneficiary-info">
+                    <strong>
+                      {campaign.beneficiaryUser.firstName}{" "}
+                      {campaign.beneficiaryUser.lastName}
+                    </strong>
+                    <span className="beneficiary-meta">Organizer • Self</span>
                   </div>
-                )}
+                </div>
+              )}
+
+              {campaign.campaignFor === "OTHER" && campaign.beneficiaryOther && (
+                <div className="beneficiary-inline">
+                  <div className="beneficiary-avatar">
+                    {campaign.beneficiaryOther.fullName?.[0]}
+                  </div>
+                  <div className="beneficiary-info">
+                    <strong>{campaign.beneficiaryOther.fullName}</strong>
+                    <span className="beneficiary-meta">
+                      {campaign.beneficiaryOther.relationshipToCreator}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -671,12 +627,10 @@ export default function CampaignDetailsPage() {
               <>
                 <p
                   ref={storyRef}
-                  className={`story-text ${expandedStory ? "expanded" : "collapsed"
-                    }`}
+                  className={`story-text ${expandedStory ? "expanded" : "collapsed"}`}
                 >
                   {campaign.story}
                 </p>
-
                 {showReadMore && (
                   <button
                     className="read-more-story-btn"
@@ -700,16 +654,11 @@ export default function CampaignDetailsPage() {
           <section className="progress-card">
             <div className="progress-card-header">
               <div>
-                <div className="total-raised">
-                  ₹{raised.toLocaleString()}
-                </div>
-                <div className="goal-text">
-                  of ₹{goal.toLocaleString()}
-                </div>
+                <div className="total-raised">₹{raised.toLocaleString()}</div>
+                <div className="goal-text">of ₹{goal.toLocaleString()}</div>
               </div>
               <div className="progress-percent">{progress}%</div>
             </div>
-
             <div className="progress-bar">
               <div style={{ width: `${progress}%` }} />
             </div>
@@ -724,24 +673,20 @@ export default function CampaignDetailsPage() {
             />
           )}
 
-
         </div>
       </div>
 
 
-      {/* =====================================================
-        IMAGES | VIDEOS
-          ===================================================== */}
+      {/* ================= IMAGES | VIDEOS ================= */}
       <section className="media-row full-width">
 
-        {/* ================= IMAGES ================= */}
+        {/* IMAGES */}
         <div className="media-box">
           <div className="media-box-header">
             <h3>Images</h3>
-
             {!isRejected && (
               <label className="media-add-btn">
-                + Upload Image
+                {uploadingMedia ? "Uploading…" : "+ Upload Image"}
                 <input
                   type="file"
                   accept="image/*"
@@ -753,30 +698,29 @@ export default function CampaignDetailsPage() {
                 />
               </label>
             )}
-
           </div>
 
-
           {imageMedia.length === 0 ? (
-            <div className="media-empty">
-              No images right now
-            </div>
+            <div className="media-empty">No images right now</div>
           ) : (
             <>
               <div className="gallery-image-container">
                 <div
                   className="gallery-track"
-                  style={{
-                    transform: `translateX(-${currentImage * 100}%)`,
-                  }}
+                  style={{ transform: `translateX(-${currentImage * 100}%)` }}
                 >
                   {imageMedia.map((url, i) => (
                     <div className="image-slide" key={i}>
-                      <img src={url} className="gallery-image" />
-
+                      <img
+                        src={url}
+                        alt={`Campaign photo ${i + 1}`}
+                        className="gallery-image"
+                        loading="lazy"
+                      />
                       {!isRejected && (
                         <button
                           className="image-delete-btn"
+                          aria-label="Delete image"
                           onClick={() => handleImageDelete(url)}
                         >
                           <Trash2 size={18} />
@@ -784,15 +728,12 @@ export default function CampaignDetailsPage() {
                       )}
                     </div>
                   ))}
-
                 </div>
-
-
 
                 {imageMedia.length > 1 && (
                   <>
-                    <button className="gallery-nav left" onClick={prevImage}>‹</button>
-                    <button className="gallery-nav right" onClick={nextImage}>›</button>
+                    <button className="gallery-nav left" aria-label="Previous image" onClick={prevImage}>‹</button>
+                    <button className="gallery-nav right" aria-label="Next image" onClick={nextImage}>›</button>
                   </>
                 )}
               </div>
@@ -812,7 +753,7 @@ export default function CampaignDetailsPage() {
           )}
         </div>
 
-        {/* ================= VIDEOS ================= */}
+        {/* VIDEOS */}
         <div className="media-box">
           <div className="media-box-header">
             <h3>Videos</h3>
@@ -824,7 +765,6 @@ export default function CampaignDetailsPage() {
                 + Add Video Link
               </button>
             )}
-
             {!isRejected && showYoutubeInput && (
               <div className="youtube-row">
                 <input
@@ -835,32 +775,28 @@ export default function CampaignDetailsPage() {
                 <button onClick={handleYoutubeAdd}>Add</button>
               </div>
             )}
-
           </div>
 
           {videoMedia.length === 0 ? (
-            <div className="media-empty">
-              No videos right now
-            </div>
+            <div className="media-empty">No videos right now</div>
           ) : (
             <>
               <div className="gallery-image-container">
                 <div
                   className="gallery-track"
-                  style={{
-                    transform: `translateX(-${currentVideo * 100}%)`,
-                  }}
+                  style={{ transform: `translateX(-${currentVideo * 100}%)` }}
                 >
                   {videoMedia.map((v, i) => (
                     <div className="video-box" key={i}>
                       <iframe
                         src={`${v.embedUrl}?rel=0`}
+                        title={`Campaign video ${i + 1}`}
                         allowFullScreen
                       />
-
                       {!isRejected && (
                         <button
                           className="video-delete-btn"
+                          aria-label="Delete video"
                           onClick={() => handleYoutubeDelete(v.originalUrl)}
                         >
                           <Trash2 size={18} />
@@ -868,14 +804,12 @@ export default function CampaignDetailsPage() {
                       )}
                     </div>
                   ))}
-
-
                 </div>
 
                 {videoMedia.length > 1 && (
                   <>
-                    <button className="gallery-nav left" onClick={prevVideo}>‹</button>
-                    <button className="gallery-nav right" onClick={nextVideo}>›</button>
+                    <button className="gallery-nav left" aria-label="Previous video" onClick={prevVideo}>‹</button>
+                    <button className="gallery-nav right" aria-label="Next video" onClick={nextVideo}>›</button>
                   </>
                 )}
               </div>
@@ -894,14 +828,13 @@ export default function CampaignDetailsPage() {
             </>
           )}
         </div>
-      </section >
-      {/* ================= FULL WIDTH ================= */}
+      </section>
+
 
       {/* ================= DOCUMENTS ================= */}
       <section className="documents-section">
         <h3 className="documents-title">Documents</h3>
 
-        {/* UPLOAD CARD */}
         {!isRejected && (
           <div className="documents-upload-card">
             <select
@@ -910,7 +843,7 @@ export default function CampaignDetailsPage() {
               onChange={(e) => setDocType(e.target.value)}
             >
               <option value="ATHLETE_IDENTITY">Athlete Identity</option>
-              <option value=" ACADEMY_CONFIRMATION">Academy Conformation</option>
+              <option value="ACADEMY_CONFIRMATION">Academy Confirmation</option>
               <option value="COACH_CONFIRMATION">Coach Confirmation</option>
               <option value="EQUIPMENT_QUOTE">Equipment Quote</option>
               <option value="TOURNAMENT_INVITE">Tournament Invite</option>
@@ -926,8 +859,9 @@ export default function CampaignDetailsPage() {
               value={docTitle}
               onChange={(e) => setDocTitle(e.target.value)}
             />
+
             <label className="documents-upload-btn">
-              {uploadingDoc ? "Uploading..." : "Upload PDF"}
+              {uploadingDoc ? "Uploading…" : "Upload PDF"}
               <input
                 type="file"
                 accept="application/pdf"
@@ -939,7 +873,7 @@ export default function CampaignDetailsPage() {
             </label>
           </div>
         )}
-        {/* LIST */}
+
         <div className="documents-list">
           {documents.length === 0 && (
             <p className="documents-empty">No documents uploaded yet.</p>
@@ -947,7 +881,6 @@ export default function CampaignDetailsPage() {
 
           {documents.map((doc) => (
             <div key={doc.id} className="pdf-card">
-              {/* PREVIEW */}
               <a
                 href={doc.fileUrl}
                 target="_blank"
@@ -963,12 +896,9 @@ export default function CampaignDetailsPage() {
                 </div>
               </a>
 
-              {/* META + ACTIONS */}
               <div className="pdf-meta">
-                <span
-                  className={`pdf-status ${doc.verificationStatus.toLowerCase()}`}
-                >
-                  {doc.verificationStatus === "PENDING" && "⚠️ Pending"}
+                <span className={`pdf-status ${doc.verificationStatus.toLowerCase()}`}>
+                  {doc.verificationStatus === "PENDING"  && "⚠️ Pending"}
                   {doc.verificationStatus === "VERIFIED" && "✅ Verified"}
                   {doc.verificationStatus === "REJECTED" && "❌ Rejected"}
                 </span>
@@ -976,9 +906,9 @@ export default function CampaignDetailsPage() {
                 {doc.verificationStatus !== "VERIFIED" && (
                   <button
                     className="pdf-delete-btn"
+                    aria-label="Delete document"
                     onClick={() => handleDeleteDocument(doc.id)}
                   >
-                    {/* Delete */}
                     <Trash2 size={18} />
                   </button>
                 )}
@@ -988,12 +918,13 @@ export default function CampaignDetailsPage() {
         </div>
       </section>
 
+
       {/* ================= CAMPAIGN UPDATES ================= */}
       <section className="campaign-updates-section">
         <h4 className="updates-title">Campaign Updates</h4>
 
         <div className="updates-card">
-          {/* Add Update Form */}
+
           {!isRejected && (
             <div className="update-form">
               <input
@@ -1002,34 +933,29 @@ export default function CampaignDetailsPage() {
                 value={updateTitle}
                 onChange={(e) => setUpdateTitle(e.target.value)}
               />
-
               <textarea
-                placeholder="Write an update for supporters..."
+                placeholder="Write an update for supporters…"
                 value={updateContent}
                 onChange={(e) => setUpdateContent(e.target.value)}
               />
-
               <button
                 className="add-update-btn"
                 onClick={handleAddUpdate}
                 disabled={addingUpdate}
               >
-                {addingUpdate ? "Posting..." : "+ Post Update"}
+                {addingUpdate ? "Posting…" : "+ Post Update"}
               </button>
             </div>
           )}
 
-          {/* Updates List */}
           {updates.length > 0 ? (
             <>
               <div className="updates-list">
-
                 {(showAllUpdates ? updates : updates.slice(0, 2)).map((update) => (
                   <div className="update-item" key={update.id}>
 
                     <div className="update-header">
                       <strong>{update.title}</strong>
-
                       <span className="update-date">
                         {new Date(update.createdAt).toLocaleDateString("en-IN", {
                           day: "numeric",
@@ -1040,17 +966,11 @@ export default function CampaignDetailsPage() {
                     </div>
 
                     <p
-                      ref={(el) => {
-                        updateRefs.current[update.id] = el;
-                      }}
-                      className={`update-content ${expandedUpdates[update.id] ? "expanded" : "collapsed"
-                        }`}
+                      ref={(el) => { updateRefs.current[update.id] = el; }}
+                      className={`update-content ${expandedUpdates[update.id] ? "expanded" : "collapsed"}`}
                     >
                       {update.content.split("\n").map((line, i) => (
-                        <React.Fragment key={i}>
-                          {line}
-                          <br />
-                        </React.Fragment>
+                        <React.Fragment key={i}>{line}<br /></React.Fragment>
                       ))}
                     </p>
 
@@ -1066,15 +986,12 @@ export default function CampaignDetailsPage() {
                       >
                         {expandedUpdates[update.id] ? "Read less" : "Read more"}
                       </button>
-
                     )}
 
                   </div>
                 ))}
-
               </div>
 
-              {/* READ MORE BUTTON */}
               {updates.length > 2 && (
                 <div className="updates-read-more-wrap">
                   <button
@@ -1087,13 +1004,10 @@ export default function CampaignDetailsPage() {
               )}
             </>
           ) : (
-            <p className="updates-empty">
-              No updates posted by fundraiser yet.
-            </p>
+            <p className="updates-empty">No updates posted yet.</p>
           )}
 
         </div>
-
       </section>
 
 
@@ -1102,49 +1016,36 @@ export default function CampaignDetailsPage() {
         <section className="recipient-card">
           <h4 className="recipient-title">Recipient Bank Account</h4>
 
-          {/* ROW 1 */}
           <div className="recipient-row">
             <select
               className="recipient-input"
               value={recipientForm.recipientType}
               onChange={(e) =>
-                setRecipientForm({
-                  ...recipientForm,
-                  recipientType: e.target.value,
-                })
+                setRecipientForm({ ...recipientForm, recipientType: e.target.value })
               }
             >
               <option value="PARENT_GUARDIAN">Parent / Guardian</option>
               <option value="SELF">Self</option>
               <option value="COACH">Coach</option>
             </select>
-
             <input
               className="recipient-input"
               placeholder="First Name"
               value={recipientForm.firstName}
               onChange={(e) =>
-                setRecipientForm({
-                  ...recipientForm,
-                  firstName: e.target.value,
-                })
+                setRecipientForm({ ...recipientForm, firstName: e.target.value })
               }
             />
-
             <input
               className="recipient-input"
               placeholder="Last Name"
               value={recipientForm.lastName}
               onChange={(e) =>
-                setRecipientForm({
-                  ...recipientForm,
-                  lastName: e.target.value,
-                })
+                setRecipientForm({ ...recipientForm, lastName: e.target.value })
               }
             />
           </div>
 
-          {/* ROW 2 */}
           <div className="recipient-row">
             <input
               className="recipient-input"
@@ -1155,49 +1056,34 @@ export default function CampaignDetailsPage() {
               }
               value={recipientForm.accountNumber}
               onChange={(e) =>
-                setRecipientForm({
-                  ...recipientForm,
-                  accountNumber: e.target.value,
-                })
+                setRecipientForm({ ...recipientForm, accountNumber: e.target.value })
               }
             />
-
             <input
               className="recipient-input"
               placeholder="Bank Name"
               value={recipientForm.bankName}
               onChange={(e) =>
-                setRecipientForm({
-                  ...recipientForm,
-                  bankName: e.target.value,
-                })
+                setRecipientForm({ ...recipientForm, bankName: e.target.value })
               }
             />
           </div>
 
-          {/* ROW 3 */}
           <div className="recipient-row">
             <input
               className="recipient-input"
               placeholder="IFSC Code"
               value={recipientForm.ifscCode}
               onChange={(e) =>
-                setRecipientForm({
-                  ...recipientForm,
-                  ifscCode: e.target.value,
-                })
+                setRecipientForm({ ...recipientForm, ifscCode: e.target.value })
               }
             />
-
             <input
               className="recipient-input"
               placeholder="Country"
               value={recipientForm.country}
               onChange={(e) =>
-                setRecipientForm({
-                  ...recipientForm,
-                  country: e.target.value,
-                })
+                setRecipientForm({ ...recipientForm, country: e.target.value })
               }
             />
             {!isRejected && (
@@ -1206,15 +1092,16 @@ export default function CampaignDetailsPage() {
                 onClick={handleSaveRecipientAccount}
                 disabled={savingRecipient}
               >
-                {savingRecipient ? "Saving..." : "Save / Update Account"}
+                {savingRecipient ? "Saving…" : "Save / Update Account"}
               </button>
             )}
           </div>
 
           {campaign.recipientAccount && (
             <p
-              className={`recipient-status ${campaign.recipientAccount.isVerified ? "verified" : "pending"
-                }`}
+              className={`recipient-status ${
+                campaign.recipientAccount.isVerified ? "verified" : "pending"
+              }`}
             >
               {campaign.recipientAccount.isVerified
                 ? "✅ Verified by admin"
@@ -1225,45 +1112,25 @@ export default function CampaignDetailsPage() {
       </section>
 
 
+      {/* Withdrawal — onSuccess refreshes only payout list, not the full campaign */}
       <CreateWithdrawalModal
         fundraiserId={id}
         available={availableAmount}
-        onSuccess={fetchCampaign}
+        onSuccess={fetchPayouts}
       />
 
       <WithdrawalHistoryTable fundraiserId={id} />
 
-
-      {/* REJECTION */}
-      {
-        campaign.status === "REJECTED" &&
-        campaign.rejectionReason && (
-          <section className="rejection-banner">
-            <div className="rejection-icon">❌</div>
-
-            <div className="rejection-content">
-              <h4>Campaign Rejected</h4>
-              <p className="rejection-reason">
-                {campaign.rejectionReason}
-              </p>
-            </div>
-          </section>
-        )
-      }
-
-      {/* ================= FEEDBACK BUTTON ================= */}
+      {/* FEEDBACK BUTTON */}
       {campaign.status === "COMPLETED" && (
         <button
           className="feedback-floating-btn"
-          onClick={() =>
-            router.push(`/feedback`)
-          }
+          onClick={() => router.push("/feedback")}
         >
           ✍️ Give Feedback
         </button>
       )}
 
-    </div >
+    </div>
   );
-
 }

@@ -96,13 +96,13 @@ export default function Footer() {
               height={48}
               className="rp-footer__logo-icon"
             />
-            <Image
+            {/* <Image
               src="/logo3.png"
               alt="Raise A Player"
               width={140}
               height={40}
               className="rp-footer__logo-text"
-            />
+            /> */}
           </Link>
 
           <p className="rp-footer__tagline">

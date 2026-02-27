@@ -2,6 +2,187 @@
 
 /* ================= WALLET ================= */
 
+/* ----------------------------------------------------------------
+   WITHDRAW FORM — input row with Max button
+---------------------------------------------------------------- */
+.withdraw-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.withdraw-input-row input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 15px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.withdraw-input-row input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.withdraw-max-btn {
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #6366f1;
+  background: #f0f0ff;
+  color: #4f46e5;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.withdraw-max-btn:hover {
+  background: #e0e0ff;
+}
+
+.withdraw-submit-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.withdraw-submit-btn:hover {
+  opacity: 0.9;
+}
+
+.withdraw-submit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.withdraw-no-balance {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #ef4444;
+  text-align: center;
+}
+
+/* ----------------------------------------------------------------
+   WITHDRAWAL HISTORY — card wrapper
+---------------------------------------------------------------- */
+.withdrawal-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  margin: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Horizontal scroll wrapper for the table on small screens */
+.withdraw-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+}
+
+/* Table */
+.withdraw-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 560px; /* forces scroll on very small screens */
+}
+
+.withdraw-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.withdraw-table td {
+  padding: 13px 12px;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.withdraw-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.withdraw-table tbody tr:hover {
+  background: #fafafa;
+}
+
+/* Amount cell — bold */
+.wt-amount {
+  font-weight: 700;
+  color: #111827 !important;
+}
+
+/* Note cell — allow wrap */
+.wt-note {
+  max-width: 180px;
+  white-space: normal !important;
+  line-height: 1.4;
+  color: #6b7280 !important;
+  font-size: 13px !important;
+}
+
+/* Actions cell */
+.wt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wt-cancel-btn {
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.wt-cancel-btn:hover {
+  background: #fee2e2;
+}
+
+.wt-dash {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Empty state */
+.withdraw-empty {
+  padding: 32px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
 .withdraw-filter {
   display: flex;
   gap: 8px;
@@ -21,7 +202,7 @@
   background: white;
   border-radius: 14px;
   padding: 20px;
-  margin-top: 32px;
+  margin: 20px;
   box-shadow: 0 6px 24px rgba(0,0,0,0.04);
   border: 1px solid #e5e7eb;
 }

@@ -200,11 +200,15 @@ export default function ExploreFundraiserDetailsPage() {
 
   /* ================= STATES ================= */
   if (loading) {
-    return <div className="dashboard-center">Loading campaign...</div>;
+    return <div className="dashboard-center">Loading campaign…</div>;
   }
 
   if (!campaign || campaign.status !== "ACTIVE") {
-    return <div className="dashboard-center">Campaign not available</div>;
+    return (
+      <div className="dashboard-center">
+        Campaign not available or no longer active.
+      </div>
+    );
   }
 
   const raised = Number(campaign.raisedAmount || 0);
@@ -244,6 +248,21 @@ export default function ExploreFundraiserDetailsPage() {
               alt="Campaign cover"
               className="cover-image"
             />
+          </div>
+
+          {/* MOBILE-ONLY DONATE CARD — sits right below cover on small screens */}
+          <div className="mobile-donate-card">
+            <div className="amount">₹{raised.toLocaleString()}</div>
+            <div className="goal">raised of ₹{goal.toLocaleString()} goal</div>
+            <div className="progress-bar">
+              <div style={{ width: `${progress}%` }} />
+            </div>
+            <button
+              className="donate-btn"
+              onClick={() => setOpenDonate(true)}
+            >
+              Donate Now
+            </button>
           </div>
 
           {/* SPORT / LEVEL / LOCATION */}
@@ -422,14 +441,20 @@ export default function ExploreFundraiserDetailsPage() {
                   }}
                 >
                   {imageMedia.map((url, i) => (
-                    <img key={i} src={url} className="gallery-image" />
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`Campaign photo ${i + 1}`}
+                      className="gallery-image"
+                      loading="lazy"
+                    />
                   ))}
                 </div>
 
                 {imageMedia.length > 1 && (
                   <>
-                    <button className="gallery-nav left" onClick={prevImage}>‹</button>
-                    <button className="gallery-nav right" onClick={nextImage}>›</button>
+                    <button className="gallery-nav left" onClick={prevImage} aria-label="Previous image">‹</button>
+                    <button className="gallery-nav right" onClick={nextImage} aria-label="Next image">›</button>
                   </>
                 )}
               </div>
@@ -468,15 +493,19 @@ export default function ExploreFundraiserDetailsPage() {
                 >
                   {videoMedia.map((v, i) => (
                     <div className="video-box" key={i}>
-                      <iframe src={`${v.embedUrl}?rel=0`} allowFullScreen />
+                      <iframe
+                        src={`${v.embedUrl}?rel=0`}
+                        title={`Campaign video ${i + 1}`}
+                        allowFullScreen
+                      />
                     </div>
                   ))}
                 </div>
 
                 {videoMedia.length > 1 && (
                   <>
-                    <button className="gallery-nav left" onClick={prevVideo}>‹</button>
-                    <button className="gallery-nav right" onClick={nextVideo}>›</button>
+                    <button className="gallery-nav left" onClick={prevVideo} aria-label="Previous video">‹</button>
+                    <button className="gallery-nav right" onClick={nextVideo} aria-label="Next video">›</button>
                   </>
                 )}
               </div>

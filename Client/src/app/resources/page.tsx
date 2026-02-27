@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import "./resources.css";
+import { useStartFundraiser } from "@/hooks/useStartFundraiser";
+import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
 
 const CATEGORIES = [
   {
@@ -92,7 +94,7 @@ const CATEGORIES = [
       },
       {
         heading: "Verification Badge",
-        body: "Every fundraiser is reviewed by our team before it goes live. This is an internal safety check and isn’t shown as a label to donors.",
+        body: "A green Verified badge appears on your fundraiser card after our quick checks (identity + documents). It helps donors feel confident and reduces fraud.",
       },
     ],
   },
@@ -298,6 +300,12 @@ export default function ResourcesPage() {
   const [search, setSearch] = useState("");
   const [activeChip, setActiveChip] = useState("All");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const {
+    handleStartFundraiser,
+    kycCheckLoading,
+    isKycModalOpen,
+    closeKycModal,
+  } = useStartFundraiser();
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -437,18 +445,20 @@ export default function ResourcesPage() {
             Join hundreds of athletes already raising funds on RaiseaPlayer.
           </p>
           <div className="res-cta-actions">
-            <a
-              href="/start-fundraiser"
+            <button
               className="res-cta-btn res-cta-btn--primary"
+              onClick={handleStartFundraiser}
+              disabled={kycCheckLoading}
             >
-              Start Fundraising
-            </a>
+              {kycCheckLoading ? "Checking..." : "Start Fundraising"}
+            </button>
             <a href="/contact" className="res-cta-btn res-cta-btn--outline">
               Talk to Support
             </a>
           </div>
         </div>
       </section>
+      <PanKycModal isOpen={isKycModalOpen} onClose={closeKycModal} />
     </main>
   );
 }

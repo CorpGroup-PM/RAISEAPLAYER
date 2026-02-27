@@ -1,26 +1,239 @@
-/* =====================================================
-   CAMPAIGN UPDATES (ADMIN)
-===================================================== */
+/* ================================================================
+   EXPLORE / PUBLIC CAMPAIGN DETAIL PAGE  — /donate/[id]/page.tsx
+   Loaded after campaign-details.css. Overrides where needed.
+================================================================ */
 
+/* ----------------------------------------------------------------
+   PAGE WRAPPER
+   Override dashboard's 960px cap for the wider public layout.
+---------------------------------------------------------------- */
+.campaign-page.public-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #f6f7f9;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+/* Remove the dark gradient overlay from the dashboard cover image —
+   it was meant for the upload button overlay, not the public view. */
+.campaign-page.public-view .cover-box::after {
+  display: none;
+}
+
+/* ----------------------------------------------------------------
+   TWO-COLUMN LAYOUT  (desktop)
+---------------------------------------------------------------- */
+.campaign-layout {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.campaign-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0; /* prevent grid blowout on long words */
+}
+
+.campaign-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 72px;
+  height: fit-content;
+}
+
+/* ----------------------------------------------------------------
+   COVER IMAGE
+---------------------------------------------------------------- */
+.cover-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e5e7eb;
+}
+
+.cover-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ----------------------------------------------------------------
+   MOBILE DONATE CARD
+   Sits right below the cover on mobile. Hidden on desktop.
+---------------------------------------------------------------- */
+.mobile-donate-card {
+  display: none;
+}
+
+/* ----------------------------------------------------------------
+   HIGHLIGHTS CARD
+---------------------------------------------------------------- */
+.highlights-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.highlight-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.highlight-item span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.highlight-item strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.highlight-item.full {
+  grid-column: 1 / -1;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.highlight-beneficiary {
+  grid-column: 1 / -1;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.highlight-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ----------------------------------------------------------------
+   BENEFICIARY INLINE
+---------------------------------------------------------------- */
+.beneficiary-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.beneficiary-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.beneficiary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.beneficiary-info strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.beneficiary-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ----------------------------------------------------------------
+   SKILLS
+---------------------------------------------------------------- */
+.skill-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.skill-chip {
+  background: #f3f4f6;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* ----------------------------------------------------------------
+   STORY CARD
+---------------------------------------------------------------- */
+.story-card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.story-card h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+/* Base: no clamping — modifier classes control expand/collapse */
 .story-text {
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: #374151;
+  white-space: pre-line;
   transition: all 0.2s ease;
 }
 
-/* show only 2 lines */
 .story-text.collapsed {
   display: -webkit-box;
-   line-clamp: 2;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* expanded state */
 .story-text.expanded {
   display: block;
+}
+
+.story-empty {
+  font-size: 14px;
+  color: #9ca3af;
 }
 
 .read-more-story-btn {
@@ -38,332 +251,92 @@
   text-decoration: underline;
 }
 
-
-.campaign-updates-section {
-  background: #ffffff;
-  margin: 18px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-}
-
-.campaign-updates-section h3 {
-  font-size: 18px;
-  font-weight: 800;
-  margin-bottom: 16px;
-  color: #111827;
-}
-
-/* LIST */
-.updates-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* UPDATE ITEM */
-.update-item {
-  background: #f9fafb;
-  border-radius: 12px;
-  padding:  12px 14px;
-
-  margin-bottom: 14px;
-
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-}
-
-.update-content.expanded {
-  display: block;
-}
-
-
-
-/* HEADER */
-.update-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-/* TITLE */
-.update-header strong {
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1.3;
-}
-
-/* DATE */
-.update-date {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  white-space: nowrap;
-}
-
-/* CONTENT */
-.update-content {
-  font-size: 14px;
-  line-height: 1.65;
-  color: #374151;
-  margin-top: 6px;
-}
-
-.update-content.collapsed {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;              /* for compatibility warning fix */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.read-more-updates-btn {
-  margin-top: 12px;
-  background: none;
-  border: none;
-  color: #2563eb;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-}
-
-.read-more-updates-btn:hover {
-  text-decoration: underline;
-}
-
-/* EMPTY STATE TEXT */
-.campaign-updates-section p {
-  font-size: 14px;
-  color: #9ca3af;
-}
-
-/* =====================================================
-   MOBILE OPTIMIZATION
-===================================================== */
-
-@media (max-width: 640px) {
-  .campaign-updates-section {
-    padding: 18px;
-  }
-
-  .update-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .update-date {
-    font-size: 11px;
-  }
-}
-
-/***** new feature *****/
-
-.campaign-layout {
-  max-width: 1200px;
-  margin: auto;
-  display: grid;
-  grid-template-columns: 1.7fr 1.3fr;
-  gap: 24px;
-  padding: 20px;
-}
-
-/* LEFT */
-.campaign-left {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* RIGHT */
-.campaign-right {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* COVER */
-.cover-box {
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.cover-image {
-  width: 100%;
-  height: 320px;
-  object-fit: cover;
-}
-
-/* HIGHLIGHTS */
-.highlights-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.05);
-}
-
-
-.highlight-item span {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.highlight-item strong {
-  display: block;
-  font-size: 15px;
-  margin-top: 4px;
-}
-
-.skill-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
-}
-/* STORY */
-.story-card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.05);
-}
-
-.story-text {
-  font-size: 14px;
-  line-height: 1.7;
-  color: #374151;
-
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2; 
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.story-text.open {
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
-  overflow: visible;
-}
-
-.read-more-btn {
-  margin-top: 8px;
-  background: none;
-  border: none;
-  color: #2563eb;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-}
-
-.story-expanded {
-  grid-template-columns: 1fr;
-}
-
-
-/* GALLERY */
-.gallery-card {
-  background: #fff;
-  padding: 18px;
-  border-radius: 12px;
-}
-
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.gallery-grid img {
-  width: 100%;
-  height: 220px;       /* controls size */
-  object-fit: cover;   /* prevents stretching */
-  border-radius: 10px;
-}
-
-.gallery-slider {
-  position: relative;
-  width: 100%;
-  max-width: 900px;
-  margin: auto;
-}
-
-.gallery-image {
-  width: 40%;
-  height: 220px;
-  object-fit: cover;
-  border-radius: 14px;
-}
-
-/* NAV BUTTONS */
-.gallery-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0,0,0,0.5);
-  color: white;
-  border: none;
-  font-size: 28px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.gallery-nav.left {
-  left: 12px;
-}
-
-.gallery-nav.right {
-  right: 12px;
-}
-
-/* DOTS */
-.gallery-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.dot {
-  width: 5px;
-  height: 5px;
-  background: #d1d5db;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.dot.active {
-  background: #22c55e;
-}
-
-
-
-/* DONATION CARD */
+/* ----------------------------------------------------------------
+   DONATION CARD  (desktop right column)
+---------------------------------------------------------------- */
 .donation-card {
   background: #fff;
   padding: 20px;
   border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
+.amount {
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.goal {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  margin: 14px 0;
+  overflow: hidden;
+}
+
+.progress-bar div {
+  height: 100%;
+  background: #22c55e;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.donate-btn {
+  width: 100%;
+  height: 48px;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.donate-btn:hover {
+  background: #15803d;
+}
+
+.donate-btn:active {
+  transform: scale(0.98);
+}
+
+/* ----------------------------------------------------------------
+   MEDIA ROW  (Images / Videos — full width below layout)
+---------------------------------------------------------------- */
 .media-row {
-  max-width: 1200px;
-  margin: auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 20px;
+}
+
+/* Applied alongside .media-row and the payout section */
+.full-width {
+  margin: 0 20px 20px;
 }
 
 .media-box {
   background: #fff;
   padding: 18px;
   border-radius: 14px;
+  border: 1px solid #e5e7eb;
+}
+
+.media-box h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 14px;
 }
 
 .media-empty {
@@ -378,163 +351,288 @@
   background: #fafafa;
 }
 
-
-/* IMAGE */
+/* Gallery — container */
 .gallery-image-container {
   position: relative;
-  display: flex;
-  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
 }
 
-.gallery-image {
-  width: 160%;
+/* Gallery — sliding track */
+.gallery-track {
+  display: flex;
+  transition: transform 0.4s ease;
+  width: 100%;
+}
+
+/* Gallery — each image slide */
+.gallery-track img.gallery-image {
+  display: block;
+  min-width: 100%;
+  width: 100%;
   height: 220px;
   object-fit: cover;
-  border-radius: 12px;
+  flex-shrink: 0;
 }
 
-/* VIDEO */
+/* Gallery — each video slide wrapper */
+.gallery-track .video-box {
+  min-width: 100%;
+  flex-shrink: 0;
+}
+
+/* Video box */
 .video-box {
-  width: 160%;          /* same as image width */
-  height: 220px;       /* same as image height */
-  border-radius: 12px;
+  width: 100%;
+  height: 220px;
   overflow: hidden;
   background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .video-box iframe {
   width: 100%;
   height: 100%;
   border: none;
+  display: block;
 }
 
-.gallery-image-container {
-  position: relative;
+/* Nav buttons */
+.gallery-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  line-height: 1;
+}
+
+.gallery-nav.left  { left: 10px;  }
+.gallery-nav.right { right: 10px; }
+.gallery-nav:hover { background: rgba(0, 0, 0, 0.75); }
+
+/* Dot indicators */
+.gallery-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  background: #d1d5db;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dot.active {
+  background: #22c55e;
+}
+
+/* ----------------------------------------------------------------
+   UPDATES SECTION
+---------------------------------------------------------------- */
+.campaign-updates-section {
+  margin: 0 20px 20px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+}
+
+.campaign-updates-section h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.update-item {
+  background: #f9fafb;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.update-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.update-header strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.update-date {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.update-content {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #374151;
+}
+
+.update-content.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.update-content.expanded {
+  display: block;
+}
+
+.updates-read-more-wrap {
   display: flex;
   justify-content: center;
+  margin-top: 16px;
 }
 
-/* TRACK (SLIDING ELEMENT) */
-.gallery-track {
-  display: flex;
-  transition: transform 0.45s ease-in-out;
-  width: 100%;
+.read-more-btn {
+  background: none;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 24px;
+  border-radius: 8px;
+  transition: background 0.15s;
 }
 
-/* each slide */
-.gallery-track img,
-.gallery-track .video-box {
-  min-width: 100%;
+.read-more-btn:hover {
+  background: #f9fafb;
+}
+
+.updates-empty {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+/* ----------------------------------------------------------------
+   LOADING / ERROR STATE
+---------------------------------------------------------------- */
+.dashboard-center {
   display: flex;
+  align-items: center;
   justify-content: center;
+  min-height: 60vh;
+  color: #6b7280;
+  font-size: 15px;
 }
 
+/* ================================================================
+   RESPONSIVE — TABLET  (≤ 1024px)
+================================================================ */
+@media (max-width: 1024px) {
+  .highlights-card {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
-
-/* MOBILE */
+/* ================================================================
+   RESPONSIVE — MOBILE  (≤ 900px)
+   No display:contents — just collapse the grid to a single column.
+   A dedicated .mobile-donate-card (shown below cover) replaces
+   the sticky sidebar donate card which is hidden on mobile.
+================================================================ */
 @media (max-width: 900px) {
+  .campaign-layout {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 14px;
+  }
+
+  /* Right column becomes normal flow (no longer sticky) */
+  .campaign-right {
+    position: static;
+  }
+
+  /* Hide the desktop donation card on mobile — mobile-donate-card takes over */
+  .campaign-right .donation-card {
+    display: none;
+  }
+
+  /* Show the inline mobile donate card */
+  .mobile-donate-card {
+    display: block;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  .mobile-donate-card .amount {
+    font-size: 22px;
+  }
+
+  .mobile-donate-card .donate-btn {
+    margin-top: 12px;
+  }
+
   .media-row {
     grid-template-columns: 1fr;
   }
 
-  .gallery-image,
-  .video-box {
-    width: 100%;
+  .full-width,
+  .campaign-updates-section {
+    margin: 0 12px 14px;
   }
 }
 
-.amount {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.goal {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.progress-bar {
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 999px;
-  margin: 12px 0;
-}
-
-.progress-bar div {
-  height: 100%;
-  background: #22c55e;
-  border-radius: 999px;
-}
-
-.donate-btn {
-  width: 100%;
-  background: #22c55e;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* BENEFICIARY */
-
-.beneficiary-inline {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.beneficiary-avatar {
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
-}
-.highlight-beneficiary {
-  grid-column: span 4;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 14px;
-
-  display: flex;
-  flex-direction: column;
-}
-.avatar {
-  width: 42px;
-  height: 42px;
-  background: #22c55e;
-  color: white;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-}
-
-/* MOBILE */
-@media (max-width: 900px) {
+/* ================================================================
+   RESPONSIVE — SMALL MOBILE  (≤ 480px)
+================================================================ */
+@media (max-width: 480px) {
   .campaign-layout {
-    grid-template-columns: 1fr;
+    padding: 10px;
+    gap: 10px;
   }
 
   .highlights-card {
     grid-template-columns: 1fr 1fr;
   }
 
-  .cover-image {
-    height: 240px;
+  .update-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .full-width,
+  .campaign-updates-section {
+    margin: 0 10px 12px;
   }
 }
-
-@media (max-width: 768px) {
-  .gallery-grid img {
-    height: 180px;
-  }
-}
-
-.full-width {
-  max-width: 1200px;
-  margin: 20px auto;
-  padding: 0 20px;
-}
-

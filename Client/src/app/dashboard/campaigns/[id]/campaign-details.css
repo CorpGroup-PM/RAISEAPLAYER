@@ -1337,7 +1337,28 @@ button {
   display: block;
 }
 
-.read-more-btn,
+.updates-read-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.read-more-btn {
+  background: none;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 24px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.read-more-btn:hover {
+  background: #f9fafb;
+}
+
 .read-more-story-btn {
   margin-top: 6px;
   background: none;
@@ -1740,10 +1761,9 @@ button {
   margin: auto;
   padding: 16px;
   gap: 20px;
-
   display: grid;
   grid-template-columns: 2fr 1fr;
-
+  align-items: start;
 }
 
 /* Left */
@@ -1751,13 +1771,17 @@ button {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0; /* prevent grid blowout */
 }
 
-/* Right */
+/* Right — sticky sidebar on desktop */
 .campaign-right-column {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: sticky;
+  top: 72px;
+  height: fit-content;
 }
 
 /* Make cards consistent */
@@ -1780,36 +1804,40 @@ button {
 
 /* ================= MOBILE ================= */
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
+  /* Highlights grid: 4-col → 2-col on tablet */
+  .highlight-row.top {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
+@media (max-width: 900px) {
   .campaign-main-grid {
     grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 14px;
   }
 
-  /* Allow reordering */
-  .campaign-left-column,
+  /* Remove sticky on mobile — right column flows naturally */
   .campaign-right-column {
-    display: contents;
+    position: static;
+  }
+}
+
+@media (max-width: 480px) {
+  .campaign-main-grid {
+    padding: 10px;
+    gap: 10px;
   }
 
-  /* Order sections manually */
-  .cover-section {
-    order: 1;
+  /* Highlights grid: 2-col on small mobile */
+  .highlight-row.top {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .progress-card {
-    order: 2;
-  }
-
-  .highlights-card {
-    order: 3;
-  }
-
-  .story-section {
-    order: 4;
-  }
-
-  .campaign-right-column > *:not(.progress-card) {
-    order: 5;
+  .update-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 }
