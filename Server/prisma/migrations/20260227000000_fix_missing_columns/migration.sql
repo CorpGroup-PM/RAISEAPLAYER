@@ -172,3 +172,4 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS "FundTransferRequest_fundraiserId_idx" ON "FundTransferRequest"("fundraiserId");
 CREATE INDEX IF NOT EXISTS "FundTransferRequest_status_idx"       ON "FundTransferRequest"("status");
+
