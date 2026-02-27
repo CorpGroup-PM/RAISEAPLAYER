@@ -2,7 +2,6 @@
 -- FIX: Missing columns on existing tables + ensure new tables exist
 -- Fully idempotent — safe to run on any DB state.
 -- =============================================================================
-
 -- ---------------------------------------------------------------------------
 -- 0. Ensure required enums exist (in case catch-up migration missed them)
 -- ---------------------------------------------------------------------------
