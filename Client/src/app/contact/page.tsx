@@ -66,7 +66,7 @@ export default function ContactPage() {
               <div className="contact-icon">📞</div>
               <div>
                 <h4>Phone Number</h4>
-                <p>+91 9XXXXXXXXX</p>
+                <p>+91 9263 10 20 30</p>
               </div>
             </div>
 

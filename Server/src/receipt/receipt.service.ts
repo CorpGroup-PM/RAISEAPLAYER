@@ -19,7 +19,7 @@ export class ReceiptService {
     doc.on('data', (chunk) => buffers.push(chunk));
 
     // 📍 LOGO
-    const logoPath = path.join(process.cwd(), 'assets', 'logo.png');
+    const logoPath = path.join(process.cwd(), 'assets/logo.png');
     doc.image(logoPath, 50, 45, { width: 120 });
 
     // 📍 PLATFORM NAME
