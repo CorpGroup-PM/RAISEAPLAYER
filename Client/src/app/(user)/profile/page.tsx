@@ -40,11 +40,30 @@ const userProfileSchema = z.object({
     .optional()
     .refine((v) => !v || /^[A-Za-z ]+$/.test(v), "Only alphabets allowed"),
 
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
-  state: z.string().optional().or(z.literal("")),
-  country: z.string().optional().or(z.literal("")),
-  pincode: z.string().optional().or(z.literal("")),
+  address: z
+    .string()
+    .min(1, "Address is required")
+    .min(15, "Address must be at least 15 characters long"),
+
+  city: z
+    .string()
+    .min(1, "City is required")
+    .min(2, "City must be at least 2 characters"),
+
+  state: z
+    .string()
+    .min(1, "State is required")
+    .min(2, "State must be at least 2 characters"),
+
+  country: z
+    .string()
+    .min(1, "Country is required")
+    .min(2, "Country must be at least 2 characters"),
+
+  pincode: z
+    .string()
+    .min(1, "Pincode is required")
+    .regex(/^[1-9][0-9]{5}$/, "Enter valid 6 digit pincode"),
 });
 
 const phoneRules = [
@@ -57,7 +76,7 @@ export default function UserProfile() {
   const { addToast } = useToast();
   const { user, refreshUser, isLoaded } = useAuth();
   const [uploading, setUploading] = useState(false);
-  
+
   /* ----------------------- FORM ----------------------- */
   const {
     register,
@@ -68,7 +87,8 @@ export default function UserProfile() {
     formState: { errors, isDirty, isSubmitting },
   } = useForm({
     resolver: zodResolver(userProfileSchema),
-    mode: "onChange",
+    mode: "onSubmit",
+    shouldFocusError: true,
   });
 
   const phoneValue = watch("phoneNumber");
@@ -115,8 +135,8 @@ export default function UserProfile() {
       await refreshUser(); // single source of truth
       reset(data); // reset dirty state
     } catch (err) {
-  console.error("Profile update failed", err);
-}
+      console.error("Profile update failed", err);
+    }
   };
 
   /* ----------------------- PROFILE PICTURE ----------------------- */
@@ -162,16 +182,14 @@ export default function UserProfile() {
             <div
               className="up-avatar"
               style={{
-                backgroundImage: `url("${
-                  user.profilePicture ||
-                  `https://i.pravatar.cc/300?u=${user.id}`
-                }")`,
+                backgroundImage: `url("${user.profilePicture || "/profileimage.png"
+                  }")`,
               }}
             />
 
             <label className="up-avatar-edit" title="Change profile picture">
               <span className="material-symbols-outlined up-edit-icon">
-                <img src="./edit.png" alt="edit"  style={{height:"20px"}}/>
+                <img src="./edit.png" alt="edit" style={{ height: "20px" }} />
               </span>
 
               <input
@@ -260,22 +278,32 @@ export default function UserProfile() {
             <div className="up-field">
               <label>Name on PAN</label>
               <input {...register("panName")} />
+
             </div>
 
             <div className="up-field">
               <label>Address</label>
               <input {...register("address")} />
+              {errors.address && (
+                <p className="error">{errors.address.message}</p>
+              )}
             </div>
 
             <div className="up-row">
               <div className="up-field">
                 <label>City</label>
                 <input {...register("city")} />
+                {errors.city && (
+                  <p className="error">{errors.city.message}</p>
+                )}
               </div>
 
               <div className="up-field">
                 <label>State</label>
                 <input {...register("state")} />
+                {errors.state && (
+                  <p className="error">{errors.state.message}</p>
+                )}
               </div>
             </div>
 
@@ -283,11 +311,17 @@ export default function UserProfile() {
               <div className="up-field">
                 <label>Country</label>
                 <input {...register("country")} />
+                {errors.country && (
+                  <p className="error">{errors.country.message}</p>
+                )}
               </div>
 
               <div className="up-field">
                 <label>Pincode</label>
                 <input {...register("pincode")} />
+                {errors.pincode && (
+                  <p className="error">{errors.pincode.message}</p>
+                )}
               </div>
             </div>
           </div>

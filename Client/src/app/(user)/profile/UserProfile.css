@@ -223,6 +223,12 @@
   background: #0d49c7;
 }
 
+.disabled-btn {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Avatar container */
 .up-avatar-box {
   position: relative;

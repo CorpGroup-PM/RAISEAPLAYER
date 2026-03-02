@@ -1,41 +1,61 @@
 "use client";
 
 import { useState } from "react";
+import { z } from "zod";
 import "./contact.css";
 import { ContactService } from "@/services/contact.service";
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [messageError, setMessageError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setStatus(null);
+ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setStatus(null);
 
-    const form = e.currentTarget;
+  
 
-    const values = {
-      name: (form.elements.namedItem("name") as HTMLInputElement).value,
-      email: (form.elements.namedItem("email") as HTMLInputElement).value,
-      phoneNumber: (form.elements.namedItem("phoneNumber") as HTMLInputElement).value,
-      message: (form.elements.namedItem("message") as HTMLTextAreaElement)
-        .value,
-    };
+  const form = e.currentTarget;
 
-    try {
-      setLoading(true);
-      const response = await ContactService.sendMessage(values);
-
-      if (response.data?.success) {
-        setStatus("Message sent successfully.");
-        form.reset();
-      }
-    } catch (error: any) {
-      setStatus(error?.response?.data?.message || "Failed to send message");
-    } finally {
-      setLoading(false);
-    }
+  const values = {
+    name: (form.elements.namedItem("name") as HTMLInputElement).value,
+    email: (form.elements.namedItem("email") as HTMLInputElement).value,
+    phoneNumber: (form.elements.namedItem("phoneNumber") as HTMLInputElement).value,
+    message: (form.elements.namedItem("message") as HTMLTextAreaElement).value,
   };
+
+  const contactSchema = z.object({
+    message: z
+      .string()
+      .min(10, "Message must be at least 10 characters long"),
+  });
+
+  const result = contactSchema.safeParse({
+    message: values.message,
+  });
+
+  if (!result.success) {
+    setStatus(result.error.issues[0].message);
+    return; // ❌ stop API call
+  }
+
+  setMessageError(null);
+
+  try {
+    setLoading(true);
+    const response = await ContactService.sendMessage(values);
+
+    if (response.data?.success) {
+      setStatus("Message sent successfully.");
+      form.reset();
+    }
+  } catch (error: any) {
+    setStatus(error?.response?.data?.message || "Failed to send message");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <section className="contact-section">
@@ -92,12 +112,14 @@ export default function ContactPage() {
             />
             <input name="phoneNumber" placeholder="Your Phone" />
             <textarea
-              name="message"
-              placeholder="Your Message"
-              rows={4}
-              required
-            />
-
+  name="message"
+  placeholder="Your Message"
+  rows={4}
+  className={messageError ? "input-error" : ""}
+/>
+{messageError && (
+  <p className="contact-error">{messageError}</p>
+)}
             <button type="submit" disabled={loading}>
               {loading ? "Sending..." : "Send Message"}
             </button>
