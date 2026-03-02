@@ -11,44 +11,41 @@
   margin-bottom: 16px;
 }
 
-/* ================= STATUS TABS ================= */
+/* ================= SHOW/HIDE BASED ON BREAKPOINT ================= */
 
-.donation-status-tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+.desktop-only {
+  display: block;
 }
 
-.status-tab {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
+.mobile-only {
+  display: none;
+  flex-direction: column;
 }
 
-.status-tab.active {
-  background: #2563eb;
-  color: #ffffff;
-  border-color: #2563eb;
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
-/* ================= TABLE ================= */
+/* ================= TABLE (DESKTOP) ================= */
 
 .donations-table-wrapper {
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid #e5e7eb;
-   overflow: hidden;
+  overflow: hidden;
 }
 
 .donations-table {
   width: 100%;
   border-collapse: collapse;
-  /* min-width: 1100px; */
   table-layout: auto;
 }
 
@@ -62,13 +59,11 @@
   text-transform: uppercase;
 }
 
-
 .donations-table td {
   padding: 12px;
   font-size: 14px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
-
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -77,54 +72,90 @@
   background: #f9fafb;
 }
 
-/* Make Fundraiser column wider */
 .donations-table th:nth-child(1),
-.donations-table td:nth-child(1) {
-  width: 30%;
-}
-
-/* Donation */
+.donations-table td:nth-child(1) { width: 30%; }
 .donations-table th:nth-child(2),
-.donations-table td:nth-child(2) {
-  width: 10%;
-}
-
-/* PDF */
+.donations-table td:nth-child(2) { width: 10%; }
 .donations-table th:nth-child(3),
-.donations-table td:nth-child(3) {
-  width: 12%;
-}
-
-/* Total Paid */
+.donations-table td:nth-child(3) { width: 12%; }
 .donations-table th:nth-child(4),
-.donations-table td:nth-child(4) {
-  width: 10%;
-}
-
-/* Status */
+.donations-table td:nth-child(4) { width: 10%; }
 .donations-table th:nth-child(5),
-.donations-table td:nth-child(5) {
-  width: 12%;
-}
-
-/* Date */
+.donations-table td:nth-child(5) { width: 12%; }
 .donations-table th:nth-child(6),
-.donations-table td:nth-child(6) {
-  width: 13%;
-}
-/* Receipt button column */
+.donations-table td:nth-child(6) { width: 13%; }
 .donations-table th:nth-child(7),
-.donations-table td:nth-child(7) {
-  width: 13%;
+.donations-table td:nth-child(7) { width: 13%; }
+
+/* ================= MOBILE CARDS ================= */
+
+.donation-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
 }
 
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.card-amounts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+}
+
+.card-amount-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-amount-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.card-amount-value {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+
+.card-total {
+  font-weight: 700;
+  color: #111827;
+}
+
+.card-receipt-btn {
+  width: 100%;
+  margin-top: 0;
+  padding: 10px 16px;
+  font-size: 14px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* ================= SHARED ================= */
 
 .donation-id {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.donation-sub {
   font-size: 12px;
   color: #6b7280;
   margin-top: 2px;
@@ -136,9 +167,11 @@
   display: inline-block;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .donation-status.success {
@@ -156,7 +189,7 @@
   color: #991b1b;
 }
 
-/* ================= DOWNLOAD RECEIPT ================= */
+/* ================= DOWNLOAD RECEIPT BUTTON ================= */
 
 .download-receipt-btn {
   margin-top: 8px;
@@ -179,74 +212,11 @@
   transform: scale(0.97);
 }
 
-/* ================= STATES ================= */
+/* ================= EMPTY / LOADING STATES ================= */
 
 .loading-cell,
 .empty-cell {
   text-align: center;
   padding: 24px;
   color: #6b7280;
-}
-
-/* ================= RESPONSIVE SCROLL (TABLET + MOBILE) ================= */
-
-@media (max-width: 1024px) {
-  .donations-table-wrapper {
-    overflow-x: auto; /* ✅ allow scroll */
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .donations-table {
-    min-width: 950px; /* ✅ keep columns visible */
-  }
-}
-
-@media (max-width: 640px) {
-  .donations-table-wrapper {
-    overflow-x: auto; /* ✅ allow scroll */
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .donations-table {
-    min-width: 900px; /* ✅ full table stays */
-  }
-
-  .download-receipt-btn {
-    white-space: nowrap; /* ✅ button won't break */
-  }
-}
-
-
-.status-with-action {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.sub {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.amount-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;            /* ✅ more space between amount + tip */
-  flex-wrap: wrap;
-  padding-top: 2px;     /* ✅ slight spacing inside */
-}
-
-.amount-main {
-  font-weight: 700;
-  color: #111827;
-}
-
-.amount-sub {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-
-.download-receipt-btn:hover {
-  background: #1d4ed8;
 }
