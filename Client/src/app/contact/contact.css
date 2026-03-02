@@ -6,6 +6,16 @@
   
 }
 
+.input-error {
+  border: 1px solid #dc2626;
+}
+
+.contact-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
 /* ===== CONTAINER ===== */
 .contact-container {
   max-width: 1200px;

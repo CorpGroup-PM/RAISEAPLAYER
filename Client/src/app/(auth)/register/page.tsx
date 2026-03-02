@@ -104,7 +104,7 @@ export default function Register() {
     const email = watch("email");
 
     if (!email) {
-      addToast("Please enter email first", "error");
+      addToast("Please enter the email", "error");
       return;
     }
 
@@ -217,6 +217,7 @@ export default function Register() {
               {...register("email")}
               disabled={isEmailVerified}
             />
+            
 
             {isEmailVerified && (
               <span className="verified-badge">✔ Email Verified</span>

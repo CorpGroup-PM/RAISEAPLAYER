@@ -132,9 +132,21 @@ export default function AdminReviewsPage() {
                     <td>{x.name || "-"}</td>
                     <td>{x.rating ?? "-"}</td>
 
-                    <td className="comment">
-                      {x.message || "-"}
-                    </td>
+                   <td>
+  {x.message ? (
+    <div className="comment-wrapper">
+      <div className="comment-clamp">
+        {x.message}
+      </div>
+
+      <div className="comment-tooltip">
+        {x.message}
+      </div>
+    </div>
+  ) : (
+    "-"
+  )}
+</td>
 
                     <td>
                       {x.createdAt

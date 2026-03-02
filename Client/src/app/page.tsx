@@ -472,6 +472,7 @@ export default function Home() {
       </section>
 
       {/* ✅ TESTIMONIALS SECTION */}
+      {!loadingReviews && reviews.length > 0 && (
       <section className="testiSection">
         <div className="testiTopPill">
           <span>⭐ 4.8</span>
@@ -546,6 +547,7 @@ export default function Home() {
           </button>
         </div>
       </section>
+      )}
 
       {/* ✅ OBJECTIVES SECTION */}
       <section className="objSection">
