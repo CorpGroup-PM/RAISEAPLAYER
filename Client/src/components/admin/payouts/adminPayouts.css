@@ -16,6 +16,10 @@
   margin-bottom: 16px;
 }
 
+.admin-page-wrapper {
+  padding-top: 70px;
+}
+
 .admin-payouts h3 {
   font-size: 18px;
   font-weight: 700;

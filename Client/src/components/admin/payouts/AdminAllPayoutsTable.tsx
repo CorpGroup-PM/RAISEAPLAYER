@@ -36,7 +36,7 @@ export default function AdminAllPayoutsTable() {
   };
 
   return (
-    <div className="admin-payouts-root">
+    <div className="admin-payouts-root admin-page-wrapper">
       <div className="admin-payouts-head">
         <h2>Payout Requests</h2>
 

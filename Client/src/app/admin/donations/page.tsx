@@ -58,7 +58,7 @@ export default function AdminAllDonationsPage() {
   return (
     <>
       <AdminNavbar />
-      <div className="admin-donations-page">
+      <div className="admin-donations-page admin-page-wrapper">
         <div className="admin-donations-head">
           <h2>All Donations</h2>
           <span className="count">{items.length} records</span>

@@ -39,7 +39,7 @@ export default function AdminUsersPage() {
   return (
     <>
       <AdminNavbar />
-      <div className="admin-users-page">
+      <div className="admin-users-page admin-page-wrapper">
         <div className="admin-users-head">
           <h2>All Users</h2>
           <span className="count">{users.length} users</span>

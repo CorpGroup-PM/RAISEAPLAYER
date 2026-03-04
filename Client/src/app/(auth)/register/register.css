@@ -275,6 +275,8 @@
 .input-group {
   width: 100%;
   margin-bottom: 18px;
+  display: flex;              /* ✅ ADD */
+  flex-direction: column;     /* ✅ ADD */
 }
 
 .input-field {

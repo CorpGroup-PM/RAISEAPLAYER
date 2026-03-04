@@ -8,6 +8,10 @@
   font-family: Inter, system-ui, -apple-system, sans-serif;
   color: #1f2937;
 }
+.admin-page-wrapper {
+  padding-top: 70px; 
+  margin-top: 0px;
+}
 
 .dashboard-main {
   max-width: 1200px;

@@ -39,7 +39,7 @@ export default function AdminPlatformTipsPage() {
 
   return (
     <>
-      <div className="admin-platform-tips-page">
+      <div className="admin-platform-tips-page admin-page-wrapper">
         <h1>Foundation Funds</h1>
 
         {/* SUMMARY */}

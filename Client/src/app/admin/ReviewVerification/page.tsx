@@ -89,7 +89,7 @@ export default function AdminReviewsPage() {
 
   /* ================= UI ================= */
   return (
-    <div className="admin-review-page">
+    <div className="admin-review-page admin-page-wrapper">
       <h2 className="page-title">Campaign Reviews</h2>
 
       {/* FILTER */}

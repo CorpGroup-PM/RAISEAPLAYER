@@ -5,6 +5,11 @@
   border: 1px solid #e5e7eb;
 }
 
+.admin-page-wrapper {
+  padding-top: 70px; 
+  margin-top: 70px;
+}
+
 .admin-donations-head {
   display: flex;
   justify-content: space-between;

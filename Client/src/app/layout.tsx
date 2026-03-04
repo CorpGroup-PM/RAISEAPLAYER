@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata,Viewport } from "next";
 import { AppProviders } from "./providers";
 import { ToastProvider } from "@/components/toast/ToastContext";
 import { GlobalLoader } from "@/components/loading/GlobalLoader";
@@ -49,6 +49,11 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
