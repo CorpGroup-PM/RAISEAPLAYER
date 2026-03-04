@@ -1,13 +1,18 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PaymentStatus } from '@prisma/client';
 import { ReceiptService } from 'src/receipt/receipt.service';
 
 @Injectable()
 export class DonationHistoryService {
-  constructor(private readonly prisma: PrismaService,
+  constructor(
+    private readonly prisma: PrismaService,
     private readonly receiptService: ReceiptService,
-  ) { }
+  ) {}
 
   async getUserDonations(userId: string) {
     const where = {
@@ -50,8 +55,6 @@ export class DonationHistoryService {
     };
   }
 
-
-
   async generateReceiptForDonation(
     userId: string,
     donationId: string,
@@ -68,7 +71,9 @@ export class DonationHistoryService {
         },
         fundraiser: {
           select: {
+            id: true,
             title: true,
+            creator: { select: { firstName: true } },
           },
         },
         payment: {
@@ -101,10 +106,11 @@ export class DonationHistoryService {
       donorName: donation.donor?.firstName ?? 'Supporter',
       donorEmail: donation.donor?.email ?? '',
       campaignTitle: donation.fundraiser.title,
-      amount: donation.donationAmount.toNumber(), // Decimal → number
+      fundraiserId: donation.fundraiser.id,
+      fundraiserOwner: donation.fundraiser.creator?.firstName ?? 'Organizer',
+      amount: donation.donationAmount.toNumber(),
       paymentId: donation.payment?.id ?? '',
       donatedAt: donation.createdAt,
     });
   }
-
 }
