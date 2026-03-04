@@ -6,7 +6,6 @@
    WITHDRAW FORM — input row with Max button
 ---------------------------------------------------------------- */
 .withdraw-input-row {
-  display: flex;
   gap: 8px;
   align-items: stretch;
 }
