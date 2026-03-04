@@ -16,9 +16,44 @@ const locationSchema = z.object({
 
 });
 
+const INDIA_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Delhi",
+  "Jammu & Kashmir",
+  "Ladakh",
+  "Puducherry",
+];
+
 export default function Slide5Location({ draft, updateDraft, next, back }: any) {
 
-const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   /* -------------------- Update helper -------------------- */
   const updateField = (key: 'city' | 'state', value: string) => {
@@ -62,21 +97,28 @@ const [errors, setErrors] = useState<Record<string, string>>({});
     >
       <input className="wizard-input" value="India" disabled />
 
+      <select
+        className="wizard-input"
+        value={draft.location.state || ""}
+        onChange={(e) => updateField("state", e.target.value)}
+      >
+        <option value="">Select State</option>
+        {INDIA_STATES.map((state) => (
+          <option key={state} value={state}>
+            {state}
+          </option>
+        ))}
+
+      </select>
+      {errors.state && <p className="error-text">{errors.state}</p>}
+      
       <input
         className="wizard-input"
         placeholder="City"
         value={draft.location.city}
-         onChange={(e) => updateField('city', e.target.value)}
+        onChange={(e) => updateField('city', e.target.value)}
       />
       {errors.city && <p className="error-text">{errors.city}</p>}
-
-      <input
-        className="wizard-input"
-        placeholder="State"
-        value={draft.location.state}
-        onChange={e =>   updateField('state', e.target.value)}
-      />
-      {errors.state && <p className="error-text">{errors.state}</p>}
 
       <div className="wizard-footer">
         <button className="btn-secondary" onClick={back}>Previous</button>

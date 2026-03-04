@@ -1,5 +1,30 @@
 import PDFDocument from 'pdfkit';
+import * as path from 'path';
 import { Injectable } from '@nestjs/common';
+
+const C = {
+  blueDark: '#1e3a8a',
+  blueMid: '#1d4ed8',
+  blueAccent: '#93c5fd',
+  blueLight: '#eff6ff',
+  blueBorder: '#bfdbfe',
+  green: '#15803d',
+  greenMid: '#16a34a',
+  greenLight: '#f0fdf4',
+  greenBorder: '#86efac',
+  amber: '#b45309',
+  amberMid: '#d97706',
+  amberLight: '#fffbeb',
+  amberBorder: '#fcd34d',
+  pageBg: '#eef2f7',
+  white: '#ffffff',
+  shadow: '#c2c8d8',
+  divider: '#e5e7eb',
+  textDark: '#111827',
+  textMid: '#374151',
+  textLight: '#6b7280',
+  textXLight: '#9ca3af',
+};
 
 @Injectable()
 export class ReceiptService {
@@ -8,214 +33,301 @@ export class ReceiptService {
     donorName: string;
     donorEmail: string;
     campaignTitle: string;
+    fundraiserId: string;
+    fundraiserOwner: string;
     amount: number;
     paymentId: string;
     donatedAt: Date;
   }): Promise<Buffer> {
     const doc = new PDFDocument({ size: 'A4', margin: 0 });
     const buffers: Buffer[] = [];
-    doc.on('data', (chunk) => buffers.push(chunk));
+    doc.on('data', (chunk: Buffer) => buffers.push(chunk));
 
-    const W  = doc.page.width;   // 595.28 pts
-    const H  = doc.page.height;  // 841.89 pts
-    const L  = 50;               // left/right margin
-    const CW = W - L * 2;       // usable content width ~495 pts
+    const W = 595.28;
+    const H = 841.89;
+    const mx = 48;
+    const cw = W - mx * 2;
 
-    /* ── Palette ─────────────────────────────────────────────────── */
-    const BRAND       = '#4F46E5';
-    const BRAND_DARK  = '#3730A3';
-    const BRAND_LIGHT = '#C7D2FE';
-    const GREEN       = '#16A34A';
-    const GREEN_BG    = '#F0FDF4';
-    const BLUE_BG     = '#EEF2FF';
-    const BORDER      = '#E5E7EB';
-    const MUTED       = '#6B7280';
-    const DARK        = '#111827';
-    const STRIPE      = '#F9FAFB';
-    const WHITE       = '#FFFFFF';
+    // ── PAGE BACKGROUND ───────────────────────────────────────
+    doc.rect(0, 0, W, H).fill(C.pageBg);
 
-    /* ── Pre-computed strings ─────────────────────────────────────── */
-    const fmtAmount = 'Rs. ' + data.amount.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    const fmtDate = data.donatedAt.toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    });
-    const fmtDateTime = data.donatedAt.toLocaleString('en-IN', {
-      day: 'numeric', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
+    // ── THREE-COLOR ACCENT STRIP ───────────────────────────────
+    doc.rect(0, 0, W / 3, 5).fill('#15803d');
+    doc.rect(W / 3, 0, W / 3, 5).fill('#2563eb');
+    doc.rect((W * 2) / 3, 0, W / 3, 5).fill(C.blueDark);
 
-    // ================================================================
-    // 1. HEADER BAR
-    // ================================================================
-    doc.rect(0, 0, W, 90).fill(BRAND);
-    doc.rect(0, 87, W, 4).fill(BRAND_DARK);
+    // ── HEADER ────────────────────────────────────────────────
+    doc.rect(0, 5, W, 115).fill(C.blueDark);
 
-    // Left: company name + tagline
-    doc.font('Helvetica-Bold').fontSize(26).fillColor(WHITE)
-      .text('RaiseAPlayer', L, 20, { lineBreak: false });
-    doc.font('Helvetica').fontSize(9.5).fillColor(BRAND_LIGHT)
-      .text('Empowering Athletes Through Your Support', L, 52, { lineBreak: false });
+    const logoPath = path.join(process.cwd(), 'assets/logo.png');
+    try {
+      doc.image(logoPath, mx, 16, { fit: [55, 55] });
+    } catch {
+      // skip if logo missing
+    }
 
-    // Right: receipt label + number
-    doc.font('Helvetica-Bold').fontSize(13).fillColor(WHITE)
-      .text('DONATION RECEIPT', L, 24, { width: CW, align: 'right', lineBreak: false });
-    doc.font('Helvetica').fontSize(9.5).fillColor(BRAND_LIGHT)
-      .text('Receipt # ' + data.receiptNumber, L, 46, { width: CW, align: 'right', lineBreak: false });
+    // "PAID" badge — top right
+    doc.roundedRect(W - mx - 54, 18, 54, 22, 11).fill('#15803d');
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .fillColor(C.white)
+      .text('PAID', W - mx - 54, 23, { width: 54, align: 'center' });
 
-    // ================================================================
-    // 2. DATE + STATUS STRIP
-    // ================================================================
-    let y = 108;
-    doc.rect(L, y, CW, 36).fill(STRIPE);
-    doc.strokeColor(BORDER).lineWidth(0.5).rect(L, y, CW, 36).stroke();
+    // Brand name
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(24)
+      .fillColor(C.white)
+      .text('RaiseAPlayer', 0, 29, { align: 'center' });
 
-    doc.font('Helvetica').fontSize(10).fillColor(MUTED)
-      .text('Date Issued:', L + 16, y + 12, { lineBreak: false });
-    doc.font('Helvetica-Bold').fontSize(10).fillColor(DARK)
-      .text(fmtDate, L + 94, y + 12, { lineBreak: false });
-
-    // PAID badge — pill shape on the right
-    const bW = 68, bH = 20, bX = L + CW - bW, bY = y + 8;
-    doc.roundedRect(bX, bY, bW, bH, 10).fill('#DCFCE7');
-    doc.font('Helvetica-Bold').fontSize(10).fillColor(GREEN)
-      .text('PAID', bX, bY + 5, { width: bW, align: 'center', lineBreak: false });
-
-    // ================================================================
-    // 3. DONOR | CAMPAIGN INFO CARDS
-    // ================================================================
-    y = 162;
-    const colW = (CW - 12) / 2;
-
-    // ── Donor card ──────────────────────────────────────────────────
-    // Blue header band
-    doc.rect(L, y, colW, 24).fill(BRAND);
-    // White body
-    doc.rect(L, y + 24, colW, 68).fill(WHITE);
-    // Border
-    doc.strokeColor(BORDER).lineWidth(0.5).rect(L, y, colW, 92).stroke();
-
-    doc.font('Helvetica-Bold').fontSize(8).fillColor(WHITE)
-      .text('DONOR', L + 14, y + 8, { lineBreak: false });
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(DARK)
-      .text(data.donorName, L + 14, y + 34, { width: colW - 22, ellipsis: true, lineBreak: false });
-    doc.font('Helvetica').fontSize(10).fillColor(MUTED)
-      .text(data.donorEmail, L + 14, y + 56, { width: colW - 22, ellipsis: true, lineBreak: false });
-
-    // ── Campaign card ────────────────────────────────────────────────
-    const c2 = L + colW + 12;
-    // Green header band
-    doc.rect(c2, y, colW, 24).fill(GREEN);
-    // White body
-    doc.rect(c2, y + 24, colW, 68).fill(WHITE);
-    // Border
-    doc.strokeColor(BORDER).lineWidth(0.5).rect(c2, y, colW, 92).stroke();
-
-    doc.font('Helvetica-Bold').fontSize(8).fillColor(WHITE)
-      .text('FUNDRAISER', c2 + 14, y + 8, { lineBreak: false });
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(DARK)
-      .text(data.campaignTitle, c2 + 14, y + 34, { width: colW - 22, ellipsis: true, lineBreak: false });
-
-    // ================================================================
-    // 4. AMOUNT HIGHLIGHT BOX
-    // ================================================================
-    y = 274;
-    doc.roundedRect(L, y, CW, 78, 8).fill(GREEN_BG);
-    doc.rect(L, y, 6, 78).fill(GREEN);   // left accent bar
-
-    doc.font('Helvetica-Bold').fontSize(10).fillColor(MUTED)
-      .text('AMOUNT DONATED', L + 22, y + 14, { lineBreak: false });
-    doc.font('Helvetica-Bold').fontSize(30).fillColor(GREEN)
-      .text(fmtAmount, L + 22, y + 33, { lineBreak: false });
-    doc.font('Helvetica').fontSize(10).fillColor(MUTED)
-      .text('INR', L + 22 + doc.widthOfString(fmtAmount, { fontSize: 30 }) + 8, y + 43, { lineBreak: false });
-
-    // ================================================================
-    // 5. TRANSACTION DETAILS TABLE
-    // ================================================================
-    y = 376;
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(DARK)
-      .text('Transaction Details', L, y, { lineBreak: false });
-
-    y += 20;
-    doc.moveTo(L, y).lineTo(L + CW, y).strokeColor(BORDER).lineWidth(1).stroke();
-    y += 1;
-
-    const rows: [string, string][] = [
-      ['Receipt Number',    data.receiptNumber],
-      ['Payment Reference', data.paymentId],
-      ['Date & Time',       fmtDateTime],
-      ['Amount',            fmtAmount + ' INR'],
-      ['Status',            'Successful'],
-    ];
-
-    const ROW_H   = 34;
-    const TABLE_H = rows.length * ROW_H;
-
-    // Alternating row fills + separators
-    rows.forEach((_, i) => {
-      const ry = y + i * ROW_H;
-      if (i % 2 === 0) doc.rect(L, ry, CW, ROW_H).fill(STRIPE);
-      if (i > 0) {
-        doc.moveTo(L, ry).lineTo(L + CW, ry)
-          .strokeColor(BORDER).lineWidth(0.5).stroke();
-      }
-    });
-
-    // Outer table border (drawn after fills so it sits on top)
-    doc.strokeColor(BORDER).lineWidth(1).rect(L, y, CW, TABLE_H).stroke();
-
-    // Vertical divider between label and value columns
-    doc.moveTo(L + 188, y).lineTo(L + 188, y + TABLE_H)
-      .strokeColor(BORDER).lineWidth(0.5).stroke();
-
-    // Table text
-    rows.forEach(([label, value], i) => {
-      const ty = y + i * ROW_H + 11;
-      doc.font('Helvetica-Bold').fontSize(10).fillColor(MUTED)
-        .text(label, L + 14, ty, { width: 164, lineBreak: false });
-      doc.font('Helvetica').fontSize(10).fillColor(DARK)
-        .text(value, L + 200, ty, { width: CW - 210, ellipsis: true, lineBreak: false });
-    });
-
-    // ================================================================
-    // 6. THANK YOU BOX
-    // ================================================================
-    y = y + TABLE_H + 28;
-    doc.roundedRect(L, y, CW, 52, 8).fill(BLUE_BG);
-    doc.font('Helvetica-Bold').fontSize(13).fillColor(BRAND)
-      .text("Thank you for supporting an athlete's dream!", L, y + 18, {
-        width: CW, align: 'center', lineBreak: false,
+    // Tagline
+    doc
+      .font('Helvetica')
+      .fontSize(9.5)
+      .fillColor(C.blueAccent)
+      .text('Empowering Athletes Through Your Support', 0, 59, {
+        align: 'center',
       });
 
-    // ================================================================
-    // 7. LEGAL NOTES
-    // ================================================================
-    y += 68;
-    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED)
+    // Thin rule inside header
+    doc
+      .moveTo(mx + 60, 82)
+      .lineTo(W - mx - 60, 82)
+      .lineWidth(0.5)
+      .strokeColor('#2d4fa6')
+      .stroke();
+
+    // ── TITLE BAND ────────────────────────────────────────────
+    doc.rect(mx, 92, cw, 44).fill(C.white);
+
+    const titleLineY = 115;
+    doc
+      .moveTo(mx + 16, titleLineY)
+      .lineTo(mx + cw / 2 - 76, titleLineY)
+      .lineWidth(0.8)
+      .strokeColor(C.blueBorder)
+      .stroke();
+    doc
+      .moveTo(mx + cw / 2 + 76, titleLineY)
+      .lineTo(mx + cw - 16, titleLineY)
+      .lineWidth(0.8)
+      .strokeColor(C.blueBorder)
+      .stroke();
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(12)
+      .fillColor(C.blueDark)
+      .text('DONATION RECEIPT', 0, 107, { align: 'center', characterSpacing: 3 });
+
+    // ── CARD SHADOW ───────────────────────────────────────────
+    doc.rect(mx + 4, 141, cw, 614).fill(C.shadow);
+
+    // ── MAIN CONTENT CARD ─────────────────────────────────────
+    doc.rect(mx, 137, cw, 614).fill(C.white);
+
+    // ── META ROW ──────────────────────────────────────────────
+    const metaY = 157;
+    // Blue top strip on meta card
+    doc.rect(mx + 16, metaY, cw - 32, 4).fill(C.blueMid);
+    doc.rect(mx + 16, metaY + 4, cw - 32, 56).fill(C.blueLight);
+
+    // Vertical divider
+    const metaColX = mx + 16 + (cw - 32) / 2;
+    doc
+      .moveTo(metaColX, metaY + 10)
+      .lineTo(metaColX, metaY + 56)
+      .lineWidth(0.5)
+      .strokeColor(C.blueBorder)
+      .stroke();
+
+    const col2X = metaColX + 16;
+
+    doc.font('Helvetica').fontSize(7.5).fillColor(C.textLight);
+    doc.text('RECEIPT NUMBER', mx + 28, metaY + 12);
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(C.textDark);
+    doc.text(data.receiptNumber, mx + 28, metaY + 24, {
+      width: (cw - 32) / 2 - 20,
+    });
+
+    doc.font('Helvetica').fontSize(7.5).fillColor(C.textLight);
+    doc.text('DATE ISSUED', col2X, metaY + 12);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.textDark);
+    doc.text(data.donatedAt.toDateString(), col2X, metaY + 24);
+
+    let y = metaY + 74;
+
+    // ── DONOR SECTION ─────────────────────────────────────────
+    y = this.sectionHeader(doc, 'Donor Details', mx, y, cw, C.blueMid);
+
+    doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
+    doc.text('FULL NAME', mx + 28, y + 2);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.textDark);
+    doc.text(data.donorName, mx + 28, y + 13);
+
+    doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
+    doc.text('EMAIL ADDRESS', mx + 28 + cw / 2 - 12, y + 2);
+    doc.font('Helvetica').fontSize(10).fillColor(C.textMid);
+    doc.text(data.donorEmail, mx + 28 + cw / 2 - 12, y + 13, {
+      width: cw / 2 - 20,
+    });
+
+    y += 42;
+
+    // ── FUNDRAISER SECTION ────────────────────────────────────
+    y = this.sectionHeader(doc, 'Fundraiser Details', mx, y, cw, C.blueMid);
+
+    doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
+    doc.text('CAMPAIGN NAME', mx + 28, y + 2);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.textDark);
+    doc.text(data.campaignTitle, mx + 28, y + 13);
+
+    doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
+    doc.text('CAMPAIGN ID', mx + 28 + cw / 2 - 12, y + 2);
+    doc.font('Helvetica').fontSize(8.5).fillColor(C.textMid);
+    doc.text(data.fundraiserId, mx + 28 + cw / 2 - 12, y + 13, {
+      width: cw / 2 - 20,
+    });
+
+    y += 34;
+
+    doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
+    doc.text('CAMPAIGN ORGANIZER', mx + 28, y + 2);
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(C.textDark);
+    doc.text(data.fundraiserOwner, mx + 28, y + 13);
+
+    y += 30;
+
+    // ── DONATION SECTION ──────────────────────────────────────
+    y = this.sectionHeader(doc, 'Donation Details', mx, y, cw, C.greenMid);
+
+    // Amount card shadow
+    doc.rect(mx + 19, y + 4, cw - 35, 90).fill('#b2e4c2');
+    // Amount card
+    doc.rect(mx + 16, y, cw - 32, 90).fill(C.greenLight);
+    doc
+      .rect(mx + 16, y, cw - 32, 90)
+      .lineWidth(0.5)
+      .strokeColor(C.greenBorder)
+      .stroke();
+    // Top strip
+    doc.rect(mx + 20, y, cw - 36, 3).fill(C.greenMid);
+
+    // Confirmed circle
+    doc.circle(mx + 30, y + 18, 8).fill(C.greenMid);
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(8)
+      .fillColor(C.white)
+      .text('OK', mx + 24, y + 14, { width: 12, align: 'center' });
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .fillColor(C.greenMid)
+      .text('PAYMENT CONFIRMED', mx + 44, y + 13);
+
+    doc
+      .font('Helvetica')
+      .fontSize(7.5)
+      .fillColor(C.textLight)
+      .text('AMOUNT DONATED', mx + 28, y + 34);
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(26)
+      .fillColor(C.green)
       .text(
-        'This donation may be eligible for tax benefits under applicable laws. Please consult your tax advisor.',
-        L, y, { width: CW, align: 'center', lineBreak: false }
-      );
-    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED)
-      .text(
-        'This is a system-generated receipt. No signature required.',
-        L, y + 16, { width: CW, align: 'center', lineBreak: false }
+        `Rs. ${data.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        mx + 28,
+        y + 46,
       );
 
-    // ================================================================
-    // 8. PAGE FOOTER
-    // ================================================================
-    const FY = H - 56;
-    doc.rect(0, FY, W, 56).fill('#F3F4F6');
-    doc.moveTo(0, FY).lineTo(W, FY).strokeColor(BORDER).lineWidth(1).stroke();
+    doc
+      .font('Helvetica')
+      .fontSize(7.5)
+      .fillColor(C.textLight)
+      .text('PAYMENT REFERENCE', mx + 28, y + 76);
+    doc
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor(C.textMid)
+      .text(data.paymentId, mx + 140, y + 76, { width: cw - 160 });
 
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(MUTED)
-      .text('support@raiseaplayer.com', 0, FY + 14, { width: W, align: 'center', lineBreak: false });
-    doc.font('Helvetica').fontSize(9).fillColor(MUTED)
-      .text('www.raiseaplayer.com', 0, FY + 32, { width: W, align: 'center', lineBreak: false });
+    y += 106;
+
+    // ── DOT DIVIDER ───────────────────────────────────────────
+    for (let i = 0; i < 7; i++) {
+      doc.circle(W / 2 - 45 + i * 15, y + 6, 2.5).fill(C.blueBorder);
+    }
+
+    y += 24;
+
+    // ── THANK YOU ─────────────────────────────────────────────
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(13)
+      .fillColor(C.blueDark)
+      .text("Thank you for supporting an athlete's dream!", 0, y, {
+        align: 'center',
+      });
+
+    y += 22;
+
+    doc
+      .font('Helvetica')
+      .fontSize(8.5)
+      .fillColor(C.textLight)
+      .text(
+        'This donation may be eligible for tax benefits under applicable laws.',
+        0,
+        y,
+        { align: 'center' },
+      );
+
+    y += 15;
+
+    doc
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor(C.textMid)
+      .text(
+        'This is a system-generated receipt from RaiseAPlayer. No signature required.',
+        0,
+        y,
+        { align: 'center' },
+      );
+
+    // ── FOOTER ────────────────────────────────────────────────
+    const footerY = 768;
+    doc.rect(0, footerY, W, H - footerY).fill(C.blueDark);
+
+    doc
+      .moveTo(mx + 50, footerY + 2)
+      .lineTo(W - mx - 50, footerY + 2)
+      .lineWidth(1.5)
+      .strokeColor(C.blueMid)
+      .stroke();
+
+    doc
+      .font('Helvetica')
+      .fontSize(9.5)
+      .fillColor(C.blueAccent)
+      .text(
+        'support@raiseaplayer.com  |  [URL=http://www.raiseaplayer.com%27]www.raiseaplayer.com'[/URL],
+        0,
+        footerY + 18,
+        { align: 'center' },
+      );
+
+    doc
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor('#60a5fa')
+      .text('© 2026 RaiseAPlayer. All rights reserved.', 0, footerY + 40, {
+        align: 'center',
+      });
 
     doc.end();
 
@@ -227,9 +339,30 @@ export class ReceiptService {
     return Buffer.concat(buffers);
   }
 
-  private sectionTitle(doc: InstanceType<typeof PDFDocument>, title: string) {
-    doc.moveDown().fontSize(12).fillColor('#4F46E5').text(title);
-    doc.moveTo(doc.x, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
-    doc.moveDown(0.5).fillColor('black').fontSize(11);
+  private sectionHeader(
+    doc: InstanceType<typeof PDFDocument>,
+    title: string,
+    mx: number,
+    y: number,
+    cw: number,
+    accentColor: string,
+  ): number {
+    // Small filled square icon
+    doc.rect(mx + 16, y + 5, 8, 8).fill(accentColor);
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(12)
+      .fillColor(accentColor)
+      .text(title, mx + 30, y + 4);
+
+    doc
+      .moveTo(mx + 16, y + 22)
+      .lineTo(mx + cw - 16, y + 22)
+      .lineWidth(0.5)
+      .strokeColor(C.divider)
+      .stroke();
+
+    return y + 30;
   }
 }

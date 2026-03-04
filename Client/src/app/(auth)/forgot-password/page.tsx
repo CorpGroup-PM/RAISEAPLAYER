@@ -16,7 +16,7 @@ const emailSchema = z.object({
 });
 
 export default function ForgotPasswordPage() {
-    const [email, setEmail] = useState("");
+    // const [email, setEmail] = useState("");
     const [otpSent, setOtpSent] = useState(false);
     const [otp, setOtp] = useState("");
     const [timer, setTimer] = useState(0);
@@ -67,14 +67,16 @@ export default function ForgotPasswordPage() {
         { test: (v: string) => /[^A-Za-z0-9]/.test(v), message: "At least 1 special character" },
     ];
 
-
-
     const {
         register,
+        watch: watchEmail,
+        trigger,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(emailSchema),
+        mode: "onChange",
     });
+    const emailValue = watchEmail("email");
 
     const {
         register: registerPassword,
@@ -88,7 +90,7 @@ export default function ForgotPasswordPage() {
     });
 
     const { isValid } = useFormState({ control });
- 
+
     // TIMER for RESEND OTP
     useEffect(() => {
         if (timer === 0) return;
@@ -98,10 +100,10 @@ export default function ForgotPasswordPage() {
 
     // SEND RESET OTP
     const sendOtp = async () => {
-        if (!email) return addToast("Please enter email", "error");
+        if (!emailValue) return;
 
         try {
-            await AuthService.requestPasswordReset(email);
+            await AuthService.requestPasswordReset(emailValue);
             setOtpSent(true);
             setTimer(30);
             setOtpAttempts(0);
@@ -115,13 +117,13 @@ export default function ForgotPasswordPage() {
         if (!otp) return addToast("Enter OTP", "error");
 
         if (otpAttempts >= 5) {
-           // addToast("Too many attempts. Request new OTP.", "error");
+            // addToast("Too many attempts. Request new OTP.", "error");
             return;
         }
 
         try {
             setIsVerifyingOtp(true);
-            const res = await AuthService.verifyResetOtp(email, otp);
+            const res = await AuthService.verifyResetOtp(emailValue, otp);
             const token = res.data?.resetToken;
 
             if (!token) {
@@ -133,7 +135,7 @@ export default function ForgotPasswordPage() {
             setIsOtpVerified(true);
         } catch {
             setOtpAttempts((prev) => prev + 1);
-           // addToast("Invalid OTP", "error");
+            // addToast("Invalid OTP", "error");
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -150,8 +152,8 @@ export default function ForgotPasswordPage() {
         }
 
         try {
-            await AuthService.resetPassword(email, resetToken, values.newPassword);
-           // addToast("Password reset successfully", "success");
+            await AuthService.resetPassword(emailValue, resetToken, values.newPassword);
+            // addToast("Password reset successfully", "success");
             window.location.href = "/login";
         } catch {
             addToast("Failed to reset password", "error");
@@ -187,7 +189,7 @@ export default function ForgotPasswordPage() {
                                     className={`input-field ${errors.email ? "input-error" : ""}`}
                                     placeholder="Email"
                                     {...register("email")}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    // onChange={(e) => setEmail(e.target.value)}
                                     disabled={isOtpVerified}
                                 />
 
@@ -197,6 +199,7 @@ export default function ForgotPasswordPage() {
                                         type="button"
                                         className="btn btn-otp inline-otp-btn"
                                         onClick={sendOtp}
+                                        disabled={!emailValue || !!errors.email}
                                     >
                                         Verify Email
                                     </button>

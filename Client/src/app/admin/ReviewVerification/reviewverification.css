@@ -2,6 +2,11 @@
   padding: 24px;
 }
 
+.admin-page-wrapper {
+  padding-top: 70px;
+  margin-top: 20px;
+}
+
 .page-title {
   font-size: 22px;
   font-weight: 700;

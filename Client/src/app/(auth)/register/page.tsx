@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/components/toast/ToastContext";
 import { loadingManager } from "@/lib/loading-manager";
 import { AuthService } from "@/services/auth.service";
-import { Eye, EyeOff} from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 const getPasswordStrength = (password: string) => {
   let score = 0;
@@ -69,6 +69,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  
 
   // OTP STATES
   const [otpSent, setOtpSent] = useState(false);
@@ -95,6 +96,7 @@ export default function Register() {
     resolver: zodResolver(registerSchema),
     mode: "onChange",
   });
+  const emailValue = watch("email");
 
   const handleGoogleSignUp = () => {
     window.location.href = GOOGLE_OAUTH_URL;
@@ -114,7 +116,7 @@ export default function Register() {
       setTimer(30);
       setAttempts(0);
     } catch {
-       //addToast("Failed to send OTP", "error");
+      //addToast("Failed to send OTP", "error");
     }
   };
 
@@ -126,7 +128,7 @@ export default function Register() {
       return;
     }
 
-    
+
     try {
       setIsVerifyingOtp(true);
 
@@ -135,15 +137,15 @@ export default function Register() {
       setIsEmailVerified(true);
       setOtpSent(false);
     } catch (err: any) {
-    
-  } finally {
+
+    } finally {
       setIsVerifyingOtp(false);
     }
   };
 
   const onSubmit = async (values: RegisterFormValues) => {
     if (!isEmailVerified) {
-     // addToast("Please verify your email before signing up.", "error");
+      // addToast("Please verify your email before signing up.", "error");
       return;
     }
 
@@ -161,7 +163,7 @@ export default function Register() {
       reset();
       window.location.href = "/login";
     } catch {
-     // addToast("Registration failed. Try again.", "error");
+      // addToast("Registration failed. Try again.", "error");
     } finally {
       loadingManager.stop();
     }
@@ -207,30 +209,38 @@ export default function Register() {
           </div>
 
           {/* EMAIL */}
-          <div className="input-group email-row">
-            <input
-              id="email"
-              type="email"
-              className={`input-field ${errors.email ? "input-error" : ""}`}
-              placeholder="Email"
-              autoComplete="email"
-              {...register("email")}
-              disabled={isEmailVerified}
-            />
-            
+          <div className="input-group">
+            {/* Row: input + verify button */}
+            <div className="email-row">
+              <input
+                id="email"
+                type="email"
+                className={`input-field ${errors.email ? "input-error" : ""}`}
+                placeholder="Email"
+                autoComplete="email"
+                {...register("email")}
+                disabled={isEmailVerified}
+              />
 
-            {isEmailVerified && (
-              <span className="verified-badge">✔ Email Verified</span>
-            )}
+              {!isEmailVerified && !otpSent && (
+                <button
+                  type="button"
+                  className="inline-otp-btn"
+                  onClick={sendOtp}
+                  disabled={!emailValue || !!errors.email}
+                >
+                  Verify Email
+                </button>
+              )}
 
-            {!isEmailVerified && !otpSent && (
-              <button
-                type="button"
-                className="inline-otp-btn"
-                onClick={sendOtp}
-              >
-                Verify Email
-              </button>
+              {isEmailVerified && (
+                <span className="verified-badge">✔ Email Verified</span>
+              )}
+            </div>
+
+            {/* ✅ ZOD ERROR BELOW */}
+            {errors.email && (
+              <p className="error-text">{errors.email.message}</p>
             )}
           </div>
 
@@ -276,9 +286,8 @@ export default function Register() {
               <input
                 id="firstname"
                 type="text"
-                className={`input-field ${
-                  errors.firstName ? "input-error" : ""
-                }`}
+                className={`input-field ${errors.firstName ? "input-error" : ""
+                  }`}
                 placeholder="Firstname"
                 {...register("firstName")}
               />
@@ -291,9 +300,8 @@ export default function Register() {
               <input
                 id="lastname"
                 type="text"
-                className={`input-field ${
-                  errors.lastName ? "input-error" : ""
-                }`}
+                className={`input-field ${errors.lastName ? "input-error" : ""
+                  }`}
                 placeholder="Lastname"
                 {...register("lastName")}
               />
@@ -307,9 +315,8 @@ export default function Register() {
                 id="phone"
                 type="tel"
                 inputMode="tel"
-                className={`input-field ${
-                  errors.phoneNumber ? "input-error" : ""
-                }`}
+                className={`input-field ${errors.phoneNumber ? "input-error" : ""
+                  }`}
                 placeholder="Phone Number"
                 autoComplete="tel"
                 {...register("phoneNumber")}
@@ -324,9 +331,8 @@ export default function Register() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  className={`input-field ${
-                    errors.password ? "input-error" : ""
-                  }`}
+                  className={`input-field ${errors.password ? "input-error" : ""
+                    }`}
                   placeholder="Password"
                   autoComplete="new-password"
                   {...register("password", {
@@ -368,9 +374,8 @@ export default function Register() {
                 <input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  className={`input-field ${
-                    errors.confirmPassword ? "input-error" : ""
-                  }`}
+                  className={`input-field ${errors.confirmPassword ? "input-error" : ""
+                    }`}
                   placeholder="Confirm Password"
                   autoComplete="new-password"
                   {...register("confirmPassword")}

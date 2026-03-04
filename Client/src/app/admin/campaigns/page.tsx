@@ -56,7 +56,7 @@ const AdminCampaignsPage: React.FC = () => {
     <>
       <AdminNavbar />
 
-      <div className="dashboard-root">
+      <div className="dashboard-root admin-page-wrapper">
         <main className="dashboard-main" >
  
 

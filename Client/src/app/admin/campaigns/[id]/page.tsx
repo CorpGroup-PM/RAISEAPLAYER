@@ -329,7 +329,7 @@ export default function AdminCampaignDetailsPage() {
     <>
       <AdminNavbar />
 
-      <div className="admin-campaign-page">
+      <div className="admin-campaign-page admin-page-wrapper">
         {/* ================= TOP BAR ================= */}
         <header className="admin-topbar">
           <button className="admin-back-btn" onClick={() => router.replace(`/admin/campaigns?status=${status}`)}>
