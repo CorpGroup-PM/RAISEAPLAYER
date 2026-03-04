@@ -315,7 +315,7 @@ export class ReceiptService {
       .fontSize(9.5)
       .fillColor(C.blueAccent)
       .text(
-        'support@raiseaplayer.com  |  [URL=http://www.raiseaplayer.com%27]www.raiseaplayer.com'[/URL],
+        'support@raiseaplayer.org  |  www.raiseaplayer.org',
         0,
         footerY + 18,
         { align: 'center' },
