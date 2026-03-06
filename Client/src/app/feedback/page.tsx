@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { FundraiserReviewService } from "@/services/fundraiser-review.service";
+import AlertModal from "@/components/ui/AlertModal";
 
 export default function FundraiserReviewPage() {
   const { fundraiserId } = useParams();
@@ -12,6 +13,9 @@ export default function FundraiserReviewPage() {
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(5);
   const [loading, setLoading] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
+  const [alertType, setAlertType] = useState<"error" | "success">("error");
+  const [redirectOnClose, setRedirectOnClose] = useState(false);
 
   const submitReview = async () => {
     console.log({
@@ -20,12 +24,14 @@ export default function FundraiserReviewPage() {
     message: feedback,
   });
     if (!name.trim()) {
-      alert("Please enter your name");
+      setAlertType("error");
+      setAlertMsg("Please enter your name");
       return;
     }
 
     if (!feedback.trim()) {
-      alert("Please enter feedback");
+      setAlertType("error");
+      setAlertMsg("Please enter feedback");
       return;
     }
 
@@ -40,8 +46,9 @@ export default function FundraiserReviewPage() {
         }
       );
 
-      alert("Review submitted successfully");
-      router.push("/dashboard");
+      setAlertType("success");
+      setAlertMsg("Review submitted successfully");
+      setRedirectOnClose(true);
     } finally {
       setLoading(false);
     }
@@ -111,6 +118,17 @@ export default function FundraiserReviewPage() {
           {loading ? "Submitting..." : "Submit Review"}
         </button>
       </div>
+
+      {alertMsg && (
+        <AlertModal
+          message={alertMsg}
+          type={alertType}
+          onClose={() => {
+            setAlertMsg("");
+            if (redirectOnClose) router.push("/dashboard");
+          }}
+        />
+      )}
     </div>
   );
 }

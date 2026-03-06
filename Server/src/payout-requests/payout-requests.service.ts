@@ -16,9 +16,9 @@ export class PayoutRequestsService {
         fundraiserId: string,
         dto: CreatePayoutRequestDto,
     ) {
-        if (dto.amount < 5000) {
-            throw new BadRequestException('Minimum withdrawal amount is ₹5000');
-        }
+        // if (dto.amount < 5000) {
+        //     throw new BadRequestException('Minimum withdrawal amount is ₹5000');
+        // }
 
         //  Run transaction ONLY for DB work
         const requestId = await this.prisma.$transaction(async (tx) => {

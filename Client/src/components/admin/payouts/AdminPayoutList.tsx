@@ -32,7 +32,7 @@ export default function AdminPayoutList({
 }) {
   const [items, setItems] = useState<AdminPayoutRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("PAID");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   const [rejectRowKey, setRejectRowKey] = useState<string | null>(null);
 

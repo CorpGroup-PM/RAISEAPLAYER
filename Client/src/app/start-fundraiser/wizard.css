@@ -53,6 +53,41 @@
   font-size: 14px;
 }
 
+.wizard-input.input-error {
+  border-color: #d32f2f;
+}
+
+/* Phone number input with +91 prefix */
+.phone-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.phone-input-wrapper.input-error {
+  border-color: #d32f2f;
+}
+
+.phone-prefix {
+  padding: 12px 10px;
+  background: #f3f4f6;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 600;
+  border-right: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.phone-input-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 12px;
+  font-size: 14px;
+}
+
 /* =========================
    FOOTER
    ========================= */

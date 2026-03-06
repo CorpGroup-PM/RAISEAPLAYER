@@ -32,6 +32,11 @@ export default function Navbar() {
     router.replace("/"); // ✅ redirect to home
   };
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (

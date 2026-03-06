@@ -460,26 +460,11 @@ export default function Home() {
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="trustCtaWrap">
-          <button
-            className="trustCtaBtn"
-            onClick={() => router.push("/trust-safety")}
-          >
-            Read our Trust & Safety standards
-          </button>
-        </div>
       </section>
 
       {/* ✅ TESTIMONIALS SECTION */}
       {!loadingReviews && reviews.length > 0 && (
       <section className="testiSection">
-        <div className="testiTopPill">
-          <span>⭐ 4.8</span>
-          <span className="testiDot">|</span>
-          <span>1,200+ supporters</span>
-        </div>
-
         <h2 className="testiTitle">What Our Users Say</h2>
         <p className="testiSubtitle">
           Stories from donors, athletes, and parents who trust RaiseAPlayer.

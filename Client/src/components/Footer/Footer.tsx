@@ -226,7 +226,7 @@ export default function Footer() {
                 <MapPinIcon />
               </span>
               <div>
-                Nagendra Nagar, Scientist Colony,
+                Unit-NO: 7-140/2, E 5, Nagendra Nagar, Scientist Colony,
                 <br />
                 Habsiguda, Hyderabad — 500 007
                 <br />

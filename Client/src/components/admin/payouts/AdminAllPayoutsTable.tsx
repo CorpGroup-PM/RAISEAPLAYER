@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 export default function AdminAllPayoutsTable() {
   const [items, setItems] = useState<any[]>([]);
-  const [status, setStatus] = useState<string>("PAID");
+  const [status, setStatus] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);

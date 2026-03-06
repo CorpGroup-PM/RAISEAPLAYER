@@ -6,8 +6,12 @@ import "./payouts.css";
 
 export default function WithdrawalHistoryTable({
   fundraiserId,
+  onRefresh,
+  refreshKey = 0,
 }: {
   fundraiserId: string;
+  onRefresh?: () => void;
+  refreshKey?: number;
 }) {
   const [items, setItems] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -16,6 +20,8 @@ export default function WithdrawalHistoryTable({
   const [showModal, setShowModal] = useState(false);
   const [activePayout, setActivePayout] = useState<any>(null);
   const [showImageViewer, setShowImageViewer] = useState(false);
+
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   const filteredItems =
     statusFilter === "ALL"
@@ -36,12 +42,14 @@ export default function WithdrawalHistoryTable({
 
   useEffect(() => {
     load();
-  }, []);
+  }, [refreshKey]);
 
-  const cancel = async (id: string) => {
-    if (!confirm("Cancel this withdrawal request?")) return;
-    await PayoutRequestsService.cancel(fundraiserId, id);
-    load();
+  const confirmCancel = async () => {
+    if (!cancelId) return;
+    await PayoutRequestsService.cancel(fundraiserId, cancelId);
+    setCancelId(null);
+    await load();
+    onRefresh?.();
   };
 
   /** Returns a human-readable note for the row (rejection / failure reason). */
@@ -107,7 +115,7 @@ export default function WithdrawalHistoryTable({
                   <td>
                     <div className="wt-actions">
                       {x.status === "PENDING" && (
-                        <button className="wt-cancel-btn" onClick={() => cancel(x.id)}>
+                        <button className="wt-cancel-btn" onClick={() => setCancelId(x.id)}>
                           Cancel
                         </button>
                       )}
@@ -192,6 +200,35 @@ export default function WithdrawalHistoryTable({
 
             <div className="rp-modal-actions">
               <button className="action-btn" onClick={closeModal}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CANCEL CONFIRMATION MODAL */}
+      {cancelId && (
+        <div className="confirm-backdrop" onClick={() => setCancelId(null)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-icon-wrap">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+
+            <h3 className="confirm-title">Cancel Withdrawal</h3>
+            <p className="confirm-desc">
+              Are you sure you want to cancel this withdrawal request? This action cannot be undone.
+            </p>
+
+            <div className="confirm-actions">
+              <button className="confirm-btn confirm-btn-secondary" onClick={() => setCancelId(null)}>
+                No, Keep It
+              </button>
+              <button className="confirm-btn confirm-btn-danger" onClick={confirmCancel}>
+                Yes, Cancel
+              </button>
             </div>
           </div>
         </div>

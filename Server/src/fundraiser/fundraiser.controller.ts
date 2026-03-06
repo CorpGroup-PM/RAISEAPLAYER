@@ -305,6 +305,41 @@ export class FundraiserController {
   }
 
   // ------------------------------------------------------------------
+  // ADD INSTAGRAM LINKS
+  // ------------------------------------------------------------------
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth()
+  @Post(':id/media/instagram')
+  @ApiOperation({ summary: 'Add Instagram media links' })
+  async addInstagram(
+    @Param('id') fundraiserId: string,
+    @Req() req: any,
+    @Body('instagramUrl') instagramUrl: string | string[],
+  ) {
+    const urls = Array.isArray(instagramUrl) ? instagramUrl : [instagramUrl];
+    return this.fundraiserService.addInstagramMedia(fundraiserId, req.user.sub, urls);
+  }
+
+  // ------------------------------------------------------------------
+  // DELETE INSTAGRAM LINK
+  // ------------------------------------------------------------------
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth()
+  @Delete(':id/media/instagram')
+  @ApiOperation({ summary: 'Delete Instagram media link' })
+  async deleteInstagramMedia(
+    @Param('id') fundraiserId: string,
+    @Body('instagramUrl') instagramUrl: string,
+    @Req() req: any,
+  ) {
+    return this.fundraiserService.deleteInstagramMedia(
+      fundraiserId,
+      req.user.sub,
+      instagramUrl,
+    );
+  }
+
+  // ------------------------------------------------------------------
   // Create FUNDRAISER UPDATE
   // ------------------------------------------------------------------
   @UseGuards(AccessTokenGuard)

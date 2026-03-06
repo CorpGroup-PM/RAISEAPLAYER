@@ -292,6 +292,10 @@
   border-bottom-color: #a02e4e;
 }
 
+.password-wrapper:focus-within {
+  border-bottom-color: #a02e4e;
+}
+
 .input-error {
   border-bottom-color: #d32f2f !important;
 }
@@ -310,29 +314,28 @@
 
 
 .password-wrapper {
-  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
+  border-bottom: 1px solid #ccc;
 }
 
+.password-wrapper.input-error {
+  border-bottom-color: #d32f2f;
+}
 
 .password-wrapper .input-field {
-  padding-right: 40px !important;
-  width: 100%;
+  flex: 1;
+  border-bottom: none;
 }
 
-
 .password-toggle-button {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 0;
-  z-index: 10;
+  flex-shrink: 0;
+  margin-left: 10px;
 }
 
 .strength-bar {

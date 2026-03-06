@@ -169,7 +169,20 @@
 .password-wrapper {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  border-bottom: 1px solid #ccc;
+}
+
+.password-wrapper .input-field {
+  flex: 1;
+  border-bottom: none;
+}
+
+.password-wrapper:focus-within {
+  border-bottom-color: #a02e4e;
+}
+
+.password-wrapper.input-error {
+  border-bottom-color: #d32f2f;
 }
 
 .password-toggle-button {
@@ -178,6 +191,7 @@
   font-size: 16px;
   background: transparent;
   border: none;
+  flex-shrink: 0;
 }
 
 .forgot-password-text {

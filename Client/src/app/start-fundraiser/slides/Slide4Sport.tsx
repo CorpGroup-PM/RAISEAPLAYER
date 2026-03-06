@@ -37,13 +37,53 @@ export default function Slide4Sport({ draft, updateDraft, next, back }: any) {
   };
 
 
+  /* -------------------- Add skill helper -------------------- */
+  const addSkill = () => {
+    if (!skillInput.trim()) return;
+
+    const newSkill = skillInput
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+    const existing = (draft.skills || []).map((s: string) => s.toLowerCase());
+
+    if (existing.includes(newSkill.toLowerCase())) {
+      setSkillInput('');
+      return;
+    }
+
+    updateDraft({
+      skills: [...(draft.skills || []), newSkill],
+    });
+
+    setSkillInput('');
+    setErrors((prev) => ({ ...prev, skills: '' }));
+  };
+
   /* -------------------- Next handler -------------------- */
   const handleNext = () => {
+    // Auto-add any pending skill text before validating
+    let skills = draft.skills || [];
+    if (skillInput.trim()) {
+      const newSkill = skillInput
+        .trim()
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+      const existing = skills.map((s: string) => s.toLowerCase());
+      if (!existing.includes(newSkill.toLowerCase())) {
+        skills = [...skills, newSkill];
+        updateDraft({ skills });
+      }
+      setSkillInput('');
+    }
+
     const result = sportSchema.safeParse({
       sport: draft.sport,
       level: draft.level,
       discipline: draft.discipline,
-      skills: draft.skills || [],
+      skills,
     });
 
     if (!result.success) {
@@ -95,39 +135,42 @@ export default function Slide4Sport({ draft, updateDraft, next, back }: any) {
       </select>
       {errors.level && <p className="error-text">{errors.level}</p>}
 
-      <div className="skill-input-wrapper">
+      <div className="skill-input-wrapper" style={{ position: 'relative' }}>
         <input
           className="wizard-input"
+          style={{ paddingRight: '40px' }}
           placeholder="Type a skill and press Enter"
           value={skillInput}
           onChange={(e) => setSkillInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && skillInput.trim()) {
+            if (e.key === 'Enter') {
               e.preventDefault();
-
-              const newSkill = skillInput
-                .trim()
-                .toLowerCase()
-                .replace(/\b\w/g, (char) => char.toUpperCase());
-
-              const existing = (draft.skills || []).map(
-                (s: string) => s.toLowerCase()
-              );
-
-              if (existing.includes(newSkill.toLowerCase())) {
-                setSkillInput('');
-                return;
-              }
-
-              updateDraft({
-                skills: [...(draft.skills || []), newSkill],
-              });
-
-              setSkillInput('');
-              setErrors((prev) => ({ ...prev, skills: '' }));
+              addSkill();
             }
           }}
         />
+        <button
+          type="button"
+          onClick={addSkill}
+          style={{
+            position: 'absolute',
+            right: '10px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'none',
+            border: 'none',
+            color: skillInput.trim() ? '#e8a87c' : '#ccc',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            cursor: skillInput.trim() ? 'pointer' : 'default',
+            padding: 0,
+            lineHeight: 1,
+          }}
+          disabled={!skillInput.trim()}
+          title="Add skill"
+        >
+          +
+        </button>
       </div>
 
       {Array.isArray(draft.skills) && draft.skills.length > 0 && (

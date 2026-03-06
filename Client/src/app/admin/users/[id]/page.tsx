@@ -103,7 +103,7 @@ export default function AdminUserDetailsPage() {
   }, [data]);
 
   return (
-    <div className="admin-user-details-page">
+    <div className="admin-user-details-page admin-page-wrapper">
       {/* HEADER */}
       <div className="admin-user-topbar">
         <button className="back-btn" onClick={() => router.push("/admin/users")}>

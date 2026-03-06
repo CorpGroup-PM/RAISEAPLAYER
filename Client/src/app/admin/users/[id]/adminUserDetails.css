@@ -349,3 +349,6 @@
   }
 }
 
+.admin-page-wrapper {
+  padding-top: 70px; /* same as navbar height */
+}

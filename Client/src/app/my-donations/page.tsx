@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UserDonationsService } from "@/services/userDonations.service";
+import AlertModal from "@/components/ui/AlertModal";
 import "./myDonations.css";
 
 type Donation = {
@@ -21,6 +22,7 @@ export default function MyDonationsPage() {
   const [items, setItems] = useState<Donation[]>([]);
   const [status] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
 
   const load = async () => {
     try {
@@ -49,7 +51,7 @@ export default function MyDonationsPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert("Failed to download receipt");
+      setAlertMsg("Failed to download receipt");
     }
   };
 
@@ -180,6 +182,10 @@ export default function MyDonationsPage() {
           </div>
         ))}
       </div>
+
+      {alertMsg && (
+        <AlertModal message={alertMsg} type="error" onClose={() => setAlertMsg("")} />
+      )}
     </div>
   );
 }

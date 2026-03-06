@@ -217,23 +217,25 @@ const ExploreFundraisersPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {campaign.creator && (
-                        <p className="created-by">
-                          Created by{" "}
-                          <strong>
-                            {campaign.creator.firstName} {campaign.creator.lastName}
-                          </strong>
-                        </p>
-                      )}
+                      <div className="card-footer-row">
+                        {campaign.creator && (
+                          <p className="created-by">
+                            Created by{" "}
+                            <strong>
+                              {campaign.creator.firstName} {campaign.creator.lastName}
+                            </strong>
+                          </p>
+                        )}
 
-                      <button
-                        className="primary-btn"
-                        onClick={() =>
-                          router.push(`/donate/${campaign.id}`)
-                        }
-                      >
-                        View →
-                      </button>
+                        <button
+                          className="primary-btn"
+                          onClick={() =>
+                            router.push(`/donate/${campaign.id}`)
+                          }
+                        >
+                          View →
+                        </button>
+                      </div>
                     </div>
                   </article>
                 );

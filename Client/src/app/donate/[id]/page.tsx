@@ -10,6 +10,21 @@ import type { Donation } from "@/types/donation";
 import "./explore.css";
 import PayoutSummary from "@/components/public/payouts/PayoutSummary";
 import StatusBadge from "@/components/StatusBadge/StatusBadge";
+import InstagramEmbed from "@/components/instagram/instagram";
+
+const isInstagramUrl = (url: string) => url.includes("instagram.com");
+
+function getYouTubeVideoId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0] || null;
+    const pathMatch = u.pathname.match(/\/(?:shorts|live|embed)\/([^/?&]+)/);
+    if (pathMatch) return pathMatch[1];
+    return u.searchParams.get("v");
+  } catch {
+    return null;
+  }
+}
 
 
 type BeneficiaryUser = {
@@ -65,9 +80,11 @@ export default function ExploreFundraiserDetailsPage() {
 
   const [imageMedia, setImageMedia] = useState<string[]>([]);
   const [videoMedia, setVideoMedia] = useState<VideoMedia[]>([]);
+  const [instagramMedia, setInstagramMedia] = useState<string[]>([]);
   const [updates, setUpdates] = useState<CampaignUpdate[]>([]);
   const [currentImage, setCurrentImage] = useState(0);
   const [currentVideo, setCurrentVideo] = useState(0);
+  const [currentInstagram, setCurrentInstagram] = useState(0);
 
   const [showAllUpdates, setShowAllUpdates] = useState(false);
   const [expandedStory, setExpandedStory] = useState(false);
@@ -102,6 +119,11 @@ export default function ExploreFundraiserDetailsPage() {
       prev === 0 ? videoMedia.length - 1 : prev - 1
     );
   };
+
+  const nextInstagram = () =>
+    setCurrentInstagram((prev) => (prev === instagramMedia.length - 1 ? 0 : prev + 1));
+  const prevInstagram = () =>
+    setCurrentInstagram((prev) => (prev === 0 ? instagramMedia.length - 1 : prev - 1));
 
 
   /* ================= FETCH CAMPAIGN ================= */
@@ -143,6 +165,7 @@ export default function ExploreFundraiserDetailsPage() {
 
     const images: string[] = [];
     const videos: VideoMedia[] = [];
+    const instagrams: string[] = [];
 
     campaign.media.forEach((item: any) => {
       if (Array.isArray(item.playerImages)) {
@@ -151,15 +174,16 @@ export default function ExploreFundraiserDetailsPage() {
 
       if (Array.isArray(item.youTubeUrl)) {
         item.youTubeUrl.forEach((originalUrl: string) => {
-          const videoId = originalUrl.includes("youtu.be/")
-            ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
-            : originalUrl.split("v=")[1]?.split("&")[0];
-
-          if (videoId) {
-            videos.push({
-              embedUrl: `https://www.youtube.com/embed/${videoId}`,
-              originalUrl,
-            });
+          if (isInstagramUrl(originalUrl)) {
+            instagrams.push(originalUrl);
+          } else {
+            const videoId = getYouTubeVideoId(originalUrl);
+            if (videoId) {
+              videos.push({
+                embedUrl: `https://www.youtube.com/embed/${videoId}`,
+                originalUrl,
+              });
+            }
           }
         });
       }
@@ -167,6 +191,7 @@ export default function ExploreFundraiserDetailsPage() {
 
     setImageMedia(images);
     setVideoMedia(videos);
+    setInstagramMedia(instagrams);
   }, [campaign]);
 
   useEffect(() => {
@@ -423,106 +448,97 @@ export default function ExploreFundraiserDetailsPage() {
 
       <section className="media-row full-width">
 
-        {/* ================= IMAGES ================= */}
+        {/* LEFT: INSTAGRAM */}
         <div className="media-box">
-          <h3>Images</h3>
+          <h3>Instagram</h3>
 
-          {imageMedia.length === 0 ? (
-            <div className="media-empty">
-              No images right now
-            </div>
+          {instagramMedia.length === 0 ? (
+            <div className="media-empty">No Instagram posts added</div>
           ) : (
-            <>
-              <div className="gallery-image-container">
-                <div
-                  className="gallery-track"
-                  style={{
-                    transform: `translateX(-${currentImage * 100}%)`,
-                  }}
-                >
-                  {imageMedia.map((url, i) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt={`Campaign photo ${i + 1}`}
-                      className="gallery-image"
-                      loading="lazy"
-                    />
-                  ))}
-                </div>
-
-                {imageMedia.length > 1 && (
-                  <>
-                    <button className="gallery-nav left" onClick={prevImage} aria-label="Previous image">‹</button>
-                    <button className="gallery-nav right" onClick={nextImage} aria-label="Next image">›</button>
-                  </>
-                )}
+            <div className="instagram-viewer">
+              <div className="instagram-slide-wrap">
+                <InstagramEmbed key={instagramMedia[currentInstagram]} url={instagramMedia[currentInstagram]} />
               </div>
-
-              {imageMedia.length > 1 && (
-                <div className="gallery-dots">
-                  {imageMedia.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`dot ${i === currentImage ? "active" : ""}`}
-                      onClick={() => setCurrentImage(i)}
-                    />
-                  ))}
+              {instagramMedia.length > 1 && (
+                <div className="instagram-nav-row">
+                  <button className="insta-nav-btn" onClick={prevInstagram}>‹</button>
+                  <span className="insta-nav-count">{currentInstagram + 1} / {instagramMedia.length}</span>
+                  <button className="insta-nav-btn" onClick={nextInstagram}>›</button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
 
-        {/* ================= VIDEOS ================= */}
-        <div className="media-box">
-          <h3>Videos</h3>
+        {/* RIGHT: IMAGES (top) + YOUTUBE (bottom) */}
+        <div className="media-right-col">
 
-          {videoMedia.length === 0 ? (
-            <div className="media-empty">
-              No videos right now
-            </div>
-          ) : (
-            <>
-              <div className="gallery-image-container">
-                <div
-                  className="gallery-track"
-                  style={{
-                    transform: `translateX(-${currentVideo * 100}%)`,
-                  }}
-                >
-                  {videoMedia.map((v, i) => (
-                    <div className="video-box" key={i}>
-                      <iframe
-                        src={`${v.embedUrl}?rel=0`}
-                        title={`Campaign video ${i + 1}`}
-                        allowFullScreen
-                      />
-                    </div>
-                  ))}
+          {/* IMAGES */}
+          <div className="media-box">
+            <h3>Images</h3>
+
+            {imageMedia.length === 0 ? (
+              <div className="media-empty">No images right now</div>
+            ) : (
+              <>
+                <div className="gallery-image-container">
+                  <div className="gallery-track" style={{ transform: `translateX(-${currentImage * 100}%)` }}>
+                    {imageMedia.map((url, i) => (
+                      <img key={i} src={url} alt={`Campaign photo ${i + 1}`} className="gallery-image" loading="lazy" />
+                    ))}
+                  </div>
+                  {imageMedia.length > 1 && (
+                    <>
+                      <button className="gallery-nav left" onClick={prevImage} aria-label="Previous image">‹</button>
+                      <button className="gallery-nav right" onClick={nextImage} aria-label="Next image">›</button>
+                    </>
+                  )}
                 </div>
-
-                {videoMedia.length > 1 && (
-                  <>
-                    <button className="gallery-nav left" onClick={prevVideo} aria-label="Previous video">‹</button>
-                    <button className="gallery-nav right" onClick={nextVideo} aria-label="Next video">›</button>
-                  </>
+                {imageMedia.length > 1 && (
+                  <div className="gallery-dots">
+                    {imageMedia.map((_, i) => (
+                      <span key={i} className={`dot ${i === currentImage ? "active" : ""}`} onClick={() => setCurrentImage(i)} />
+                    ))}
+                  </div>
                 )}
-              </div>
+              </>
+            )}
+          </div>
 
-              {videoMedia.length > 1 && (
-                <div className="gallery-dots">
-                  {videoMedia.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`dot ${i === currentVideo ? "active" : ""}`}
-                      onClick={() => setCurrentVideo(i)}
-                    />
-                  ))}
+          {/* YOUTUBE */}
+          <div className="media-box">
+            <h3>YouTube Videos</h3>
+
+            {videoMedia.length === 0 ? (
+              <div className="media-empty">No videos right now</div>
+            ) : (
+              <>
+                <div className="gallery-image-container">
+                  <div className="gallery-track" style={{ transform: `translateX(-${currentVideo * 100}%)` }}>
+                    {videoMedia.map((v, i) => (
+                      <div className="video-box" key={i}>
+                        <iframe src={`${v.embedUrl}?rel=0`} title={`Campaign video ${i + 1}`} allowFullScreen />
+                      </div>
+                    ))}
+                  </div>
+                  {videoMedia.length > 1 && (
+                    <>
+                      <button className="gallery-nav left" onClick={prevVideo} aria-label="Previous video">‹</button>
+                      <button className="gallery-nav right" onClick={nextVideo} aria-label="Next video">›</button>
+                    </>
+                  )}
                 </div>
-              )}
-            </>
-          )}
+                {videoMedia.length > 1 && (
+                  <div className="gallery-dots">
+                    {videoMedia.map((_, i) => (
+                      <span key={i} className={`dot ${i === currentVideo ? "active" : ""}`} onClick={() => setCurrentVideo(i)} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
         </div>
       </section>
 

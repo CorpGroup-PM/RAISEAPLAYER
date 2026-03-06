@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PaymentService } from "../../services/payment.service";
 import "./donate-modal.css";
 import { useAuth } from "@/context/AuthContext";
+import AlertModal from "@/components/ui/AlertModal";
 
 type Props = {
     fundraiserId: string;
@@ -18,8 +19,8 @@ export default function DonateModal({
 }: Props) {
     const { isAuthenticated } = useAuth();
 
-    const [amount, setAmount] = useState(2500);
-    const [tip, setTip] = useState(400);
+    const [amount, setAmount] = useState("2500");
+    const [tip, setTip] = useState("400");
     const [isAnonymous, setIsAnonymous] = useState(false);
 
     const [guestName, setGuestName] = useState("");
@@ -28,10 +29,13 @@ export default function DonateModal({
 
     const [showGuestForm, setShowGuestForm] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     if (!isOpen) return null;
 
-    const total = amount + tip;
+    const numAmount = Number(amount) || 0;
+    const numTip = Number(tip) || 0;
+    const total = numAmount + numTip;
 
     /* ================= RAZORPAY SCRIPT LOADER ================= */
     const loadRazorpay = (): Promise<boolean> => {
@@ -68,22 +72,18 @@ export default function DonateModal({
         // Guest → validate details
         if (!isAuthenticated) {
             if (!guestName || !guestEmail || !guestMobile) {
-                alert("Please fill all details");
+                setErrorMsg("Please fill all details");
                 return;
             }
         }
 
         // Validate amounts
-        if (amount < 1) {
-            alert("Donation amount must be at least ₹1");
+        if (numAmount < 1) {
+            setErrorMsg("Donation amount must be at least ₹1");
             return;
         }
-        if (tip < 0) {
-            alert("Tip amount cannot be negative");
-            return;
-        }
-        if (amount > 1_000_000) {
-            alert("Donation amount cannot exceed ₹10,00,000");
+        if (numAmount > 1_000_000) {
+            setErrorMsg("Donation amount cannot exceed ₹10,00,000");
             return;
         }
 
@@ -92,8 +92,8 @@ export default function DonateModal({
 
             const res = await PaymentService.createOrder({
                 fundraiserId,
-                donationAmount: amount,
-                platformTipAmount: tip,
+                donationAmount: numAmount,
+                platformTipAmount: numTip,
                 isAnonymous,
 
                 guestName:
@@ -112,14 +112,14 @@ export default function DonateModal({
             const razorpay = res.data?.razorpay;
 
             if (!razorpay?.key || !razorpay?.orderId) {
-                alert("Unable to start payment. Please try again.");
+                setErrorMsg("Unable to start payment. Please try again.");
                 return;
             }
 
             // Load SDK before using
             const isLoaded = await loadRazorpay();
             if (!isLoaded) {
-                alert("Razorpay SDK failed to load. Please try again.");
+                setErrorMsg("Razorpay SDK failed to load. Please try again.");
                 return;
             }
 
@@ -142,7 +142,6 @@ export default function DonateModal({
 
             rzp.open();
         } catch (_err) {
-            alert("Payment initiation failed. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -161,9 +160,13 @@ export default function DonateModal({
                 <div className="donate-box">
                     <label>Donation Amount (₹)</label>
                     <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={amount}
-                        onChange={(e) => setAmount(+e.target.value)}
+                        onChange={(e) => {
+                            const v = e.target.value.replace(/[^0-9]/g, "").replace(/^0+/, "");
+                            setAmount(v);
+                        }}
                     />
                 </div>
 
@@ -171,9 +174,13 @@ export default function DonateModal({
                 <div className="donate-box">
                     <label>Foundation Development Fund (₹)</label>
                     <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={tip}
-                        onChange={(e) => setTip(+e.target.value)}
+                        onChange={(e) => {
+                            const v = e.target.value.replace(/[^0-9]/g, "").replace(/^0+/, "");
+                            setTip(v);
+                        }}
                     />
                     <p className="tip-hint">
                         We charge no platform fees. Tip is optional.
@@ -229,6 +236,10 @@ export default function DonateModal({
 
                 </button>
             </div>
+
+            {errorMsg && (
+                <AlertModal message={errorMsg} type="error" onClose={() => setErrorMsg("")} />
+            )}
         </div>
     );
 }

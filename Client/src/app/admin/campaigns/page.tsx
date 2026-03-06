@@ -23,7 +23,7 @@ const AdminCampaignsPage: React.FC = () => {
   const searchParams = useSearchParams();
 
   const initialStatus =
-    (searchParams.get("status") as CampaignStatus) || "ACTIVE";
+    (searchParams.get("status") as CampaignStatus) || "PENDING_REVIEW";
 
   const [status, setStatus] =
     useState<CampaignStatus>(initialStatus);

@@ -111,7 +111,12 @@ export class FundraiserService {
     // CREATE — atomic count check + insert to prevent race condition
     // -------------------------
     const fundraiser = await this.prisma.$transaction(async (tx) => {
-      const count = await tx.fundraiser.count({ where: { creatorId } });
+      const count = await tx.fundraiser.count({
+        where: {
+          creatorId,
+          status: { notIn: ['COMPLETED', 'REJECTED'] },
+        },
+      });
       if (count >= 3) {
         throw new ForbiddenException('Maximum 3 fundraisers allowed');
       }
@@ -870,18 +875,185 @@ export class FundraiserService {
   }
 
 
-
   async deleteYoutubeMedia(
+  fundraiserId: string,
+  userId: string,
+  youTubeUrl: string,
+) {
+  //  Validate input
+  if (!youTubeUrl) {
+    throw new BadRequestException('YouTube URL is required');
+  }
+
+  //  Validate fundraiser ownership
+  const fundraiser = await this.prisma.fundraiser.findUnique({
+    where: { id: fundraiserId },
+  });
+
+  if (!fundraiser || fundraiser.creatorId !== userId) {
+    throw new BadRequestException('Unauthorized');
+  }
+
+  //  Fetch media record
+  const media = await this.prisma.fundraiserMedia.findUnique({
+    where: { fundraiserId },
+  });
+
+  if (!media || !media.youTubeUrl || media.youTubeUrl.length === 0) {
+    throw new BadRequestException('No YouTube media found');
+  }
+
+  // ✅ Extract target videoId (v) from incoming URL
+  let targetVideoId: string | null = null;
+  try {
+    const parsed = new URL(youTubeUrl);
+    targetVideoId =
+      parsed.searchParams.get('v') ||
+      (parsed.hostname === 'youtu.be' ? parsed.pathname.replace('/', '') : null);
+  } catch (e) {
+    throw new BadRequestException('Invalid YouTube URL');
+  }
+
+  if (!targetVideoId) {
+    throw new BadRequestException('Invalid YouTube URL (missing video id)');
+  }
+
+  // ✅ Check if any stored URL has same videoId
+  const exists = media.youTubeUrl.some((url) => {
+    try {
+      const u = new URL(url);
+      const id =
+        u.searchParams.get('v') ||
+        (u.hostname === 'youtu.be' ? u.pathname.replace('/', '') : null);
+      return id === targetVideoId;
+    } catch {
+      return false;
+    }
+  });
+
+  if (!exists) {
+    throw new BadRequestException('YouTube URL not found');
+  }
+
+  // ✅ Remove the URL(s) that match the same videoId
+  const updatedUrls = media.youTubeUrl.filter((url) => {
+    try {
+      const u = new URL(url);
+      const id =
+        u.searchParams.get('v') ||
+        (u.hostname === 'youtu.be' ? u.pathname.replace('/', '') : null);
+      return id !== targetVideoId;
+    } catch {
+      // keep invalid stored strings untouched
+      return true;
+    }
+  });
+
+  //  Update DB
+  const deleteYoutubemedia = await this.prisma.fundraiserMedia.update({
+    where: { fundraiserId },
+    data: {
+      youTubeUrl: updatedUrls,
+    },
+  });
+
+  return {
+    message: 'YouTube link removed successfully.',
+    youTube: deleteYoutubemedia,
+  };
+}
+
+  // ─── Instagram helpers ────────────────────────────────────────────
+
+  private isValidInstagramUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url.trim());
+      const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+      if (host !== 'instagram.com') return false;
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      return ['p', 'reel', 'tv'].includes(parts[0]) && parts.length >= 2;
+    } catch {
+      return false;
+    }
+  }
+
+  private normalizeInstagramUrl(url: string): string {
+    try {
+      const parsed = new URL(url.trim());
+      const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+      if (host !== 'instagram.com') return url.trim();
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      if (['p', 'reel', 'tv'].includes(parts[0]) && parts.length >= 2) {
+        return `https://www.instagram.com/${parts[0]}/${parts[1]}/`;
+      }
+      return url.trim();
+    } catch {
+      return url.trim();
+    }
+  }
+
+  async addInstagramMedia(
     fundraiserId: string,
     userId: string,
-    youTubeUrl: string,
+    instagramUrls: string[],
   ) {
-    //  Validate input
-    if (!youTubeUrl) {
-      throw new BadRequestException('YouTube URL is required');
+    const fundraiser = await this.prisma.fundraiser.findUnique({
+      where: { id: fundraiserId },
+      select: { id: true, creatorId: true },
+    });
+
+    if (!fundraiser || fundraiser.creatorId !== userId) {
+      throw new BadRequestException('Unauthorized');
     }
 
-    //  Validate fundraiser ownership
+    const cleaned = (instagramUrls ?? []).map((s) => (s ?? '').trim()).filter(Boolean);
+    if (cleaned.length === 0) {
+      throw new BadRequestException('Please provide at least one Instagram URL');
+    }
+
+    const invalid = cleaned.filter((u) => !this.isValidInstagramUrl(u));
+    if (invalid.length) {
+      throw new BadRequestException(`Invalid Instagram URL(s): ${invalid.join(', ')}`);
+    }
+
+    const normalizedUnique = Array.from(
+      new Set(cleaned.map((u) => this.normalizeInstagramUrl(u))),
+    );
+
+    const existing = await this.prisma.fundraiserMedia.findUnique({
+      where: { fundraiserId },
+      select: { youTubeUrl: true },
+    });
+
+    const existingInstagram = new Set(
+      (existing?.youTubeUrl ?? [])
+        .filter((u) => u.includes('instagram.com'))
+        .map((u) => this.normalizeInstagramUrl(u)),
+    );
+
+    const alreadyPresent = normalizedUnique.filter((u) => existingInstagram.has(u));
+    if (alreadyPresent.length) {
+      throw new BadRequestException(`URL already present: ${alreadyPresent.join(', ')}`);
+    }
+
+    const media = await this.prisma.fundraiserMedia.upsert({
+      where: { fundraiserId },
+      create: { fundraiserId, youTubeUrl: normalizedUnique },
+      update: { youTubeUrl: { push: normalizedUnique } },
+    });
+
+    return { message: 'Instagram links added successfully.', media };
+  }
+
+  async deleteInstagramMedia(
+    fundraiserId: string,
+    userId: string,
+    instagramUrl: string,
+  ) {
+    if (!instagramUrl) {
+      throw new BadRequestException('Instagram URL is required');
+    }
+
     const fundraiser = await this.prisma.fundraiser.findUnique({
       where: { id: fundraiserId },
     });
@@ -890,37 +1062,33 @@ export class FundraiserService {
       throw new BadRequestException('Unauthorized');
     }
 
-    //  Fetch media record
     const media = await this.prisma.fundraiserMedia.findUnique({
       where: { fundraiserId },
     });
 
-    if (!media || !media.youTubeUrl || media.youTubeUrl.length === 0) {
-      throw new BadRequestException('No YouTube media found');
+    if (!media || !media.youTubeUrl?.length) {
+      throw new BadRequestException('No media found');
     }
 
-    //  Validate URL exists
-    if (!media.youTubeUrl.includes(youTubeUrl)) {
-      throw new BadRequestException('YouTube URL not found');
-    }
-
-    //  Remove single URL
-    const updatedUrls = media.youTubeUrl.filter(
-      (url) => url !== youTubeUrl,
+    const normalizedTarget = this.normalizeInstagramUrl(instagramUrl);
+    const exists = media.youTubeUrl.some(
+      (u) => u.includes('instagram.com') && this.normalizeInstagramUrl(u) === normalizedTarget,
     );
 
-    //  Update DB
-    const deleteYoutubemedia = await this.prisma.fundraiserMedia.update({
+    if (!exists) {
+      throw new BadRequestException('Instagram URL not found');
+    }
+
+    const updatedUrls = media.youTubeUrl.filter(
+      (u) => !(u.includes('instagram.com') && this.normalizeInstagramUrl(u) === normalizedTarget),
+    );
+
+    const updated = await this.prisma.fundraiserMedia.update({
       where: { fundraiserId },
-      data: {
-        youTubeUrl: updatedUrls,
-      },
+      data: { youTubeUrl: updatedUrls },
     });
 
-    return {
-      message: 'YouTube link removed successfully.',
-      youTube: deleteYoutubemedia,
-    };
+    return { message: 'Instagram link removed successfully.', media: updated };
   }
 
   async createUpdate(fundraiserId: string, creatorId: string, dto: CreateUpdateDto) {
@@ -1079,7 +1247,10 @@ export class FundraiserService {
     const reviews = await this.prisma.review.findMany({
       where: {
         isVerified: true,
-      }
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     })
 
     return reviews;

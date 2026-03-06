@@ -6,7 +6,7 @@
   background: #ffffff;
   border-radius: 14px;
   padding: 20px;
-  margin: 32px 16px;
+  margin: 20px;
   border: 1px solid #e5e7eb;
 }
 
@@ -200,6 +200,7 @@
 @media (max-width: 480px) {
   .payout-card {
     padding: 16px;
+    margin: 14px;
   }
 
   .summary-grid {

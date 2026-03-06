@@ -92,7 +92,7 @@ export default function AnalyticsDashboardClient() {
   return (
     <div className="aaPage">
       <div className="aaContainer">
-        <div className="aaHeader">
+        <div className="aaHeader admin-page-wrapper">
           <div>
             <h1 className="aaTitle">DASHBOARD</h1>
 

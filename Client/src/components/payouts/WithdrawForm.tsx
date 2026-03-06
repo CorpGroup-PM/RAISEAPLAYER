@@ -31,14 +31,11 @@ export default function WithdrawForm({
     try {
       setLoading(true);
       await PayoutRequestsService.create(fundraiserId, num);
-      toastManager.show("Withdrawal request submitted successfully", "success");
+      // Success toast already shown by axios interceptor
       setAmount("");
       onSuccess();
-    } catch (e: any) {
-      toastManager.show(
-        e?.response?.data?.message || "Failed to submit withdrawal request",
-        "error"
-      );
+    } catch {
+      // Error toast already shown by axios interceptor
     } finally {
       setLoading(false);
     }
@@ -61,15 +58,6 @@ export default function WithdrawForm({
           min={1}
           max={available}
         />
-        {available > 0 && (
-          <button
-            className="withdraw-max-btn"
-            type="button"
-            onClick={() => setAmount(String(Math.floor(available)))}
-          >
-            Max
-          </button>
-        )}
       </div>
 
       <button className="withdraw-submit-btn" disabled={loading || available <= 0} onClick={submit}>

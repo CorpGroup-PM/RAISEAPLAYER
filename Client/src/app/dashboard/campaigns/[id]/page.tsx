@@ -12,8 +12,45 @@ import DonorsList from "@/components/donation/DonorsList";
 import CreateWithdrawalModal from "@/components/payouts/WithdrawForm";
 import WithdrawalHistoryTable from "@/components/payouts/WithdrawalHistoryTable";
 import { PayoutRequestsService } from "@/services/payoutRequests.service";
+import { z } from "zod";
+import AlertModal from "@/components/ui/AlertModal";
+import InstagramEmbed from "@/components/instagram/instagram"
+
+const recipientSchema = z.object({
+  recipientType: z.string().min(1, "Select recipient type"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  accountNumber: z
+    .string()
+    .regex(/^\d+$/, "Account number must contain digits only")
+    .min(9, "Account number must be between 9 and 18 digits")
+    .max(18, "Account number must be between 9 and 18 digits"),
+  bankName: z.string().min(1, "Bank name is required"),
+  ifscCode: z.string().min(1, "IFSC code is required"),
+  country: z.string().min(1, "Country is required"),
+});
 
 type VideoMedia = { embedUrl: string; originalUrl: string };
+
+const isInstagramUrl = (url: string) => url.includes("instagram.com");
+
+/** Extracts YouTube video ID from all common URL formats:
+ *  watch?v=, youtu.be/, /shorts/, /live/, /embed/
+ */
+function getYouTubeVideoId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    // youtu.be/VIDEO_ID
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0] || null;
+    // /shorts/VIDEO_ID or /live/VIDEO_ID or /embed/VIDEO_ID
+    const pathMatch = u.pathname.match(/\/(?:shorts|live|embed)\/([^/?&]+)/);
+    if (pathMatch) return pathMatch[1];
+    // watch?v=VIDEO_ID
+    return u.searchParams.get("v");
+  } catch {
+    return null;
+  }
+}
 
 type CampaignUpdate = {
   id: string;
@@ -52,12 +89,16 @@ export default function CampaignDetailsPage() {
 
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [showInstagramInput, setShowInstagramInput] = useState(false);
 
   const [imageMedia, setImageMedia] = useState<string[]>([]);
   const [videoMedia, setVideoMedia] = useState<VideoMedia[]>([]);
+  const [instagramMedia, setInstagramMedia] = useState<string[]>([]);
 
   const [currentImage, setCurrentImage] = useState(0);
   const [currentVideo, setCurrentVideo] = useState(0);
+  const [currentInstagram, setCurrentInstagram] = useState(0);
 
   const [updates, setUpdates] = useState<CampaignUpdate[]>([]);
   const [updateTitle, setUpdateTitle] = useState("");
@@ -80,6 +121,10 @@ export default function CampaignDetailsPage() {
     setCurrentVideo((prev) => (prev === videoMedia.length - 1 ? 0 : prev + 1));
   const prevVideo = () =>
     setCurrentVideo((prev) => (prev === 0 ? videoMedia.length - 1 : prev - 1));
+  const nextInstagram = () =>
+    setCurrentInstagram((prev) => (prev === instagramMedia.length - 1 ? 0 : prev + 1));
+  const prevInstagram = () =>
+    setCurrentInstagram((prev) => (prev === 0 ? instagramMedia.length - 1 : prev - 1));
 
   const [recipientForm, setRecipientForm] = useState({
     recipientType: "PARENT_GUARDIAN",
@@ -92,15 +137,19 @@ export default function CampaignDetailsPage() {
   });
 
   const [savingRecipient, setSavingRecipient] = useState(false);
+  const [accFocused, setAccFocused] = useState(false);
+  const [recipientErrors, setRecipientErrors] = useState<Record<string, string>>({});
 
   const [documents, setDocuments] = useState<FundraiserDocument[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [docType, setDocType] = useState("ATHLETE_IDENTITY");
   const [docTitle, setDocTitle] = useState("");
+  const [alertMsg, setAlertMsg] = useState("");
 
   const isRejected = campaign?.status === "REJECTED";
 
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
+  const [payoutRefreshKey, setPayoutRefreshKey] = useState(0);
   const [availableAmount, setAvailableAmount] = useState(0);
 
   /* ================= FETCH HELPERS ================= */
@@ -123,6 +172,7 @@ export default function CampaignDetailsPage() {
     } catch {
       setPayoutRequests([]);
     }
+    setPayoutRefreshKey((k) => k + 1);
   };
 
   /**
@@ -137,6 +187,7 @@ export default function CampaignDetailsPage() {
 
       const images: string[] = [];
       const videos: VideoMedia[] = [];
+      const instagrams: string[] = [];
 
       data.media?.forEach((item: any) => {
         if (Array.isArray(item.playerImages)) {
@@ -144,14 +195,16 @@ export default function CampaignDetailsPage() {
         }
         if (Array.isArray(item.youTubeUrl)) {
           item.youTubeUrl.forEach((originalUrl: string) => {
-            const videoId = originalUrl.includes("youtu.be/")
-              ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
-              : originalUrl.split("v=")[1]?.split("&")[0];
-            if (videoId) {
-              videos.push({
-                embedUrl: `https://www.youtube.com/embed/${videoId}`,
-                originalUrl,
-              });
+            if (isInstagramUrl(originalUrl)) {
+              instagrams.push(originalUrl);
+            } else {
+              const videoId = getYouTubeVideoId(originalUrl);
+              if (videoId) {
+                videos.push({
+                  embedUrl: `https://www.youtube.com/embed/${videoId}`,
+                  originalUrl,
+                });
+              }
             }
           });
         }
@@ -159,7 +212,10 @@ export default function CampaignDetailsPage() {
 
       setImageMedia(images);
       setVideoMedia(videos);
+      setInstagramMedia(instagrams);
       setCurrentImage(0);
+      setCurrentVideo(0);
+      setCurrentInstagram(0);
     } catch (err) {
       console.error("Failed to refresh media", err);
     }
@@ -221,6 +277,7 @@ export default function CampaignDetailsPage() {
 
     const images: string[] = [];
     const videos: VideoMedia[] = [];
+    const instagrams: string[] = [];
 
     campaign.media.forEach((item: any) => {
       if (Array.isArray(item.playerImages)) {
@@ -228,14 +285,18 @@ export default function CampaignDetailsPage() {
       }
       if (Array.isArray(item.youTubeUrl)) {
         item.youTubeUrl.forEach((originalUrl: string) => {
-          const videoId = originalUrl.includes("youtu.be/")
-            ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
-            : originalUrl.split("v=")[1]?.split("&")[0];
-          if (videoId) {
-            videos.push({
-              embedUrl: `https://www.youtube.com/embed/${videoId}`,
-              originalUrl,
-            });
+          if (isInstagramUrl(originalUrl)) {
+            instagrams.push(originalUrl);
+          } else {
+            const videoId = originalUrl.includes("youtu.be/")
+              ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
+              : originalUrl.split("v=")[1]?.split("&")[0];
+            if (videoId) {
+              videos.push({
+                embedUrl: `https://www.youtube.com/embed/${videoId}`,
+                originalUrl,
+              });
+            }
           }
         });
       }
@@ -243,6 +304,7 @@ export default function CampaignDetailsPage() {
 
     setImageMedia(images);
     setVideoMedia(videos);
+    setInstagramMedia(instagrams);
   }, [campaign?.media]);
 
   /* ================= STORY READ-MORE ================= */
@@ -298,7 +360,7 @@ export default function CampaignDetailsPage() {
       recipientType: acc.recipientType,
       firstName: acc.firstName,
       lastName: acc.lastName,
-      accountNumber: "",
+      accountNumber: acc.accountNumber || "",
       bankName: acc.bankName,
       ifscCode: acc.ifscCode,
       country: acc.country,
@@ -318,7 +380,7 @@ export default function CampaignDetailsPage() {
   /* ================= DERIVED VALUES ================= */
 
   const raised = Math.max(0, Number(campaign?.raisedAmount) || 0);
-  const goal   = Math.max(0, Number(campaign?.goalAmount)   || 0);
+  const goal = Math.max(0, Number(campaign?.goalAmount) || 0);
   const progress = goal === 0 ? 0 : Math.min(Math.round((raised / goal) * 100), 100);
 
   /* ================= COVER UPLOAD ================= */
@@ -344,7 +406,7 @@ export default function CampaignDetailsPage() {
   /* ================= IMAGE UPLOAD ================= */
 
   const handleImageUpload = async (files: FileList) => {
-    if (!id) return;
+    if (!id || uploadingMedia) return;
     try {
       setUploadingMedia(true);
       await FundraiserService.uploadPlayerMedia(id, Array.from(files));
@@ -364,9 +426,7 @@ export default function CampaignDetailsPage() {
     try {
       await FundraiserService.addYoutubeMedia(id, [youtubeUrl]);
       const originalUrl = youtubeUrl;
-      const videoId = originalUrl.includes("youtu.be/")
-        ? originalUrl.split("youtu.be/")[1]?.split("?")[0]
-        : originalUrl.split("v=")[1]?.split("&")[0];
+      const videoId = getYouTubeVideoId(originalUrl);
       if (videoId) {
         setVideoMedia((prev) => [
           ...prev,
@@ -414,7 +474,7 @@ export default function CampaignDetailsPage() {
   const handleImageDelete = async (url: string) => {
     try {
       await FundraiserService.deletePlayerMedia(id as string, url);
-      setImageMedia((prev) => prev.filter((img) => img !== url));
+      await refreshMedia();
     } catch (err) {
       console.error("Failed to delete image", err);
     }
@@ -422,12 +482,39 @@ export default function CampaignDetailsPage() {
 
   /* ================= DELETE YOUTUBE ================= */
 
-  const handleYoutubeDelete = async (originalUrl: string) => {
+  const handleYoutubeDelete = async (video: VideoMedia) => {
     try {
-      await FundraiserService.deleteYoutubeMedia(id as string, originalUrl);
-      setVideoMedia((prev) => prev.filter((v) => v.originalUrl !== originalUrl));
-    } catch (err) {
-      console.error("Delete YouTube failed", err);
+      const videoId = video.embedUrl.split("/embed/")[1]?.split("?")[0];
+      const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      await FundraiserService.deleteYoutubeMedia(id as string, watchUrl);
+      await refreshMedia();
+    } catch (err: any) {
+      console.error("Delete YouTube failed", err?.response?.data || err);
+    }
+  };
+
+  /* ================= ADD INSTAGRAM ================= */
+
+  const handleInstagramAdd = async () => {
+    if (!instagramUrl.trim() || !id) return;
+    try {
+      await FundraiserService.addInstagramMedia(id, [instagramUrl]);
+      await refreshMedia();
+      setInstagramUrl("");
+      setShowInstagramInput(false);
+    } catch (err: any) {
+      console.error("Add Instagram failed", err?.response?.data || err);
+    }
+  };
+
+  /* ================= DELETE INSTAGRAM ================= */
+
+  const handleInstagramDelete = async (url: string) => {
+    try {
+      await FundraiserService.deleteInstagramMedia(id as string, url);
+      await refreshMedia();
+    } catch (err: any) {
+      console.error("Delete Instagram failed", err?.response?.data || err);
     }
   };
 
@@ -435,6 +522,19 @@ export default function CampaignDetailsPage() {
 
   const handleSaveRecipientAccount = async () => {
     if (!id) return;
+
+    const result = recipientSchema.safeParse(recipientForm);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+      });
+      setRecipientErrors(fieldErrors);
+      return;
+    }
+    setRecipientErrors({});
+
     try {
       setSavingRecipient(true);
       const res = await RecipientAccountService.upsert(id, recipientForm);
@@ -454,11 +554,11 @@ export default function CampaignDetailsPage() {
   const handleAddDocument = async (file: File) => {
     if (!id || !file) return;
     if (file.type !== "application/pdf") {
-      alert("Only PDF files are allowed");
+      setAlertMsg("Only PDF files are allowed");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("PDF must be less than 5MB");
+      setAlertMsg("PDF must be less than 5MB");
       return;
     }
     try {
@@ -479,7 +579,7 @@ export default function CampaignDetailsPage() {
   const handleDeleteDocument = async (documentId: string) => {
     try {
       await FundraiserDocumentsService.deleteDocument(documentId);
-      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
+      window.location.reload();
     } catch (err) {
       console.error("Delete failed", err);
     }
@@ -584,40 +684,40 @@ export default function CampaignDetailsPage() {
               </div>
             )}
 
-            <div className="highlight-divider" />
+          </section>
 
-            <div className="highlight-beneficiary-row">
-              <span className="highlight-label">Beneficiary</span>
+          {/* BENEFICIARY */}
+          <section className="beneficiary-section">
+            <span className="highlight-label">Beneficiary</span>
 
-              {campaign.campaignFor === "SELF" && campaign.beneficiaryUser && (
-                <div className="beneficiary-inline">
-                  <div className="beneficiary-avatar">
-                    {campaign.beneficiaryUser.firstName?.[0]}
-                  </div>
-                  <div className="beneficiary-info">
-                    <strong>
-                      {campaign.beneficiaryUser.firstName}{" "}
-                      {campaign.beneficiaryUser.lastName}
-                    </strong>
-                    <span className="beneficiary-meta">Organizer • Self</span>
-                  </div>
+            {campaign.campaignFor === "SELF" && campaign.beneficiaryUser && (
+              <div className="beneficiary-inline">
+                <div className="beneficiary-avatar">
+                  {campaign.beneficiaryUser.firstName?.[0]}
                 </div>
-              )}
-
-              {campaign.campaignFor === "OTHER" && campaign.beneficiaryOther && (
-                <div className="beneficiary-inline">
-                  <div className="beneficiary-avatar">
-                    {campaign.beneficiaryOther.fullName?.[0]}
-                  </div>
-                  <div className="beneficiary-info">
-                    <strong>{campaign.beneficiaryOther.fullName}</strong>
-                    <span className="beneficiary-meta">
-                      {campaign.beneficiaryOther.relationshipToCreator}
-                    </span>
-                  </div>
+                <div className="beneficiary-info">
+                  <strong>
+                    {campaign.beneficiaryUser.firstName}{" "}
+                    {campaign.beneficiaryUser.lastName}
+                  </strong>
+                  <span className="beneficiary-meta">Organizer • Self</span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {campaign.campaignFor === "OTHER" && campaign.beneficiaryOther && (
+              <div className="beneficiary-inline">
+                <div className="beneficiary-avatar">
+                  {campaign.beneficiaryOther.fullName?.[0]}
+                </div>
+                <div className="beneficiary-info">
+                  <strong>{campaign.beneficiaryOther.fullName}</strong>
+                  <span className="beneficiary-meta">
+                    {campaign.beneficiaryOther.relationshipToCreator}
+                  </span>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* STORY */}
@@ -677,156 +777,194 @@ export default function CampaignDetailsPage() {
       </div>
 
 
-      {/* ================= IMAGES | VIDEOS ================= */}
+      {/* ================= INSTAGRAM | IMAGES + YOUTUBE ================= */}
       <section className="media-row full-width">
 
-        {/* IMAGES */}
+        {/* LEFT: INSTAGRAM */}
         <div className="media-box">
           <div className="media-box-header">
-            <h3>Images</h3>
-            {!isRejected && (
-              <label className="media-add-btn">
-                {uploadingMedia ? "Uploading…" : "+ Upload Image"}
+            <h3>Instagram</h3>
+            {!isRejected && !showInstagramInput && (
+              <button className="media-add-btn" onClick={() => setShowInstagramInput(true)}>
+                + Add Instagram
+              </button>
+            )}
+            {!isRejected && showInstagramInput && (
+              <div className="youtube-row">
                 <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  hidden
-                  onChange={(e) =>
-                    e.target.files && handleImageUpload(e.target.files)
-                  }
+                  value={instagramUrl}
+                  onChange={(e) => setInstagramUrl(e.target.value)}
+                  placeholder="Paste Instagram reel/post link"
                 />
-              </label>
+                <button onClick={handleInstagramAdd}>Add</button>
+              </div>
             )}
           </div>
 
-          {imageMedia.length === 0 ? (
-            <div className="media-empty">No images right now</div>
+          {instagramMedia.length === 0 ? (
+            <div className="media-empty">No Instagram posts added</div>
           ) : (
-            <>
-              <div className="gallery-image-container">
-                <div
-                  className="gallery-track"
-                  style={{ transform: `translateX(-${currentImage * 100}%)` }}
-                >
-                  {imageMedia.map((url, i) => (
-                    <div className="image-slide" key={i}>
-                      <img
-                        src={url}
-                        alt={`Campaign photo ${i + 1}`}
-                        className="gallery-image"
-                        loading="lazy"
-                      />
-                      {!isRejected && (
-                        <button
-                          className="image-delete-btn"
-                          aria-label="Delete image"
-                          onClick={() => handleImageDelete(url)}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {imageMedia.length > 1 && (
-                  <>
-                    <button className="gallery-nav left" aria-label="Previous image" onClick={prevImage}>‹</button>
-                    <button className="gallery-nav right" aria-label="Next image" onClick={nextImage}>›</button>
-                  </>
+            <div className="instagram-viewer">
+              <div className="instagram-slide-wrap">
+                <InstagramEmbed key={instagramMedia[currentInstagram]} url={instagramMedia[currentInstagram]} />
+                {!isRejected && (
+                  <button
+                    className="video-delete-btn instagram-del-btn"
+                    aria-label="Delete Instagram post"
+                    onClick={() => handleInstagramDelete(instagramMedia[currentInstagram])}
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 )}
               </div>
-
-              {imageMedia.length > 1 && (
-                <div className="gallery-dots">
-                  {imageMedia.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`dot ${i === currentImage ? "active" : ""}`}
-                      onClick={() => setCurrentImage(i)}
-                    />
-                  ))}
+              {instagramMedia.length > 1 && (
+                <div className="instagram-nav-row">
+                  <button className="insta-nav-btn" onClick={prevInstagram}>‹</button>
+                  <span className="insta-nav-count">{currentInstagram + 1} / {instagramMedia.length}</span>
+                  <button className="insta-nav-btn" onClick={nextInstagram}>›</button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
 
-        {/* VIDEOS */}
-        <div className="media-box">
-          <div className="media-box-header">
-            <h3>Videos</h3>
-            {!isRejected && !showYoutubeInput && (
-              <button
-                className="media-add-btn"
-                onClick={() => setShowYoutubeInput(true)}
-              >
-                + Add Video Link
-              </button>
-            )}
-            {!isRejected && showYoutubeInput && (
-              <div className="youtube-row">
-                <input
-                  value={youtubeUrl}
-                  onChange={(e) => setYoutubeUrl(e.target.value)}
-                  placeholder="Paste YouTube link"
-                />
-                <button onClick={handleYoutubeAdd}>Add</button>
-              </div>
+        {/* RIGHT: IMAGES (top) + YOUTUBE (bottom) */}
+        <div className="media-right-col">
+
+          {/* IMAGES */}
+          <div className="media-box">
+            <div className="media-box-header">
+              <h3>Images</h3>
+              {!isRejected && (
+                <label className="media-add-btn">
+                  {uploadingMedia ? "Uploading…" : "+ Upload Image"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    disabled={uploadingMedia}
+                    onChange={(e) => {
+                      if (e.target.files && !uploadingMedia) {
+                        handleImageUpload(e.target.files);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+
+            {imageMedia.length === 0 ? (
+              <div className="media-empty">No images right now</div>
+            ) : (
+              <>
+                <div className="gallery-image-container">
+                  <div
+                    className="gallery-track"
+                    style={{ transform: `translateX(-${currentImage * 100}%)` }}
+                  >
+                    {imageMedia.map((url, i) => (
+                      <div className="image-slide" key={i}>
+                        <img
+                          src={url}
+                          alt={`Campaign photo ${i + 1}`}
+                          className="gallery-image"
+                          loading="lazy"
+                        />
+                        {!isRejected && (
+                          <button
+                            className="image-delete-btn"
+                            aria-label="Delete image"
+                            onClick={() => handleImageDelete(url)}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {imageMedia.length > 1 && (
+                    <>
+                      <button className="gallery-nav left" aria-label="Previous image" onClick={prevImage}>‹</button>
+                      <button className="gallery-nav right" aria-label="Next image" onClick={nextImage}>›</button>
+                    </>
+                  )}
+                </div>
+                {imageMedia.length > 1 && (
+                  <div className="gallery-dots">
+                    {imageMedia.map((_, i) => (
+                      <span key={i} className={`dot ${i === currentImage ? "active" : ""}`} onClick={() => setCurrentImage(i)} />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {videoMedia.length === 0 ? (
-            <div className="media-empty">No videos right now</div>
-          ) : (
-            <>
-              <div className="gallery-image-container">
-                <div
-                  className="gallery-track"
-                  style={{ transform: `translateX(-${currentVideo * 100}%)` }}
-                >
-                  {videoMedia.map((v, i) => (
-                    <div className="video-box" key={i}>
-                      <iframe
-                        src={`${v.embedUrl}?rel=0`}
-                        title={`Campaign video ${i + 1}`}
-                        allowFullScreen
-                      />
-                      {!isRejected && (
-                        <button
-                          className="video-delete-btn"
-                          aria-label="Delete video"
-                          onClick={() => handleYoutubeDelete(v.originalUrl)}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {videoMedia.length > 1 && (
-                  <>
-                    <button className="gallery-nav left" aria-label="Previous video" onClick={prevVideo}>‹</button>
-                    <button className="gallery-nav right" aria-label="Next video" onClick={nextVideo}>›</button>
-                  </>
-                )}
-              </div>
-
-              {videoMedia.length > 1 && (
-                <div className="gallery-dots">
-                  {videoMedia.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`dot ${i === currentVideo ? "active" : ""}`}
-                      onClick={() => setCurrentVideo(i)}
-                    />
-                  ))}
+          {/* YOUTUBE */}
+          <div className="media-box">
+            <div className="media-box-header">
+              <h3>YouTube Videos</h3>
+              {!isRejected && !showYoutubeInput && (
+                <button className="media-add-btn" onClick={() => setShowYoutubeInput(true)}>
+                  + Add Video Link
+                </button>
+              )}
+              {!isRejected && showYoutubeInput && (
+                <div className="youtube-row">
+                  <input
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    placeholder="Paste YouTube link"
+                  />
+                  <button onClick={handleYoutubeAdd}>Add</button>
                 </div>
               )}
-            </>
-          )}
+            </div>
+
+            {videoMedia.length === 0 ? (
+              <div className="media-empty">No videos right now</div>
+            ) : (
+              <>
+                <div className="gallery-image-container">
+                  <div
+                    className="gallery-track"
+                    style={{ transform: `translateX(-${currentVideo * 100}%)` }}
+                  >
+                    {videoMedia.map((v, i) => (
+                      <div className="video-box" key={i}>
+                        <iframe src={`${v.embedUrl}?rel=0`} title={`Campaign video ${i + 1}`} allowFullScreen />
+                        {!isRejected && (
+                          <button
+                            className="video-delete-btn"
+                            aria-label="Delete video"
+                            onClick={() => handleYoutubeDelete(v)}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {videoMedia.length > 1 && (
+                    <>
+                      <button className="gallery-nav left" aria-label="Previous video" onClick={prevVideo}>‹</button>
+                      <button className="gallery-nav right" aria-label="Next video" onClick={nextVideo}>›</button>
+                    </>
+                  )}
+                </div>
+                {videoMedia.length > 1 && (
+                  <div className="gallery-dots">
+                    {videoMedia.map((_, i) => (
+                      <span key={i} className={`dot ${i === currentVideo ? "active" : ""}`} onClick={() => setCurrentVideo(i)} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
         </div>
       </section>
 
@@ -898,7 +1036,7 @@ export default function CampaignDetailsPage() {
 
               <div className="pdf-meta">
                 <span className={`pdf-status ${doc.verificationStatus.toLowerCase()}`}>
-                  {doc.verificationStatus === "PENDING"  && "⚠️ Pending"}
+                  {doc.verificationStatus === "PENDING" && "⚠️ Pending"}
                   {doc.verificationStatus === "VERIFIED" && "✅ Verified"}
                   {doc.verificationStatus === "REJECTED" && "❌ Rejected"}
                 </span>
@@ -919,13 +1057,155 @@ export default function CampaignDetailsPage() {
       </section>
 
 
-      {/* ================= CAMPAIGN UPDATES ================= */}
-      <section className="campaign-updates-section">
-        <h4 className="updates-title">Campaign Updates</h4>
+      {/* ================= RECIPIENT BANK ACCOUNT ================= */}
+      <section className="recipient-wrapper">
+        <section className="recipient-card">
+          <h4 className="recipient-title">Recipient Bank Account</h4>
 
-        <div className="updates-card">
+          {/* Row 1: Recipient Type — full width */}
+          <div className="recipient-row-single">
+            <select
+              className="recipient-input"
+              value={recipientForm.recipientType}
+              onChange={(e) =>
+                setRecipientForm({ ...recipientForm, recipientType: e.target.value })
+              }
+            >
+              <option value="PARENT_GUARDIAN">Parent / Guardian</option>
+              <option value="SELF">Self</option>
+              <option value="COACH">Coach</option>
+            </select>
+          </div>
 
+          {/* Row 2: First Name + Last Name */}
+          <div className="recipient-row">
+            <div>
+              <input
+                className="recipient-input"
+                placeholder="First Name"
+                value={recipientForm.firstName}
+                onChange={(e) =>
+                  setRecipientForm({ ...recipientForm, firstName: e.target.value })
+                }
+              />
+              {recipientErrors.firstName && <p className="error-text">{recipientErrors.firstName}</p>}
+            </div>
+            <div>
+              <input
+                className="recipient-input"
+                placeholder="Last Name"
+                value={recipientForm.lastName}
+                onChange={(e) =>
+                  setRecipientForm({ ...recipientForm, lastName: e.target.value })
+                }
+              />
+              {recipientErrors.lastName && <p className="error-text">{recipientErrors.lastName}</p>}
+            </div>
+          </div>
+
+          {/* Row 3: Account Number + Bank Name */}
+          <div className="recipient-row">
+            <div>
+              <input
+                className="recipient-input"
+                placeholder="Account Number"
+                value={
+                  accFocused || !recipientForm.accountNumber
+                    ? recipientForm.accountNumber
+                    : "*".repeat(recipientForm.accountNumber.length - 4) + recipientForm.accountNumber.slice(-4)
+                }
+                onFocus={() => setAccFocused(true)}
+                onBlur={() => setAccFocused(false)}
+                onChange={(e) =>
+                  setRecipientForm({ ...recipientForm, accountNumber: e.target.value })
+                }
+              />
+              {recipientErrors.accountNumber && <p className="error-text">{recipientErrors.accountNumber}</p>}
+            </div>
+            <div>
+              <input
+                className="recipient-input"
+                placeholder="Bank Name"
+                value={recipientForm.bankName}
+                onChange={(e) =>
+                  setRecipientForm({ ...recipientForm, bankName: e.target.value })
+                }
+              />
+              {recipientErrors.bankName && <p className="error-text">{recipientErrors.bankName}</p>}
+            </div>
+          </div>
+
+          {/* Row 4: IFSC Code + Country */}
+          <div className="recipient-row">
+            <div>
+              <input
+                className="recipient-input"
+                placeholder="IFSC Code"
+                value={recipientForm.ifscCode}
+                onChange={(e) =>
+                  setRecipientForm({ ...recipientForm, ifscCode: e.target.value })
+                }
+              />
+              {recipientErrors.ifscCode && <p className="error-text">{recipientErrors.ifscCode}</p>}
+            </div>
+            <div>
+              <input
+                className="recipient-input"
+                placeholder="Country"
+                value={recipientForm.country}
+                onChange={(e) =>
+                  setRecipientForm({ ...recipientForm, country: e.target.value })
+                }
+              />
+              {recipientErrors.country && <p className="error-text">{recipientErrors.country}</p>}
+            </div>
+          </div>
+
+          {/* Row 5: Save button — full width */}
           {!isRejected && (
+            <div className="recipient-row-single">
+              <button
+                className="recipient-save-btn"
+                onClick={handleSaveRecipientAccount}
+                disabled={savingRecipient}
+              >
+                {savingRecipient ? "Saving…" : "Save / Update Account"}
+              </button>
+            </div>
+          )}
+
+          {campaign.recipientAccount && (
+            <p
+              className={`recipient-status ${campaign.recipientAccount.isVerified ? "verified" : "pending"
+                }`}
+            >
+              {campaign.recipientAccount.isVerified
+                ? "✅ Verified by admin"
+                : "⚠️ Pending admin verification"}
+            </p>
+          )}
+        </section>
+      </section>
+
+      {/* Withdrawal — onSuccess refreshes only payout list, not the full campaign */}
+      {(campaign.status === "ACTIVE" || campaign.status === "COMPLETED") && (
+        <CreateWithdrawalModal
+          fundraiserId={id}
+          available={availableAmount}
+          onSuccess={fetchPayouts}
+        />
+      )}
+
+      <WithdrawalHistoryTable fundraiserId={id} onRefresh={fetchPayouts} refreshKey={payoutRefreshKey} />
+
+      {/* ================= CAMPAIGN UPDATES ================= */}
+      {(campaign.status === "ACTIVE") && (
+        <section className="campaign-updates-section">
+
+
+          <div className="updates-card">
+            <div className="withdraw-header"><h4 className="updates-title">Campaign Updates</h4></div>
+            
             <div className="update-form">
               <input
                 type="text"
@@ -946,191 +1226,74 @@ export default function CampaignDetailsPage() {
                 {addingUpdate ? "Posting…" : "+ Post Update"}
               </button>
             </div>
-          )}
 
-          {updates.length > 0 ? (
-            <>
-              <div className="updates-list">
-                {(showAllUpdates ? updates : updates.slice(0, 2)).map((update) => (
-                  <div className="update-item" key={update.id}>
+            {updates.length > 0 ? (
+              <>
+                <div className="updates-list">
+                  {(showAllUpdates ? updates : updates.slice(0, 2)).map((update) => (
+                    <div className="update-item" key={update.id}>
 
-                    <div className="update-header">
-                      <strong>{update.title}</strong>
-                      <span className="update-date">
-                        {new Date(update.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </span>
-                    </div>
+                      <div className="update-header">
+                        <strong>{update.title}</strong>
+                        <span className="update-date">
+                          {new Date(update.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
 
-                    <p
-                      ref={(el) => { updateRefs.current[update.id] = el; }}
-                      className={`update-content ${expandedUpdates[update.id] ? "expanded" : "collapsed"}`}
-                    >
-                      {update.content.split("\n").map((line, i) => (
-                        <React.Fragment key={i}>{line}<br /></React.Fragment>
-                      ))}
-                    </p>
-
-                    {overflowingUpdates[update.id] && (
-                      <button
-                        className="read-more-story-btn"
-                        onClick={() =>
-                          setExpandedUpdates((prev) => ({
-                            ...prev,
-                            [update.id]: !prev[update.id],
-                          }))
-                        }
+                      <p
+                        ref={(el) => { updateRefs.current[update.id] = el; }}
+                        className={`update-content ${expandedUpdates[update.id] ? "expanded" : "collapsed"}`}
                       >
-                        {expandedUpdates[update.id] ? "Read less" : "Read more"}
-                      </button>
-                    )}
+                        {update.content.split("\n").map((line, i) => (
+                          <React.Fragment key={i}>{line}<br /></React.Fragment>
+                        ))}
+                      </p>
 
-                  </div>
-                ))}
-              </div>
+                      {overflowingUpdates[update.id] && (
+                        <button
+                          className="read-more-story-btn"
+                          onClick={() =>
+                            setExpandedUpdates((prev) => ({
+                              ...prev,
+                              [update.id]: !prev[update.id],
+                            }))
+                          }
+                        >
+                          {expandedUpdates[update.id] ? "Read less" : "Read more"}
+                        </button>
+                      )}
 
-              {updates.length > 2 && (
-                <div className="updates-read-more-wrap">
-                  <button
-                    className="read-more-btn"
-                    onClick={() => setShowAllUpdates((prev) => !prev)}
-                  >
-                    {showAllUpdates ? "Show less" : "Show more"}
-                  </button>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </>
-          ) : (
-            <p className="updates-empty">No updates posted yet.</p>
-          )}
 
-        </div>
-      </section>
-
-
-      {/* ================= RECIPIENT BANK ACCOUNT ================= */}
-      <section className="recipient-wrapper">
-        <section className="recipient-card">
-          <h4 className="recipient-title">Recipient Bank Account</h4>
-
-          <div className="recipient-row">
-            <select
-              className="recipient-input"
-              value={recipientForm.recipientType}
-              onChange={(e) =>
-                setRecipientForm({ ...recipientForm, recipientType: e.target.value })
-              }
-            >
-              <option value="PARENT_GUARDIAN">Parent / Guardian</option>
-              <option value="SELF">Self</option>
-              <option value="COACH">Coach</option>
-            </select>
-            <input
-              className="recipient-input"
-              placeholder="First Name"
-              value={recipientForm.firstName}
-              onChange={(e) =>
-                setRecipientForm({ ...recipientForm, firstName: e.target.value })
-              }
-            />
-            <input
-              className="recipient-input"
-              placeholder="Last Name"
-              value={recipientForm.lastName}
-              onChange={(e) =>
-                setRecipientForm({ ...recipientForm, lastName: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="recipient-row">
-            <input
-              className="recipient-input"
-              placeholder={
-                campaign.recipientAccount
-                  ? "******" + campaign.recipientAccount.accountNumber.slice(-4)
-                  : "Account Number"
-              }
-              value={recipientForm.accountNumber}
-              onChange={(e) =>
-                setRecipientForm({ ...recipientForm, accountNumber: e.target.value })
-              }
-            />
-            <input
-              className="recipient-input"
-              placeholder="Bank Name"
-              value={recipientForm.bankName}
-              onChange={(e) =>
-                setRecipientForm({ ...recipientForm, bankName: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="recipient-row">
-            <input
-              className="recipient-input"
-              placeholder="IFSC Code"
-              value={recipientForm.ifscCode}
-              onChange={(e) =>
-                setRecipientForm({ ...recipientForm, ifscCode: e.target.value })
-              }
-            />
-            <input
-              className="recipient-input"
-              placeholder="Country"
-              value={recipientForm.country}
-              onChange={(e) =>
-                setRecipientForm({ ...recipientForm, country: e.target.value })
-              }
-            />
-            {!isRejected && (
-              <button
-                className="recipient-save-btn"
-                onClick={handleSaveRecipientAccount}
-                disabled={savingRecipient}
-              >
-                {savingRecipient ? "Saving…" : "Save / Update Account"}
-              </button>
+                {updates.length > 2 && (
+                  <div className="updates-read-more-wrap">
+                    <button
+                      className="read-more-btn"
+                      onClick={() => setShowAllUpdates((prev) => !prev)}
+                    >
+                      {showAllUpdates ? "Show less" : "Show more"}
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="updates-empty">No updates posted yet.</p>
             )}
+
           </div>
-
-          {campaign.recipientAccount && (
-            <p
-              className={`recipient-status ${
-                campaign.recipientAccount.isVerified ? "verified" : "pending"
-              }`}
-            >
-              {campaign.recipientAccount.isVerified
-                ? "✅ Verified by admin"
-                : "⚠️ Pending admin verification"}
-            </p>
-          )}
         </section>
-      </section>
-
-
-      {/* Withdrawal — onSuccess refreshes only payout list, not the full campaign */}
-      <CreateWithdrawalModal
-        fundraiserId={id}
-        available={availableAmount}
-        onSuccess={fetchPayouts}
-      />
-
-      <WithdrawalHistoryTable fundraiserId={id} />
-
-      {/* FEEDBACK BUTTON */}
-      {campaign.status === "COMPLETED" && (
-        <button
-          className="feedback-floating-btn"
-          onClick={() => router.push("/feedback")}
-        >
-          ✍️ Give Feedback
-        </button>
       )}
 
+
+      {alertMsg && (
+        <AlertModal message={alertMsg} type="error" onClose={() => setAlertMsg("")} />
+      )}
     </div>
   );
 }

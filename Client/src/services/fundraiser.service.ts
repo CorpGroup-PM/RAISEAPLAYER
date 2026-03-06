@@ -48,8 +48,20 @@ deletePlayerMedia(id: string, playerImage: string) {
 deleteYoutubeMedia(id: string, youTubeUrl: string) {
   return api.delete(`/fundraiser/${id}/media/youtube`, {
     data: {
-      youTubeUrl, 
+      youTubeUrl,
     },
+  });
+},
+
+addInstagramMedia(id: string, instagramUrls: string[]) {
+  return api.post(`/fundraiser/${id}/media/instagram`, {
+    instagramUrl: instagramUrls,
+  });
+},
+
+deleteInstagramMedia(id: string, instagramUrl: string) {
+  return api.delete(`/fundraiser/${id}/media/instagram`, {
+    data: { instagramUrl },
   });
 },
 

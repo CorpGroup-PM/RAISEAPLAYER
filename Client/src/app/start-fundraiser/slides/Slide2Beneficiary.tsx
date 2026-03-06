@@ -34,18 +34,22 @@ const beneficiarySchema = z.object({
     .trim()
     .min(1, 'Relationship is required'),
 
-    //optional contact details
-     phoneNumber: z
+  // optional contact details — valid format required only if a value is entered
+  phoneNumber: z
     .string()
-    .regex(phoneRegex, 'Enter a valid 10-digit Indian phone number')
     .optional()
-    .or(z.literal('')),
+    .refine(
+      (val) => !val || phoneRegex.test(val),
+      'Enter a valid 10-digit Indian phone number'
+    ),
 
   email: z
     .string()
-    .email('Enter a valid email address')
     .optional()
-    .or(z.literal('')),
+    .refine(
+      (val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+      'Enter a valid email address'
+    ),
 });
 
 export default function Slide2Beneficiary({
@@ -148,26 +152,32 @@ export default function Slide2Beneficiary({
 
        {/* OPTIONAL CONTACT DETAILS */}
 
-      <input
-  className="wizard-input"
-  placeholder="Phone Number (optional)"
-  value={b.phoneNumber || ''}
-  onChange={(e) => update('phoneNumber', e.target.value)}
-/>
-{errors.phoneNumber && (
-  <p className="error-text">{errors.phoneNumber}</p>
-)}
+      <div className={`phone-input-wrapper${errors.phoneNumber ? ' input-error' : ''}`}>
+        <span className="phone-prefix">+91</span>
+        <input
+          className="phone-input-field"
+          type="tel"
+          inputMode="numeric"
+          placeholder="Phone Number (optional)"
+          maxLength={10}
+          value={b.phoneNumber || ''}
+          onChange={(e) => update('phoneNumber', e.target.value.replace(/[^0-9]/g, ''))}
+        />
+      </div>
+      {errors.phoneNumber && (
+        <p className="error-text">{errors.phoneNumber}</p>
+      )}
 
-<input
-  className="wizard-input"
-  type="email"
-  placeholder="Email (optional)"
-  value={b.email || ''}
-  onChange={(e) => update('email', e.target.value)}
-/>
-{errors.email && (
-  <p className="error-text">{errors.email}</p>
-)}
+      <input
+        className={`wizard-input${errors.email ? ' input-error' : ''}`}
+        type="email"
+        placeholder="Email (optional)"
+        value={b.email || ''}
+        onChange={(e) => update('email', e.target.value)}
+      />
+      {errors.email && (
+        <p className="error-text">{errors.email}</p>
+      )}
 
 
       {/* Footer */}

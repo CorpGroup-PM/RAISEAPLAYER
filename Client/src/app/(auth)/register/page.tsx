@@ -400,11 +400,11 @@ export default function Register() {
 
             <p className="terms-text">
               By signing up, you agree to our{" "}
-              <a href="#" className="link">
+              <a href="/legal/terms" className="link">
                 Terms
               </a>{" "}
               and{" "}
-              <a href="#" className="link">
+              <a href="/legal/privacy-policy" className="link">
                 Privacy Policy
               </a>
               .

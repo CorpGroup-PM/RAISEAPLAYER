@@ -64,7 +64,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 14px 16px;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   position: sticky;
@@ -89,7 +89,7 @@ button {
 ===================================================== */
 
 .campaign-header {
-  padding: 20px;
+  padding: 20px 16px;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -177,6 +177,7 @@ button {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 65%;
 }
 
 /* Overlay gradient */
@@ -220,8 +221,8 @@ button {
 .story-section {
   background: #ffffff;
   margin: 0px;
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: 12px;
+  padding: 16px;
   border: 1px solid #e5e7eb;
 }
 
@@ -282,6 +283,7 @@ button {
   width: 100%;
   height: 260px;
   object-fit: cover;
+  object-position: center 65%;
   border-radius: 16px;
 }
 
@@ -369,7 +371,7 @@ button {
 /* ================= CAMPAIGN UPDATES ================= */
 
 .campaign-updates-section {
-  margin: 16px;
+  margin: 0;
 }
 
 .updates-card {
@@ -487,8 +489,7 @@ button {
 
 .beneficiary-section {
   background: #ffffff;
-  margin: 12px;
-  padding: 14px 16px;
+  padding: 16px;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
 }
@@ -654,6 +655,7 @@ button {
   width: 100%;
   height: 280px;
   object-fit: cover;
+  object-position: center 65%;
   border-radius: 16px;
   display: block;
 }
@@ -685,7 +687,7 @@ button {
 /* ================= CAMPAIGN HIGHLIGHTS ================= */
 
 .campaign-highlights {
-  margin: 16px;
+  margin: 0;
 }
 
 .campaign-highlights h3 {
@@ -720,8 +722,31 @@ button {
 .highlights-card {
   background: #ffffff;
   border-radius: 12px;
-  padding: 10px 10px;
+  padding: 16px;
   border: 1px solid #e5e7eb;
+}
+
+.beneficiary-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.beneficiary-section .beneficiary-inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.beneficiary-section .beneficiary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* Rows */
@@ -822,23 +847,29 @@ button {
   color: #111827;
 }
 
-/* ROW-WISE GRID */
+/* ROW-WISE GRID — 2 columns */
 .recipient-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 14px;
   margin-bottom: 14px;
 }
 
-/* INPUT STYLE (MATCH UPDATES INPUT) */
+/* Full-width single row (dropdown + save button) */
+.recipient-row-single {
+  margin-bottom: 14px;
+}
+
+/* INPUT STYLE */
 .recipient-input {
-  height: 44px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid #d1d5db;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
   font-size: 14px;
   outline: none;
   background: #fff;
+  width: 100%;
 }
 
 .recipient-input:focus {
@@ -847,11 +878,12 @@ button {
 
 /* BUTTON – SAME AS "+ POST UPDATE" */
 .recipient-save-btn {
-  height: 44px;
+  height: 48px;
+  width: 100%;
   background: #2563eb;
   color: #ffffff;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -876,13 +908,7 @@ button {
   color: #059669;
 }
 
-.recipient-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-/* Mobile */
+/* Mobile: stack to single column */
 @media (max-width: 640px) {
   .recipient-row {
     grid-template-columns: 1fr;
@@ -894,8 +920,8 @@ button {
 .documents-section {
   background: #ffffff;
   border-radius: 14px;
-  padding: 24px;
-  margin: 15px;
+  padding: 16px;
+  margin: 0 16px 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
@@ -1188,6 +1214,7 @@ button {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 65%;
 }
 
 .explore-image-placeholder {
@@ -1433,9 +1460,8 @@ button {
 .recipient-wrapper,
 .withdrawal-history,
 .withdraw-request {
-  max-width: 1200px;
-  margin: 20px auto;
-  padding: 0 20px;
+  margin-top: 16px;
+  padding: 0 16px 16px;
 }
 
 @media (max-width: 900px) {
@@ -1453,11 +1479,76 @@ button {
 }
 
 .media-row {
-  max-width: 1200px;
-  margin: auto;
+  padding: 0 16px 16px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
+}
+
+/* Right column: images stacked on top of youtube */
+.media-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Instagram viewer container */
+.instagram-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.instagram-slide-wrap {
+  position: relative;
+  width: 100%;
+  height: 460px;   /* fixed height — keeps nav always at same position */
+  overflow: hidden;
+}
+
+/* nav row sits right below the fixed-height container */
+.instagram-viewer .instagram-nav-row {
+  margin-top: 0;
+}
+
+.instagram-del-btn {
+  position: absolute !important;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+/* Instagram prev/next nav */
+.instagram-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.insta-nav-btn {
+  background: rgba(0,0,0,0.15);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+}
+
+.insta-nav-btn:hover {
+  background: rgba(0,0,0,0.25);
+}
+
+.insta-nav-count {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .media-box-header {
@@ -1532,6 +1623,7 @@ button {
   /* controls size */
   object-fit: cover;
   /* prevents stretching */
+  object-position: center 65%;
   border-radius: 10px;
 }
 
@@ -1545,7 +1637,8 @@ button {
 .gallery-image {
   width: 40%;
   height: 220px;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center 65%;
   border-radius: 14px;
 }
 
@@ -1691,11 +1784,16 @@ button {
 @media (max-width: 900px) {
   .media-row {
     grid-template-columns: 1fr;
+    padding: 0 12px 12px;
   }
 
   .gallery-image,
   .video-box {
     width: 100%;
+  }
+
+  .media-right-col {
+    gap: 16px;
   }
 }
 
@@ -1757,8 +1855,6 @@ button {
 /* ================= MAIN GRID ================= */
 
 .campaign-main-grid {
-  max-width: 1200px;
-  margin: auto;
   padding: 16px;
   gap: 20px;
   display: grid;
@@ -1841,3 +1937,11 @@ button {
     gap: 2px;
   }
 }
+
+/* ── Recipient validation errors ── */
+.recipient-card .error-text {
+  color: #e53e3e;
+  font-size: 0.75rem;
+  margin: 4px 0 0;
+}
+

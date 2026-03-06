@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { AdminPayoutsService } from "@/services/adminPayouts.service";
 import { v4 as uuid } from "uuid";
+import AlertModal from "@/components/ui/AlertModal";
 
 export default function AdminProcessForm({
   requestId,
@@ -15,10 +16,11 @@ export default function AdminProcessForm({
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
 
   const submit = async () => {
     if (!transactionId || !paymentDate) {
-      alert("Transaction ID and Date are required");
+      setAlertMsg("Transaction ID and Date are required");
       return;
     }
 
@@ -30,10 +32,19 @@ export default function AdminProcessForm({
     if (file) form.append("proofImage", file);
 
     setLoading(true);
-    await AdminPayoutsService.process(requestId, form);
-    setLoading(false);
-    onDone();
-    
+    try {
+      await AdminPayoutsService.process(requestId, form);
+
+      // Close Bootstrap modal
+      const dismissBtn = document.querySelector('.modal.show [data-bs-dismiss="modal"]') as HTMLElement;
+      dismissBtn?.click();
+
+      onDone();
+    } catch {
+      // Error toast shown by axios interceptor
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,6 +72,9 @@ export default function AdminProcessForm({
         {loading ? "Processing..." : "Mark Paid"}
       </button>
 
+      {alertMsg && (
+        <AlertModal message={alertMsg} type="warning" onClose={() => setAlertMsg("")} />
+      )}
     </div>
   );
 }

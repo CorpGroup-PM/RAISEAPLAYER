@@ -106,15 +106,26 @@ const MyFundraisersDashboard: React.FC = () => {
 
                     <div className="card-body">
                       <h3>{campaign.title}</h3>
-                      <p className="meta">
+                      {/* <p className="meta">
                         {campaign.sport}
                         {campaign.level && ` • ${campaign.level}`}
-                      </p>
+                      </p> */}
 
                       <p className="location">
                         {campaign.city}
                         {campaign.state && `, ${campaign.state}`}
                       </p>
+
+                      {campaign.createdAt && (
+                        <p className="campaign-created-at">
+                          Created:{" "}
+                          {new Date(campaign.createdAt).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                      )}
 
                       <div className="progress-box">
                         <div className="progress-row">

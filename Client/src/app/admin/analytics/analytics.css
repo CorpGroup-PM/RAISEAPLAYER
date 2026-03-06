@@ -660,3 +660,7 @@
     grid-template-columns: 1fr;
   }
 }
+
+.admin-page-wrapper {
+  padding-top: 70px; /* same as navbar height */
+}

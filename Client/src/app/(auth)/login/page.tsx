@@ -6,7 +6,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AuthService } from "@/services/auth.service";
 import { authManager } from "@/lib/auth-manager";
-import { useToast } from "@/components/toast/ToastContext";
 import { Eye, EyeClosed, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { redirect } from "next/navigation";
@@ -20,8 +19,6 @@ const GOOGLE_OAUTH_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const { addToast } = useToast();
-
   const {
     register,
     handleSubmit,
@@ -53,9 +50,7 @@ const onSubmit = async (values: any) => {
       window.location.href = "/dashboard";
     }
   } catch (error: any) {
-    const message =
-      error?.response?.data?.message || "Login failed. Try again.";
-    addToast(message, "error");
+    // Error toast is already shown by the axios response interceptor
   }
 };
 

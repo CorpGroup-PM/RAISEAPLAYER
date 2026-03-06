@@ -27,3 +27,6 @@ Server/dist/
 # Server/package-lock.json
 Server/src/prisma/prisma.service.ts
 Server/prisma/migrations/.../migration.sql
+
+# Local Docker setup
+docker-compose.local.yml
