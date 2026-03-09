@@ -261,7 +261,7 @@ export default function Navbar() {
 
               <Link href="/dashboard">
                 <button
-                  className="rp-mobile-primary"
+                  className={pathname.startsWith("/dashboard") ? "rp-mobile-primary" : "rp-mobile-secondary"}
                   onClick={() => setMenuOpen(false)}
                 >
                   My Dashboard
@@ -270,7 +270,7 @@ export default function Navbar() {
 
               <Link href="/my-donations">
                 <button
-                  className="rp-mobile-secondary"
+                  className={pathname.startsWith("/my-donations") ? "rp-mobile-primary" : "rp-mobile-secondary"}
                   onClick={() => setMenuOpen(false)}
                 >
                   My Donations
@@ -279,7 +279,7 @@ export default function Navbar() {
 
               <Link href="/profile">
                 <button
-                  className="rp-mobile-secondary"
+                  className={pathname.startsWith("/profile") ? "rp-mobile-primary" : "rp-mobile-secondary"}
                   onClick={() => setMenuOpen(false)}
                 >
                   My Profile

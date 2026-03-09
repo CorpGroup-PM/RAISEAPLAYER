@@ -275,12 +275,10 @@
 
 /* Each Menu Item */
 .rp-mobile-links li {
-  padding: 11px 0;
   font-size: 16px;
   font-weight: 500;
   color: #222;
   border-bottom: 1px solid #f1f5f9;
-  cursor: pointer;
   transition: color 0.15s ease;
 }
 
@@ -294,10 +292,13 @@
   color: #ff7a21;
 }
 
-/* Make <Link> text inherit li color */
+/* <Link> fills the entire row — full hit area */
 .rp-mobile-links li a {
+  display: block;
+  padding: 11px 0;
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
 }
 
 .rp-mobile-section {
