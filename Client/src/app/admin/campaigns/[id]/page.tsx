@@ -62,6 +62,7 @@ export default function AdminCampaignDetailsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const account = campaign?.recipientAccount;
 
   const [documents, setDocuments] = useState<any[]>([]);
@@ -636,7 +637,13 @@ export default function AdminCampaignDetailsPage() {
                       style={{ transform: `translateX(-${currentImage * 100}%)` }}
                     >
                       {imageMedia.map((url, i) => (
-                        <img key={i} src={url} className="gallery-image" />
+                        <img
+                          key={i}
+                          src={url}
+                          className="gallery-image"
+                          style={{ cursor: "zoom-in" }}
+                          onClick={() => setLightboxUrl(url)}
+                        />
                       ))}
                     </div>
                     {imageMedia.length > 1 && (
@@ -1055,6 +1062,40 @@ export default function AdminCampaignDetailsPage() {
           </div>
         )}
       </div>
+
+      {/* ================= LIGHTBOX ================= */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "zoom-out",
+          }}
+        >
+          <img
+            src={lightboxUrl}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "90vw", maxHeight: "90vh",
+              borderRadius: "8px",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+              cursor: "default",
+            }}
+          />
+          <button
+            onClick={() => setLightboxUrl(null)}
+            style={{
+              position: "absolute", top: 16, right: 20,
+              background: "none", border: "none",
+              color: "#fff", fontSize: 36, cursor: "pointer", lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </>
   );
 }

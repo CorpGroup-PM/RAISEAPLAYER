@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 import { AdminPayoutsService } from "@/services/adminPayouts.service";
 import AdminStatusBadge from "./AdminStatusBadge";
@@ -69,6 +68,11 @@ export default function AdminPayoutList({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("bootstrap/dist/js/bootstrap.bundle.min.js");
+  }, []);
 
   useEffect(() => {
     load();
