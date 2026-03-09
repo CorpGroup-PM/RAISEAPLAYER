@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import "./Navbar.css";
 import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+
 import { useStartFundraiser } from "@/hooks/useStartFundraiser";
 import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
 
@@ -16,21 +16,12 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
   const {
     handleStartFundraiser,
     kycCheckLoading,
     isKycModalOpen,
     closeKycModal,
   } = useStartFundraiser();
-
-  const handleLogout = () => {
-    logout(); // clear auth
-    setProfileOpen(false);
-    setMenuOpen(false);
-
-    router.replace("/"); // ✅ redirect to home
-  };
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -54,9 +45,6 @@ export default function Navbar() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [profileOpen]);
-
-  // Prevent hydration mismatch
-  if (!isLoaded) return null;
 
   return (
     <>
@@ -191,7 +179,7 @@ export default function Navbar() {
 
           {/* Mobile Hamburger */}
           <button
-            className="rp-hamburger mobile-only"
+            className="rp-hamburger"
             onClick={() => setMenuOpen(true)}
           >
             <span />
@@ -239,7 +227,7 @@ export default function Navbar() {
         </ul>
 
         <div className="rp-mobile-bottom">
-          {!isAuthenticated ? (
+          {isLoaded && !isAuthenticated ? (
             <div className="rp-bottom-auth-buttons">
               <Link href="/login">
                 <button
@@ -259,7 +247,7 @@ export default function Navbar() {
                 </button>
               </Link>
             </div>
-          ) : (
+          ) : isLoaded && isAuthenticated ? (
             <div className="rp-bottom-auth-buttons">
               <div className="rp-mobile-user">
                 <img src={user?.profilePicture || "/icon.png"} alt="Profile" />
@@ -308,7 +296,7 @@ export default function Navbar() {
                 Logout
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       </aside>
 

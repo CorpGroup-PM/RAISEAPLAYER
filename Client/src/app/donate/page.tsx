@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FundraiserService } from "@/services/fundraiser.service";
 import "../dashboard/dashboard.css";
+import ShareButton from "@/components/ShareButton/ShareButton";
 
 type Fundraiser = {
   id: string;
@@ -219,12 +220,15 @@ const ExploreFundraisersPage: React.FC = () => {
 
                       <div className="card-footer-row">
                         {campaign.creator && (
-                          <p className="created-by">
-                            Created by{" "}
-                            <strong>
-                              {campaign.creator.firstName} {campaign.creator.lastName}
-                            </strong>
-                          </p>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <p className="created-by" style={{ margin: 0 }}>
+                              Created by{" "}
+                              <strong>
+                                {campaign.creator.firstName} {campaign.creator.lastName}
+                              </strong>
+                            </p>
+                            <ShareButton fundraiserId={campaign.id} title={campaign.title} />
+                          </div>
                         )}
 
                         <button

@@ -66,20 +66,20 @@ export class ReceiptService {
       // skip if logo missing
     }
 
-    // "PAID" badge — top right
-    doc.roundedRect(W - mx - 54, 18, 54, 22, 11).fill('#15803d');
+    // "PAID" badge — rendered before brand name to avoid PDFKit cursor issue
+    doc.roundedRect(W - mx - 54, 30, 54, 22, 11).fill('#15803d');
     doc
       .font('Helvetica-Bold')
       .fontSize(9)
       .fillColor(C.white)
-      .text('PAID', W - mx - 54, 23, { width: 54, align: 'center' });
+      .text('PAID', W - mx - 54, 38, { width: 54, align: 'center' });
 
     // Brand name
     doc
       .font('Helvetica-Bold')
       .fontSize(24)
       .fillColor(C.white)
-      .text('RaiseAPlayer', 0, 29, { align: 'center' });
+      .text('RAISEAPLAYER', 0, 29, { align: 'center' });
 
     // Tagline
     doc
@@ -101,31 +101,17 @@ export class ReceiptService {
     // ── TITLE BAND ────────────────────────────────────────────
     doc.rect(mx, 92, cw, 44).fill(C.white);
 
-    const titleLineY = 115;
-    doc
-      .moveTo(mx + 16, titleLineY)
-      .lineTo(mx + cw / 2 - 76, titleLineY)
-      .lineWidth(0.8)
-      .strokeColor(C.blueBorder)
-      .stroke();
-    doc
-      .moveTo(mx + cw / 2 + 76, titleLineY)
-      .lineTo(mx + cw - 16, titleLineY)
-      .lineWidth(0.8)
-      .strokeColor(C.blueBorder)
-      .stroke();
-
     doc
       .font('Helvetica-Bold')
       .fontSize(12)
       .fillColor(C.blueDark)
       .text('DONATION RECEIPT', 0, 107, { align: 'center', characterSpacing: 3 });
 
-    // ── CARD SHADOW ───────────────────────────────────────────
-    doc.rect(mx + 4, 141, cw, 614).fill(C.shadow);
+    // ── CARD SHADOW (offset 4px right + 4px down, same width as card) ─
+    doc.rect(mx + 4, 141, cw - 4, 620).fill('#d0d5e8');
 
     // ── MAIN CONTENT CARD ─────────────────────────────────────
-    doc.rect(mx, 137, cw, 614).fill(C.white);
+    doc.rect(mx, 137, cw, 620).fill(C.white);
 
     // ── META ROW ──────────────────────────────────────────────
     const metaY = 157;
@@ -178,61 +164,68 @@ export class ReceiptService {
     // ── FUNDRAISER SECTION ────────────────────────────────────
     y = this.sectionHeader(doc, 'Fundraiser Details', mx, y, cw, C.blueMid);
 
+    // Campaign Name — full width so long titles never overflow into the right column
     doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
     doc.text('CAMPAIGN NAME', mx + 28, y + 2);
     doc.font('Helvetica-Bold').fontSize(11).fillColor(C.textDark);
-    doc.text(data.campaignTitle, mx + 28, y + 13);
+    doc.text(data.campaignTitle, mx + 28, y + 13, {
+      width: cw - 56,
+      lineBreak: true,
+    });
+    const titleLines = Math.ceil(
+      doc.widthOfString(data.campaignTitle) / (cw - 56),
+    );
+    y += 16 + Math.max(1, titleLines) * 14 + 8;
 
+    // Campaign ID | Campaign Organizer on the same row below
     doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
-    doc.text('CAMPAIGN ID', mx + 28 + cw / 2 - 12, y + 2);
+    doc.text('CAMPAIGN ID', mx + 28, y + 2);
     doc.font('Helvetica').fontSize(8.5).fillColor(C.textMid);
-    doc.text(data.fundraiserId, mx + 28 + cw / 2 - 12, y + 13, {
-      width: cw / 2 - 20,
+    doc.text(data.fundraiserId, mx + 28, y + 13, {
+      width: cw / 2 - 30,
     });
 
-    y += 34;
-
     doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
-    doc.text('CAMPAIGN ORGANIZER', mx + 28, y + 2);
+    doc.text('CAMPAIGN ORGANIZER', mx + 28 + cw / 2, y + 2);
     doc.font('Helvetica-Bold').fontSize(10).fillColor(C.textDark);
-    doc.text(data.fundraiserOwner, mx + 28, y + 13);
+    doc.text(data.fundraiserOwner, mx + 28 + cw / 2, y + 13);
 
     y += 30;
 
     // ── DONATION SECTION ──────────────────────────────────────
     y = this.sectionHeader(doc, 'Donation Details', mx, y, cw, C.greenMid);
 
-    // Amount card shadow
-    doc.rect(mx + 19, y + 4, cw - 35, 90).fill('#b2e4c2');
+    // Amount card shadow — same width as card so shadow is visible on right + bottom
+    doc.rect(mx + 19, y + 4, cw - 32, 106).fill('#c6ebd4');
     // Amount card
-    doc.rect(mx + 16, y, cw - 32, 90).fill(C.greenLight);
+    doc.rect(mx + 16, y, cw - 32, 106).fill(C.greenLight);
     doc
-      .rect(mx + 16, y, cw - 32, 90)
+      .rect(mx + 16, y, cw - 32, 106)
       .lineWidth(0.5)
       .strokeColor(C.greenBorder)
       .stroke();
-    // Top strip
-    doc.rect(mx + 20, y, cw - 36, 3).fill(C.greenMid);
+    // Top accent strip
+    doc.rect(mx + 16, y, cw - 32, 3).fill(C.greenMid);
 
     // Confirmed circle
-    doc.circle(mx + 30, y + 18, 8).fill(C.greenMid);
+    doc.circle(mx + 30, y + 20, 8).fill(C.greenMid);
     doc
       .font('Helvetica-Bold')
       .fontSize(8)
       .fillColor(C.white)
-      .text('OK', mx + 24, y + 14, { width: 12, align: 'center' });
+      .text('OK', mx + 24, y + 16, { width: 12, align: 'center' });
 
     doc
       .font('Helvetica-Bold')
       .fontSize(9)
       .fillColor(C.greenMid)
-      .text('PAYMENT CONFIRMED', mx + 44, y + 13);
+      .text('PAYMENT CONFIRMED', mx + 44, y + 15);
 
     doc
       .font('Helvetica')
       .fontSize(7.5)
       .fillColor(C.textLight)
-      .text('AMOUNT DONATED', mx + 28, y + 34);
+      .text('AMOUNT DONATED', mx + 28, y + 36);
 
     doc
       .font('Helvetica-Bold')
@@ -241,21 +234,22 @@ export class ReceiptService {
       .text(
         `Rs. ${data.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
         mx + 28,
-        y + 46,
+        y + 48,
       );
 
+    // Payment reference — stacked (label on top, value below)
     doc
       .font('Helvetica')
       .fontSize(7.5)
       .fillColor(C.textLight)
-      .text('PAYMENT REFERENCE', mx + 28, y + 76);
+      .text('PAYMENT REFERENCE', mx + 28, y + 82);
     doc
       .font('Helvetica')
       .fontSize(8)
       .fillColor(C.textMid)
-      .text(data.paymentId, mx + 140, y + 76, { width: cw - 160 });
+      .text(data.paymentId, mx + 28, y + 92, { width: cw - 56 });
 
-    y += 106;
+    y += 122;
 
     // ── DOT DIVIDER ───────────────────────────────────────────
     for (let i = 0; i < 7; i++) {

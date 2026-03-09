@@ -222,10 +222,11 @@
   left: 0;
   width: 0;
   max-width: 360px;
-  height: 100vh;
+  height: 100dvh;
   background: #ffffff;
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.35);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   z-index: 1500;
@@ -392,7 +393,7 @@
   }
 
   .rp-hamburger {
-    display: flex;
+    display: flex !important;
   }
 }
 @media (max-width: 960px) {

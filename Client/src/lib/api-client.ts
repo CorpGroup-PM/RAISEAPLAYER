@@ -138,6 +138,15 @@ api.interceptors.response.use(
       originalRequest?.url?.includes("/auth/verify-email");
 
     const isRefreshRoute = originalRequest?.url?.includes("/auth/refresh");
+    const isLogoutRoute  = originalRequest?.url?.includes("/auth/logout");
+
+    /* ----------------------------------------------
+       LOGOUT: always silently reject — local logout
+       handles cleanup, no toast needed
+    ---------------------------------------------- */
+    if (isLogoutRoute) {
+      return Promise.reject(error);
+    }
 
     /* ----------------------------------------------
        CASE 1: PUBLIC AUTH FAILURES

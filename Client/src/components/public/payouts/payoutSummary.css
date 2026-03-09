@@ -6,7 +6,7 @@
   background: #ffffff;
   border-radius: 14px;
   padding: 20px;
-  margin: 20px;
+  margin: 0 16px 20px;
   border: 1px solid #e5e7eb;
 }
 
@@ -186,6 +186,10 @@
 
 /* Tablets */
 @media (max-width: 900px) {
+  .payout-card {
+    margin: 0;
+  }
+
   .summary-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -200,7 +204,7 @@
 @media (max-width: 480px) {
   .payout-card {
     padding: 16px;
-    margin: 14px;
+    margin: 0;
   }
 
   .summary-grid {

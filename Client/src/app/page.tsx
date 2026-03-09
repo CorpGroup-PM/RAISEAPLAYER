@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { FundraiserService } from "@/services/fundraiser.service";
 import { useStartFundraiser } from "@/hooks/useStartFundraiser";
 import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
+import ShareButton from "@/components/ShareButton/ShareButton";
 
 type FundraiserTop = {
   id: string;
@@ -225,12 +226,15 @@ export default function Home() {
                       />
                     </div>
                     {c.creator && (
-                      <p className="created-by">
-                        Created by{" "}
-                        <strong>
-                          {c.creator.firstName} {c.creator.lastName}
-                        </strong>
-                      </p>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <p className="created-by" style={{ margin: 0 }}>
+                          Created by{" "}
+                          <strong>
+                            {c.creator.firstName} {c.creator.lastName}
+                          </strong>
+                        </p>
+                        <ShareButton fundraiserId={c.id} title={c.title} />
+                      </div>
                     )}
 
                     <div className="campaignFooterRow">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PaymentService } from "../../services/payment.service";
 import "./donate-modal.css";
 import { useAuth } from "@/context/AuthContext";
@@ -18,6 +19,7 @@ export default function DonateModal({
     onClose,
 }: Props) {
     const { isAuthenticated } = useAuth();
+    const router = useRouter();
 
     const [amount, setAmount] = useState("2500");
     const [tip, setTip] = useState("400");
@@ -26,6 +28,7 @@ export default function DonateModal({
     const [guestName, setGuestName] = useState("");
     const [guestEmail, setGuestEmail] = useState("");
     const [guestMobile, setGuestMobile] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; mobile?: string }>({});
 
     const [showGuestForm, setShowGuestForm] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -71,10 +74,27 @@ export default function DonateModal({
 
         // Guest → validate details
         if (!isAuthenticated) {
-            if (!guestName || !guestEmail || !guestMobile) {
-                setErrorMsg("Please fill all details");
+            const errors: { name?: string; email?: string; mobile?: string } = {};
+
+            if (!guestName.trim() || guestName.trim().length < 2) {
+                errors.name = "Enter a valid full name";
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!guestEmail.trim() || !emailRegex.test(guestEmail.trim())) {
+                errors.email = "Enter a valid email address";
+            }
+
+            const mobileRegex = /^[6-9]\d{9}$/;
+            if (!mobileRegex.test(guestMobile)) {
+                errors.mobile = "Enter a valid 10-digit Indian mobile number";
+            }
+
+            if (Object.keys(errors).length > 0) {
+                setFieldErrors(errors);
                 return;
             }
+            setFieldErrors({});
         }
 
         // Validate amounts
@@ -106,7 +126,7 @@ export default function DonateModal({
 
                 guestMobile:
                     isAnonymous ? undefined :
-                        isAuthenticated ? undefined : guestMobile,
+                        isAuthenticated ? undefined : `+91${guestMobile}`,
             });
 
             const razorpay = res.data?.razorpay;
@@ -133,6 +153,7 @@ export default function DonateModal({
 
                 handler: function (_response: any) {
                     onClose();
+                    router.refresh();
                 },
 
                 modal: {
@@ -196,20 +217,33 @@ export default function DonateModal({
                         <input
                             placeholder="Full Name"
                             value={guestName}
-                            onChange={(e) => setGuestName(e.target.value)}
+                            className={fieldErrors.name ? "input-error" : ""}
+                            onChange={(e) => { setGuestName(e.target.value); setFieldErrors((p) => ({ ...p, name: undefined })); }}
                         />
+                        {fieldErrors.name && <span className="field-error">{fieldErrors.name}</span>}
 
                         <input
                             placeholder="Email"
                             value={guestEmail}
-                            onChange={(e) => setGuestEmail(e.target.value)}
+                            className={fieldErrors.email ? "input-error" : ""}
+                            onChange={(e) => { setGuestEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: undefined })); }}
                         />
+                        {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
 
-                        <input
-                            placeholder="Mobile Number"
-                            value={guestMobile}
-                            onChange={(e) => setGuestMobile(e.target.value)}
-                        />
+                        <div className={`phone-prefix-wrap${fieldErrors.mobile ? " input-error" : ""}`}>
+                            <span className="prefix">+91</span>
+                            <input
+                                placeholder="10-digit mobile"
+                                value={guestMobile}
+                                maxLength={10}
+                                onChange={(e) => {
+                                    const v = e.target.value.replace(/\D/g, "").slice(0, 10);
+                                    setGuestMobile(v);
+                                    setFieldErrors((p) => ({ ...p, mobile: undefined }));
+                                }}
+                            />
+                        </div>
+                        {fieldErrors.mobile && <span className="field-error">{fieldErrors.mobile}</span>}
                     </div>
                 )}
 

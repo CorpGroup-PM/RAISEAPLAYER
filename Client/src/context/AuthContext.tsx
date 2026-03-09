@@ -174,8 +174,7 @@ useEffect(() => {
         refreshUser,
       }}
     >
-      {/* Prevent UI Flicker */}
-      {isLoaded ? children : <div></div>}
+      {children}
     </AuthContext.Provider>
   );
 }

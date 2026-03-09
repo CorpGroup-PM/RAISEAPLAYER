@@ -98,9 +98,9 @@
 }
 
 .highlight-item span {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+  color: black;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -411,6 +411,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 12px;
+  width: 100%;
 }
 
 /* Gallery — sliding track */
@@ -624,6 +625,11 @@
    the sticky sidebar donate card which is hidden on mobile.
 ================================================================ */
 @media (max-width: 900px) {
+  .campaign-page.public-view {
+    min-height: auto;
+    padding-bottom: 32px;
+  }
+
   .campaign-layout {
     grid-template-columns: 1fr;
     padding: 12px;
@@ -658,9 +664,17 @@
     margin-top: 12px;
   }
 
+  /* Remove horizontal padding — full-width margin already provides edge spacing */
   .media-row {
     grid-template-columns: 1fr;
-    padding: 0 12px 12px;
+    padding: 0 0 12px;
+  }
+
+  /* Prevent grid blowout on mobile */
+  .media-box,
+  .media-right-col {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .media-right-col {
@@ -692,12 +706,12 @@
     gap: 2px;
   }
 
-  .full-width{
-    margin: 0 10px 14px;
-  }
-
+  .full-width,
   .campaign-updates-section {
     margin: 0 10px 14px;
   }
-
+  
+  /* .full-width {
+  margin: 0 16px 20px;
+} */
 }

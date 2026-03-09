@@ -1,0 +1,143 @@
+.sb-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.sb-wrap-full {
+  width: 100%;
+}
+
+/* ── Full pill trigger ── */
+.sb-trigger-full {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  height: 40px;
+  border-radius: 999px;
+  border: 1.5px solid #d1d5db;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.sb-trigger-full:hover {
+  background: #f0f4ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.sb-trigger-full svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* Popup for full variant — opens upward, centered */
+.sb-popup-full {
+  right: 0;
+  left: 0;
+  min-width: unset;
+}
+
+/* Trigger button */
+.sb-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.sb-trigger:hover {
+  background: #f0f4ff;
+  color: #0057b8;
+  border-color: #bfdbfe;
+}
+
+.sb-trigger svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Popup */
+.sb-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 148px;
+  z-index: 200;
+  animation: sb-fade-in 0.15s ease;
+}
+
+@keyframes sb-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Options */
+.sb-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.sb-option svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* WhatsApp */
+.sb-whatsapp {
+  color: #15803d;
+}
+.sb-whatsapp:hover {
+  background: #f0fdf4;
+}
+
+/* Copy Link */
+.sb-copy {
+  color: #374151;
+}
+.sb-copy:hover {
+  background: #f3f4f6;
+}
+
+/* More / Native */
+.sb-more {
+  color: #374151;
+}
+.sb-more:hover {
+  background: #f3f4f6;
+}
