@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { PaymentService } from "../../services/payment.service";
 import "./donate-modal.css";
 import { useAuth } from "@/context/AuthContext";
@@ -11,15 +10,16 @@ type Props = {
     fundraiserId: string;
     isOpen: boolean;
     onClose: () => void;
+    onSuccess?: () => void;
 };
 
 export default function DonateModal({
     fundraiserId,
     isOpen,
     onClose,
+    onSuccess,
 }: Props) {
     const { isAuthenticated } = useAuth();
-    const router = useRouter();
 
     const [amount, setAmount] = useState("2500");
     const [tip, setTip] = useState("400");
@@ -153,7 +153,7 @@ export default function DonateModal({
 
                 handler: function (_response: any) {
                     onClose();
-                    router.refresh();
+                    onSuccess?.();
                 },
 
                 modal: {

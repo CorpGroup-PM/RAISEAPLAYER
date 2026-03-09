@@ -189,7 +189,7 @@ export default function UserProfile() {
 
             <label className="up-avatar-edit" title="Change profile picture">
               <span className="material-symbols-outlined up-edit-icon">
-                <img src="./edit.png" alt="edit" style={{ height: "20px" }} />
+                <img src="/edit.png" alt="edit" style={{ height: "20px" }} />
               </span>
 
               <input

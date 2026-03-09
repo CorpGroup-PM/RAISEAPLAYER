@@ -14,7 +14,8 @@ import WithdrawalHistoryTable from "@/components/payouts/WithdrawalHistoryTable"
 import { PayoutRequestsService } from "@/services/payoutRequests.service";
 import { z } from "zod";
 import AlertModal from "@/components/ui/AlertModal";
-import InstagramEmbed from "@/components/instagram/instagram"
+import InstagramEmbed from "@/components/instagram/instagram";
+import { useAuth } from "@/context/AuthContext";
 
 const recipientSchema = z.object({
   recipientType: z.string().min(1, "Select recipient type"),
@@ -78,6 +79,7 @@ function addCacheBust(url: string): string {
 export default function CampaignDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { isLoaded } = useAuth();
 
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -242,17 +244,18 @@ export default function CampaignDetailsPage() {
   /* ================= INITIAL LOAD ================= */
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !isLoaded) return;
     const load = async () => {
       await fetchCampaign();
       await fetchPayouts();
     };
     load();
-  }, [id]);
+  }, [id, isLoaded]);
 
   useEffect(() => {
+    if (!id || !isLoaded) return;
     fetchDocuments();
-  }, [id]);
+  }, [id, isLoaded]);
 
   /* ================= AVAILABLE AMOUNT ================= */
 

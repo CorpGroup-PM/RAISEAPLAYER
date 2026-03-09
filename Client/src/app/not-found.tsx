@@ -29,7 +29,7 @@ export default function NotFound() {
 
           <button
             className="nf-btn secondary"
-            onClick={() => router.push("/explore")}
+            onClick={() => router.push("/donate")}
           >
             <Heart size={18} />
             Support Our Athletes

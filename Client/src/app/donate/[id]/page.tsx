@@ -128,36 +128,35 @@ export default function ExploreFundraiserDetailsPage() {
 
 
   /* ================= FETCH CAMPAIGN ================= */
-  useEffect(() => {
+  const fetchCampaign = async () => {
     if (!id) return;
+    try {
+      setLoading(true);
+      const res = await api.get(`/fundraiser/${id}/public`);
 
-    const fetchCampaign = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get(`/fundraiser/${id}/public`);
+      const data = res?.data?.data;
+      setCampaign(data);
 
-        const data = res?.data?.data;
-        setCampaign(data);
+      const updatesFromBE = Array.isArray(data?.fundraiserupdates)
+        ? data.fundraiserupdates
+        : [];
 
-        const updatesFromBE = Array.isArray(data?.fundraiserupdates)
-          ? data.fundraiserupdates
-          : [];
+      setUpdates(
+        updatesFromBE.sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      );
+    } catch {
+      setCampaign(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setUpdates(
-          updatesFromBE.sort(
-            (a: any, b: any) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          )
-        );
-      } catch {
-        setCampaign(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchCampaign();
-  }, [id]); // openDonate intentionally removed — modal open/close should NOT re-fetch
+  }, [id]);
 
 
   /* ================= MEDIA NORMALIZATION ================= */
@@ -624,6 +623,7 @@ export default function ExploreFundraiserDetailsPage() {
         fundraiserId={campaign.id}
         isOpen={openDonate}
         onClose={() => setOpenDonate(false)}
+        onSuccess={fetchCampaign}
       />
 
     </div>
