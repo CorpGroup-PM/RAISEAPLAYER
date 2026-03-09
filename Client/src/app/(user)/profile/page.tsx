@@ -179,13 +179,19 @@ export default function UserProfile() {
         {/* LEFT CARD */}
         <div className="up-profile-card">
           <div className="up-avatar-box">
-            <div
-              className="up-avatar"
-              style={{
-                backgroundImage: `url("${user.profilePicture || "/profileimage.png"
-                  }")`,
-              }}
-            />
+            {user.profilePicture ? (
+              <div
+                className="up-avatar"
+                style={{ backgroundImage: `url("${user.profilePicture}")` }}
+              />
+            ) : (
+              <div className="up-avatar up-avatar-default">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="38" r="22" fill="#9ca3af" />
+                  <ellipse cx="50" cy="90" rx="36" ry="24" fill="#9ca3af" />
+                </svg>
+              </div>
+            )}
 
             <label className="up-avatar-edit" title="Change profile picture">
               <span className="material-symbols-outlined up-edit-icon">

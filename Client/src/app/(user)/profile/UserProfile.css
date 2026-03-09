@@ -77,6 +77,19 @@
   background-position: center;
 }
 
+.up-avatar-default {
+  background: #e5e7eb;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.up-avatar-default svg {
+  width: 80px;
+  height: 80px;
+}
+
 .up-avatar-edit {
   position: absolute;
   bottom: -4px;
