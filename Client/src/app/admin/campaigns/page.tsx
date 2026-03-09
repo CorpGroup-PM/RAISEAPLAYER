@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import "../../dashboard/dashboard.css";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 import StatusBadge from "@/components/StatusBadge/StatusBadge";
@@ -19,15 +19,13 @@ const STATUS_OPTIONS: CampaignStatus[] = [
   "COMPLETED",
 ];
 
-const AdminCampaignsPage: React.FC = () => {
+function AdminCampaignsContent() {
   const searchParams = useSearchParams();
 
   const initialStatus =
     (searchParams.get("status") as CampaignStatus) || "PENDING_REVIEW";
 
-  const [status, setStatus] =
-    useState<CampaignStatus>(initialStatus);
-
+  const [status, setStatus] = useState<CampaignStatus>(initialStatus);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -36,9 +34,7 @@ const AdminCampaignsPage: React.FC = () => {
   const fetchCampaigns = async (selectedStatus: CampaignStatus) => {
     try {
       setLoading(true);
-      const res =
-        await AdminCampaignsService.listCampaigns(selectedStatus);
-
+      const res = await AdminCampaignsService.listCampaigns(selectedStatus);
       setCampaigns(res.data.data.campaigns);
     } catch (err) {
       console.error("Failed to fetch campaigns", err);
@@ -57,8 +53,7 @@ const AdminCampaignsPage: React.FC = () => {
       <AdminNavbar />
 
       <div className="dashboard-root admin-page-wrapper">
-        <main className="dashboard-main" >
- 
+        <main className="dashboard-main">
 
           {/* ================= FILTER ================= */}
           <div className="admin-page-header">
@@ -73,10 +68,8 @@ const AdminCampaignsPage: React.FC = () => {
                 onChange={(e) => {
                   const newStatus = e.target.value as CampaignStatus;
                   setStatus(newStatus);
-
                   router.replace(`/admin/campaigns?status=${newStatus}`);
                 }}
-
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -86,7 +79,6 @@ const AdminCampaignsPage: React.FC = () => {
               </select>
             </div>
           </div>
-
 
           {/* ================= LOADING ================= */}
           {loading && (
@@ -139,9 +131,7 @@ const AdminCampaignsPage: React.FC = () => {
                       <div className="card-body">
                         <h3>{campaign.title}</h3>
 
-                        <p className="meta">
-                          {campaign.campaignFor}
-                        </p>
+                        <p className="meta">{campaign.campaignFor}</p>
 
                         <p className="location">
                           {campaign.city}
@@ -158,22 +148,20 @@ const AdminCampaignsPage: React.FC = () => {
                               ₹{raised.toLocaleString()}
                             </div>
                             <div>
-                              <span>Goal:</span>{" "}
-                              ₹{goal.toLocaleString()}
+                              <span>Goal:</span> ₹{goal.toLocaleString()}
                             </div>
                           </div>
 
                           <div className="progress-bar">
-                            <div
-                              style={{ width: `${progress}%` }}
-                            />
+                            <div style={{ width: `${progress}%` }} />
                           </div>
                         </div>
 
                         <p className="created-by">
                           Created by{" "}
                           <strong>
-                            {campaign.creator.firstName} {campaign.creator.lastName}
+                            {campaign.creator.firstName}{" "}
+                            {campaign.creator.lastName}
                           </strong>
                         </p>
 
@@ -184,7 +172,6 @@ const AdminCampaignsPage: React.FC = () => {
                             router.push(
                               `/admin/campaigns/${campaign.id}?status=${status}`
                             )
-
                           }
                         >
                           Review / Manage →
@@ -194,13 +181,18 @@ const AdminCampaignsPage: React.FC = () => {
                   );
                 })}
               </div>
-
             </section>
           )}
         </main>
       </div>
     </>
   );
-};
+}
 
-export default AdminCampaignsPage;
+export default function AdminCampaignsPage() {
+  return (
+    <Suspense fallback={<div className="dashboard-center">Loading...</div>}>
+      <AdminCampaignsContent />
+    </Suspense>
+  );
+}
