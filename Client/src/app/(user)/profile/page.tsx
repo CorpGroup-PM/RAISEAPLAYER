@@ -159,7 +159,6 @@ export default function UserProfile() {
     try {
       setUploading(true);
       await UserService.updateProfilePicture(file);
-      addToast("Profile picture updated", "success");
       await refreshUser();
     } catch {
       addToast("Failed to upload profile picture", "error");
