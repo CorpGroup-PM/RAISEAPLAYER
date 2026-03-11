@@ -17,9 +17,13 @@ export class PrismaService
       throw new Error('DATABASE_URL is not set');
     }
 
+    const isLocal =
+      connectionString.includes('localhost') ||
+      connectionString.includes('127.0.0.1');
+
     const pool = new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      ...(isLocal ? {} : { ssl: { rejectUnauthorized: false } }),
     });
     const adapter = new PrismaPg(pool);
 
