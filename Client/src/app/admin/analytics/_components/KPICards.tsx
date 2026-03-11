@@ -83,15 +83,6 @@ const ITEMS = [
     isAlert: true,
   },
   {
-    label: "Pending Documents",
-    key: "pendingDocuments",
-    fmt: (v: number) => num(v),
-    link: "/admin/documents",
-    iconType: "warn" as const,
-    Icon: FileText,
-    isAlert: true,
-  },
-  {
     label: "Unverified Banks",
     key: "unverifiedBankAccounts",
     fmt: (v: number) => num(v),

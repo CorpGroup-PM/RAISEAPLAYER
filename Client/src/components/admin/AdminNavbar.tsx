@@ -84,12 +84,6 @@ export default function AdminNavbar() {
             <Link href="/admin/FoundationFunds">Foundation Funds</Link>
           </li>
           <li
-            className={pathname.startsWith("/admin/documents") ? "active" : ""}
-            onClick={() => setMenuOpen(false)}
-          >
-            <Link href="/admin/documents">Documents</Link>
-          </li>
-          <li
             className={pathname.startsWith("/admin/bank-accounts") ? "active" : ""}
             onClick={() => setMenuOpen(false)}
           >
