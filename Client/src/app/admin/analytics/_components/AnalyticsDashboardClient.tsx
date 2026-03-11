@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnalyticsService } from "@/services/analytics.service";
 import { getLast7DaysISO, getTodayISO } from "@/lib/date-utils";
 import DateFilterBar from "./DateFilterBar";
 import KPICards from "./KPICards";
-import OverviewPanels from "./OverviewPanels";
-import DonationsPanel from "./FundraisersPanel";
 import WithdrawalsPanel from "./WithdrawalsPanel";
 import FundraisersPanel from "./FundraisersPanel";
 import DonationsHerochart from "./DonationsHero";
@@ -95,7 +93,7 @@ export default function AnalyticsDashboardClient() {
         <div className="aaHeader admin-page-wrapper">
           <div>
             <h1 className="aaTitle">DASHBOARD</h1>
-
+            <p className="aaSubtitle">Platform intelligence &amp; operational metrics</p>
           </div>
 
           <div className="aaHeaderRight">
@@ -103,6 +101,14 @@ export default function AnalyticsDashboardClient() {
               <div className="aaRefreshLabel">Last refreshed</div>
               <div className="aaRefreshValue">{lastUpdated || "—"}</div>
             </div>
+            <button
+              className="aaBtn aaBtnPrimary"
+              onClick={() => load({ from, to })}
+              disabled={loading}
+              title="Refresh data"
+            >
+              {loading ? "Loading…" : "↻ Refresh"}
+            </button>
           </div>
         </div>
         <DateFilterBar
@@ -123,11 +129,9 @@ export default function AnalyticsDashboardClient() {
           lastUpdated={lastUpdated}
         />
         <div className="aaGrid">
-          {/* <OverviewPanels loading={loading} overview={data?.overview} /> */}
           <FundraisersPanel loading={loading} data={data?.fundraisers} />
         </div>
         <div className="aaGrid">
-          {/* <DonationsPanel loading={loading} data={data?.donations} /> */}
           <WithdrawalsPanel loading={loading} data={data?.withdrawals} />
         </div>
       </div>

@@ -71,48 +71,28 @@
 
 .home-heroBg {
   background-image: url("/hero-player.png");
-  background-size: 58%;
+  background-size: auto 108%;
   background-repeat: no-repeat;
-  background-position: right center;
+  background-position: calc(100% + 20px) center;
+  min-height: 380px;
 }
-
-
 
 /* Fog overlays */
 .home-fogOverlay {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 20% 40%,
-      rgba(255, 255, 255, 0.97) 0%,
-      rgba(255, 255, 255, 0.95) 20%,
-      rgba(255, 255, 255, 0.90) 35%,
-      rgba(255, 255, 255, 0.70) 50%,
-      rgba(255, 255, 255, 0) 70%),
-    radial-gradient(circle at 32% 65%,
-      rgba(255, 255, 255, 0.70) 0%,
-      rgba(255, 255, 255, 0.25) 55%,
-      rgba(255, 255, 255, 0) 75%);
-  filter: blur(10px);
+  background: linear-gradient(to right,
+    rgba(255, 255, 255, 1)    0%,
+    rgba(255, 255, 255, 1)    48%,
+    rgba(255, 255, 255, 0.85) 54%,
+    rgba(255, 255, 255, 0.40) 60%,
+    rgba(255, 255, 255, 0)    65%);
 }
 
 .home-middleBlendFog {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 100%;
-  width: 280px;
-  pointer-events: none;
-  z-index: 1;
-  background: linear-gradient(to right,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(255, 255, 255, 0.85) 25%,
-    rgba(255, 255, 255, 0.35) 55%,
-    rgba(255, 255, 255, 0) 100%);
-  filter: blur(14px);
+  display: none;
 }
 
 .home-heroInner {
@@ -225,21 +205,36 @@
     display: none;
   }
 
-  .home-heroLeft {
-    width: 100%;
+  .home-heroBg {
+    background-size: 100% auto;
+    background-position: center bottom;
+    min-height: 500px;
   }
 
   .home-fogOverlay {
-    background:
-      radial-gradient(circle at 30% 35%,
-        rgba(255, 255, 255, 0.97) 0%,
-        rgba(255, 255, 255, 0.88) 40%,
-        rgba(255, 255, 255, 0.5) 65%,
-        rgba(255, 255, 255, 0) 100%),
-      radial-gradient(circle at 50% 70%,
-        rgba(255, 255, 255, 0.7) 0%,
-        rgba(255, 255, 255, 0) 70%);
-    filter: blur(10px);
+    background: linear-gradient(to bottom,
+      rgba(255, 255, 255, 1)    0%,
+      rgba(255, 255, 255, 1)    35%,
+      rgba(255, 255, 255, 0.80) 52%,
+      rgba(255, 255, 255, 0.45) 70%,
+      rgba(255, 255, 255, 0.25) 100%);
+  }
+
+  .home-heroLeft {
+    min-width: unset;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-heroBg {
+    background-size: 140% auto;
+    background-position: center bottom;
+    min-height: 440px;
+  }
+
+  .home-heroOuter {
+    padding: 12px 10px;
   }
 }
 

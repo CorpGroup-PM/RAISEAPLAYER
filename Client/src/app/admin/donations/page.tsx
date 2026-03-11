@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import "./adminDonations.css";
-import AdminNavbar from "@/components/admin/AdminNavbar";
 import { adminAnalytics } from "@/services/adminAnalytics.service";
 
 type DonorRow = {
@@ -57,7 +56,6 @@ export default function AdminAllDonationsPage() {
 
   return (
     <>
-      <AdminNavbar />
       <div className="admin-donations-page admin-page-wrapper">
         <div className="admin-donations-head">
           <h2>All Donations</h2>

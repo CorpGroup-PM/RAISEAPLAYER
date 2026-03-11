@@ -1,622 +1,380 @@
-/* ================= ROOT ================= */
+/* ── Admin Payouts Page ── */
 
-.admin-payouts {
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 0 0 1px #e5e7eb;
+.apPage {
+  background: #f1f5f9;
+  min-height: 100vh;
+  padding: 0 0 80px;
 }
 
-/* ================= HEADER ================= */
+.apContainer {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
 
-.admin-payouts-head {
+.apHeader {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  padding: 32px 0 20px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .admin-page-wrapper {
   padding-top: 70px;
 }
 
-.admin-payouts h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
+.apTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.apSubtitle {
+  font-size: 12px;
+  color: #94a3b8;
   margin: 0;
 }
 
-.admin-payout-controls {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+/* ── Summary Cards ── */
+.apSummary {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
 }
+@media (max-width: 1100px) { .apSummary { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px)  { .apSummary { grid-template-columns: repeat(2, 1fr); } }
 
-.admin-status-filter {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  font-size: 14px;
-}
-
-/* ================= TABLE ================= */
-
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #ffffff;
+.apSummaryCard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  overflow: hidden;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.admin-table thead {
-  background: #f3f4f6;
-}
-
-.admin-table th {
-  padding: 12px;
-  text-align: left;
-  font-size: 12px;
+.apSummaryLabel {
+  font-size: 10px;
   font-weight: 700;
-  color: #6b7280;
+  color: #94a3b8;
   text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
 }
 
-.admin-table td {
-  padding: 12px;
-  font-size: 14px;
-  color: #111827;
-  border-top: 1px solid #e5e7eb;
-  vertical-align: middle;
+.apSummaryValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
 }
+.apSummaryValue.good { color: #15803d; }
+.apSummaryValue.warn { color: #b45309; }
+.apSummaryValue.bad  { color: #be123c; }
+.apSummaryValue.info { color: #2563eb; }
 
-.admin-table tbody tr:hover {
-  background: #f9fafb;
-}
-
-.admin-empty {
-  text-align: center;
-  padding: 20px;
-  color: #6b7280;
-}
-
-/* ================= BUTTONS ================= */
-
-.admin-payouts button {
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.admin-payouts button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Custom action colors (non-bootstrap) */
-.btn-approve {
-  background: #2563eb;
-  color: #ffffff;
-}
-
-.btn-process {
-  background: #f59e0b;
-  color: #111827;
-}
-
-.btn-reject {
-  background: #dc2626;
-  color: #ffffff;
-}
-
-/* ================= STATUS COLUMN ================= */
-
-.admin-status-cell {
+/* ── Filters ── */
+.apFilters {
   display: flex;
-  align-items: center;
   gap: 8px;
-}
-
-/* ================= TOOLTIP ================= */
-
-.admin-reason-tooltip-wrapper {
-  position: relative;
-  cursor: pointer;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.admin-reason-tooltip {
-  position: absolute;
-  bottom: 130%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #111827;
-  color: #ffffff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  max-width: 260px;
-  white-space: normal;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 10;
-}
-
-.admin-reason-tooltip::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 6px;
-  border-style: solid;
-  border-color: #111827 transparent transparent transparent;
-}
-
-.admin-reason-tooltip-wrapper:hover .admin-reason-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(-4px);
-}
-
-/* ================= PROCESSING COLUMN ================= */
-
-.admin-processing-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ================= ADMIN PROCESS FORM ================= */
-
-.admin-process-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.admin-process-form input,
-.admin-process-form textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  font-size: 14px;
-}
-
-.admin-process-form textarea {
-  resize: none;
-}
-
-/* ================= MOBILE ================= */
-
-@media (max-width: 900px) {
-  .admin-payouts {
-    overflow-x: auto;
-  }
-
-  .admin-table {
-    min-width: 900px;
-  }
-}
-/* ================= ACTION BUTTON GROUP ================= */
-
-.admin-actions {
-  display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* ================= BASE BUTTON ================= */
-
-.admin-actions button,
-.admin-actions .btn {
-  height: 34px;
-  padding: 0 14px;
-
-  border-radius: 6px;
-  border: none;
-
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-
-  cursor: pointer;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  white-space: nowrap;
-}
-
-/* Click feedback */
-.admin-actions button:active,
-.admin-actions .btn:active {
-  transform: translateY(1px);
-}
-
-/* Disabled */
-.admin-actions button:disabled,
-.admin-actions .btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ================= BUTTON VARIANTS ================= */
-
-/* Approve / Primary */
-.admin-btn-approve,
-.admin-actions .btn-primary {
-  background-color: #2563eb;
-  color: #ffffff;
-}
-
-.admin-btn-approve:hover,
-.admin-actions .btn-primary:hover {
-  background-color: #1d4ed8;
-}
-
-/* Processing / Warning */
-.admin-btn-processing {
-  background-color: #f59e0b;
-  color: #111827;
-}
-
-.admin-btn-processing:hover {
-  background-color: #d97706;
-}
-
-/* Reject / Fail / Danger */
-.admin-btn-danger,
-.admin-actions .btn-danger {
-  background-color: #dc2626;
-  color: #ffffff;
-}
-
-.admin-btn-danger:hover,
-.admin-actions .btn-danger:hover {
-  background-color: #b91c1c;
-}
-
-/* Secondary (Close / Cancel) */
-.admin-actions .btn-secondary {
-  background-color: #6b7280;
-  color: #ffffff;
-}
-
-.admin-actions .btn-secondary:hover {
-  background-color: #4b5563;
-}
-
-/* ================= ICON SUPPORT (OPTIONAL) ================= */
-
-.admin-actions button svg,
-.admin-actions .btn svg {
-  width: 14px;
-  height: 14px;
-  margin-right: 6px;
-}
-
-/* =====================================================
-   ROOT
-===================================================== */
-
-.admin-payouts-root {
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
-}
-
-/* =====================================================
-   HEADER
-===================================================== */
-
-.admin-payouts-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 16px;
 }
 
-.admin-payouts-head h2 {
-  font-size: 18px;
-  font-weight: 800;
-  color: #111827;
-  margin: 0;
+.apFilterBtn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
+.apFilterBtn:hover  { border-color: #a5b4fc; color: #4f46e5; background: #eef2ff; }
+.apFilterBtn.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
 
-.admin-payouts-head select {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  font-size: 14px;
-  background: #ffffff;
-}
-
-/* =====================================================
-   TABLE
-===================================================== */
-
-.admin-payouts-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #ffffff;
+/* ── Panel ── */
+.apPanel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   overflow: hidden;
 }
 
-.admin-payouts-table thead {
-  background: #f3f4f6;
-}
-
-.admin-payouts-table th {
-  padding: 12px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #6b7280;
-  text-transform: uppercase;
-  text-align: left;
-}
-
-.admin-payouts-table td {
-  padding: 12px;
-  font-size: 14px;
-  color: #111827;
-  border-top: 1px solid #e5e7eb;
-  vertical-align: middle;
-}
-
-.admin-payouts-table tbody tr:hover {
-  background: #f9fafb;
-}
-
-/* =====================================================
-   FUNDRAISER CELL
-===================================================== */
-
-.fundraiser-cell {
-  cursor: pointer;
-}
-
-.fundraiser-cell:hover strong {
-  color: #2563eb;
-}
-
-.fundraiser-owner {
+.apPanelHeader {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.fundraiser-id {
+.apPanelTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.apCount {
   font-size: 12px;
-  color: #6b7280;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
-/* =====================================================
-   INPUT (REASON)
-===================================================== */
+/* ── Table ── */
+.apTableWrap { overflow-x: auto; }
 
-.admin-payouts-table input {
+.apTable {
   width: 100%;
-  padding: 6px 8px;
+  border-collapse: collapse;
   font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  outline: none;
 }
 
-.admin-payouts-table input:focus {
-  border-color: #2563eb;
-}
-
-/* =====================================================
-   ACTION BUTTONS
-===================================================== */
-
-.admin-payouts-table td:last-child {
+.apTable th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
 }
 
-.admin-payouts-table button {
-  height: 32px;
-  padding: 0 14px;
-  margin-right: 6px;
+.apTable td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
 
-  border-radius: 6px;
-  border: none;
+.apTable tr:last-child td { border-bottom: none; }
+.apTable tr:hover td { background: #fafbff; }
 
-  font-size: 13px;
+/* ── Cell Styles ── */
+.apCampaignLink {
   font-weight: 600;
-
-  cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.05s ease;
-}
-
-.admin-payouts-table button:active {
-  transform: translateY(1px);
-}
-
-.admin-payouts-table button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Approve */
-.admin-payouts-table button:nth-child(1) {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-.admin-payouts-table button:nth-child(1):hover {
-  background: #15803d;
-}
-
-/* Reject */
-.admin-payouts-table button:nth-child(2) {
-  background: #dc2626;
-  color: #ffffff;
-}
-
-.admin-payouts-table button:nth-child(2):hover {
-  background: #b91c1c;
-}
-
-/* Processing */
-.admin-payouts-table button:nth-child(1):only-child {
-  background: #f59e0b;
-  color: #111827;
-}
-
-.admin-payouts-table button:nth-child(1):only-child:hover {
-  background: #d97706;
-}
-
-/* =====================================================
-   STATUS TEXT
-===================================================== */
-
-.admin-payouts-table span {
+  color: #4f46e5;
   font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
+  text-decoration: none;
+  display: block;
+}
+.apCampaignLink:hover { text-decoration: underline; }
+
+.apFundraiserId {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: monospace;
+  margin-top: 2px;
 }
 
-/* =====================================================
-   LOADING TEXT
-===================================================== */
-
-.admin-payouts-root p {
-  margin-top: 14px;
+.apAmount {
+  font-weight: 700;
+  color: #0f172a;
   font-size: 14px;
-  color: #6b7280;
+  white-space: nowrap;
 }
 
-/* =====================================================
-   MOBILE
-===================================================== */
-
-@media (max-width: 900px) {
-  .admin-payouts-root {
-    overflow-x: auto;
-  }
-
-  .admin-payouts-table {
-    min-width: 900px;
-  }
+.apReason {
+  font-size: 12px;
+  color: #64748b;
+  max-width: 200px;
 }
 
-.view-btn {
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  background: #ff7a18;
+.apDate {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+/* ── Status Badges ── */
+.apBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.apBadge.pending    { background: #fef3c7; color: #b45309; }
+.apBadge.approved   { background: #dbeafe; color: #1d4ed8; }
+.apBadge.processing { background: #e0f2fe; color: #0369a1; }
+.apBadge.paid       { background: #dcfce7; color: #15803d; }
+.apBadge.failed     { background: #ffe4e6; color: #be123c; }
+.apBadge.rejected   { background: #ffe4e6; color: #be123c; }
+.apBadge.cancelled  { background: #f1f5f9; color: #64748b; }
+
+/* ── View Button ── */
+.apViewBtn {
+  padding: 5px 14px;
+  border: 1px solid #4f46e5;
+  border-radius: 7px;
+  background: #fff;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
+.apViewBtn:hover { background: #4f46e5; color: #fff; }
 
-.view-btn:hover {
-  background: #f9fafb;
+/* ── Buttons ── */
+.apBtn {
+  padding: 7px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.apBtn:hover:not(:disabled) { background: #f8fafc; color: #0f172a; }
+.apBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.apBtnPrimary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.apBtnPrimary:hover:not(:disabled) { background: #4338ca; border-color: #4338ca; }
+
+/* ── Misc ── */
+.apLoading, .apEmpty {
+  text-align: center;
+  padding: 48px;
+  color: #94a3b8;
   font-size: 13px;
 }
 
-/* MODAL */
-.rp-modal-backdrop {
+/* ── Modal ── */
+.apModalBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 16px;
 }
 
-.rp-modal {
-  width: 420px;
+.apModal {
+  width: 100%;
+  max-width: 460px;
   background: #fff;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
 }
 
-.modal-row {
+.apModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.apModalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.apModalClose {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.apModalClose:hover { background: #f1f5f9; color: #0f172a; }
+
+.apModalBody {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.apModalRow {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 12px;
 }
 
-.modal-row .label {
+.apModalLabel {
+  font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: #64748b;
+  white-space: nowrap;
 }
 
-.modal-row .value {
-  color: #111827;
-}
-
-.rp-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.action-btn{
-  background-color: #ff7a18;
-   padding: 6px 12px;
+.apModalValue {
   font-size: 13px;
-  border-radius: 6px;
+  color: #0f172a;
+  text-align: right;
 }
 
-.modal-proof {
-  margin-top: 14px;
+.apModalAmount {
+  font-weight: 700;
+  font-size: 15px;
+  color: #15803d;
+}
+
+.apModalMono {
+  font-family: monospace;
+  font-size: 12px;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+
+.apModalProof {
   display: flex;
   flex-direction: column;
   gap: 10px;
   align-items: center;
+  padding-top: 4px;
 }
 
-.proof-preview {
+.apProofImg {
   width: 100%;
-  max-width: 420px;
-  max-height: 260px;
+  max-height: 220px;
   object-fit: contain;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
-.proof-actions {
+.apModalFooter {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
   display: flex;
-  gap: 10px;
+  justify-content: flex-end;
 }
 
-.view-full-btn,
-.download-btn {
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  cursor: pointer;
-  text-decoration: none;
-  color: #111827;
+@media (max-width: 640px) {
+  .apContainer { padding: 0 16px; }
+  .apHeader { padding-top: 20px; }
 }
-
-.view-full-btn:hover,
-.download-btn:hover {
-  background: #f3f4f6;
-}
-
-

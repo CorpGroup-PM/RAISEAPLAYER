@@ -24,6 +24,13 @@ ChartJS.register(
   Legend,
 );
 
+function prettyStatus(s: string) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function DonationsHerochart({
   data,
   loading,
@@ -38,10 +45,18 @@ export default function DonationsHerochart({
   const registered = n(data?.guestVsRegistered?.registered);
   const successRate = n(data?.successRate);
   const tipPct = n(data?.platformTips?.tipPercentage);
-
-  const status = data?.statusBreakdown || [];
+  const totalTips = n(data?.platformTips?.totalTips);
   const anon = data?.anonymousBreakdown || {};
-  const tips = data?.platformTips || {};
+  const status = data?.statusBreakdown || [];
+
+  const totalDonations = points.reduce(
+    (sum: number, x: any) => sum + n(x.totalAmount),
+    0,
+  );
+  const totalCount = points.reduce(
+    (sum: number, x: any) => sum + n(x.count),
+    0,
+  );
 
   const lineData = {
     labels: points.map((x: any) => x.date),
@@ -49,12 +64,13 @@ export default function DonationsHerochart({
       {
         label: "Donation Amount",
         data: points.map((x: any) => n(x.totalAmount)),
-        tension: 0.35,
+        tension: 0.4,
         borderWidth: 2,
         pointRadius: 0,
+        pointHoverRadius: 5,
         fill: true,
-        backgroundColor: "rgba(79,70,229,0.08)",
-        borderColor: "rgba(79,70,229,0.75)",
+        backgroundColor: "rgba(79,70,229,0.07)",
+        borderColor: "rgba(79,70,229,0.8)",
       },
     ],
   };
@@ -64,8 +80,9 @@ export default function DonationsHerochart({
     datasets: [
       {
         data: [guest, registered],
-        backgroundColor: ["rgba(59,130,246,0.75)", "rgba(79,70,229,0.75)"],
+        backgroundColor: ["rgba(59,130,246,0.8)", "rgba(79,70,229,0.8)"],
         borderWidth: 0,
+        hoverOffset: 4,
       },
     ],
   };
@@ -75,7 +92,7 @@ export default function DonationsHerochart({
       <div className="aaPanelHeader">
         <div>
           <h3 className="aaPanelTitle">Donations</h3>
-          <p className="aaPanelSub">Performance & composition</p>
+          <p className="aaPanelSub">Revenue trend &amp; donor composition</p>
         </div>
 
         <div className="aaPillGroup">
@@ -85,8 +102,32 @@ export default function DonationsHerochart({
             Success rate: <b>{pct(successRate, 0)}</b>
           </span>
           <span className="aaPill">
-            Tip %: <b>{pct(tipPct, 2)}</b>
+            Tip rate: <b>{pct(tipPct, 2)}</b>
           </span>
+        </div>
+      </div>
+
+      {/* Stats summary */}
+      <div className="aaStatRow" style={{ marginTop: 16 }}>
+        <div className="aaStatItem">
+          <div className="aaStatLabel">Total Revenue</div>
+          <div className="aaStatValue">{inr(totalDonations)}</div>
+          <div className="aaStatSub">in selected range</div>
+        </div>
+        <div className="aaStatItem">
+          <div className="aaStatLabel">Donations</div>
+          <div className="aaStatValue">{num(totalCount)}</div>
+          <div className="aaStatSub">successful transactions</div>
+        </div>
+        <div className="aaStatItem">
+          <div className="aaStatLabel">Platform Tips</div>
+          <div className="aaStatValue">{inr(totalTips)}</div>
+          <div className="aaStatSub">{pct(tipPct, 1)} of total</div>
+        </div>
+        <div className="aaStatItem">
+          <div className="aaStatLabel">Anonymous</div>
+          <div className="aaStatValue">{num(n(anon?.anonymous))}</div>
+          <div className="aaStatSub">of {num(n(anon?.anonymous) + n(anon?.nonAnonymous))} donors</div>
         </div>
       </div>
 
@@ -94,8 +135,7 @@ export default function DonationsHerochart({
 
       <div className="aaTwoCols">
         <div className="aaChartBox">
-          <div className="aaChartHead">Donations over time</div>
-
+          <div className="aaChartHead">Revenue over time</div>
           <div className="aaChartWrap">
             <Line
               data={lineData}
@@ -105,6 +145,10 @@ export default function DonationsHerochart({
                 plugins: {
                   legend: { display: false },
                   tooltip: {
+                    backgroundColor: "rgba(15,23,42,0.9)",
+                    titleColor: "#94a3b8",
+                    bodyColor: "#f1f5f9",
+                    padding: 10,
                     callbacks: {
                       label: (ctx) => ` ${inr(ctx.parsed.y)}`,
                     },
@@ -113,13 +157,15 @@ export default function DonationsHerochart({
                 scales: {
                   x: {
                     grid: { display: false },
-                    ticks: { color: "rgba(100,116,139,0.9)" },
+                    ticks: { color: "#94a3b8", font: { size: 11 } },
                   },
                   y: {
-                    grid: { color: "rgba(230,234,242,0.9)" },
+                    grid: { color: "rgba(226,232,240,0.8)" },
                     ticks: {
-                      color: "rgba(100,116,139,0.9)",
-                      callback: (v) => `₹${Number(v).toLocaleString("en-IN")}`,
+                      color: "#94a3b8",
+                      font: { size: 11 },
+                      callback: (v) =>
+                        `₹${Number(v).toLocaleString("en-IN")}`,
                     },
                   },
                 },
@@ -127,30 +173,42 @@ export default function DonationsHerochart({
             />
           </div>
 
-          <div className="aaBadgeLine" style={{ marginTop: 10 }}>
-            {status.map((s: any) => (
-              <span key={s.status} className="aaPill">
-                <b>{s.status}</b>: {num(s.count)}
-              </span>
-            ))}
-          </div>
+          {status.length > 0 && (
+            <div className="aaBadgeLine" style={{ marginTop: 12 }}>
+              {status.map((s: any) => (
+                <span key={s.status} className="aaPill">
+                  {prettyStatus(s.status)}: <b>{num(s.count)}</b>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="aaChartBox">
-          <div className="aaChartHead">Guest vs registered</div>
-
+          <div className="aaChartHead">Guest vs Registered donors</div>
           <div className="aaChartWrap">
             <Doughnut
               data={donutData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: "68%",
                 plugins: {
                   legend: {
-                    position: "top",
-                    labels: { color: "rgba(100,116,139,0.95)" },
+                    position: "bottom",
+                    labels: {
+                      color: "#64748b",
+                      font: { size: 12 },
+                      padding: 16,
+                      usePointStyle: true,
+                      pointStyleWidth: 8,
+                    },
                   },
                   tooltip: {
+                    backgroundColor: "rgba(15,23,42,0.9)",
+                    titleColor: "#94a3b8",
+                    bodyColor: "#f1f5f9",
+                    padding: 10,
                     callbacks: {
                       label: (ctx) => ` ${ctx.label}: ${num(ctx.parsed)}`,
                     },
@@ -158,16 +216,6 @@ export default function DonationsHerochart({
                 },
               }}
             />
-          </div>
-
-          <div className="aaBadgeLine" style={{ marginTop: 10 }}>
-            <span className="aaPill">
-              Anonymous: <b>{num(anon?.anonymous)}</b> / Non-anon:{" "}
-              <b>{num(anon?.nonAnonymous)}</b>
-            </span>
-            <span className="aaPill">
-              Tips total: <b>{inr(tips?.totalTips)}</b>
-            </span>
           </div>
         </div>
       </div>

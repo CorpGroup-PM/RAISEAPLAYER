@@ -296,22 +296,22 @@ export default function ExploreFundraiserDetailsPage() {
 
             <div className="highlight-item">
               <span>SPORT</span>
-              <strong>{campaign.sport}</strong>
+              <span className="skill-chip">{campaign.sport}</span>
             </div>
 
             <div className="highlight-item">
               <span>LEVEL</span>
-              <strong>{campaign.level}</strong>
+              <span className="skill-chip">{campaign.level}</span>
             </div>
 
             <div className="highlight-item">
               <span>LOCATION</span>
-              <strong>{campaign.city}, {campaign.state}</strong>
+              <span className="skill-chip">{campaign.city}, {campaign.state}</span>
             </div>
 
             <div className="highlight-item">
               <span>DISCIPLINE</span>
-              <strong>{campaign.discipline || "—"}</strong>
+              <span className="skill-chip">{campaign.discipline || "—"}</span>
             </div>
 
             {Array.isArray(campaign.skills) &&

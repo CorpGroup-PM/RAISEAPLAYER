@@ -22,18 +22,14 @@ const sportSchema = z.object({
 export default function Slide4Sport({ draft, updateDraft, next, back }: any) {
 
   const [skillInput, setSkillInput] = useState('');
+  const [customSport, setCustomSport] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   /* -------------------- Update helper -------------------- */
   const updateField = (key: string, value: string) => {
-    const cleaned =
-      key === 'sport'
-        ? value.trim().replace(/\b\w/g, c => c.toUpperCase())
-        : value;
-
-    updateDraft({ [key]: cleaned });
-    setErrors((prev) => ({ ...prev, [key]: '' }));
+    updateDraft({ [key]: value });
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: '' }));
   };
 
 
@@ -107,12 +103,60 @@ export default function Slide4Sport({ draft, updateDraft, next, back }: any) {
       title="Sport & Skills"
       userStory="As a supporter, I want to understand the player’s sport and skills."
     >
-      <input
+      <select
         className="wizard-input"
-        placeholder="Enter sport"
-        value={draft.sport || ''}
-        onChange={(e) => updateField('sport', e.target.value)}
-      />
+        value={customSport !== '' ? 'Other' : (draft.sport || '')}
+        onChange={(e) => {
+          if (e.target.value === 'Other') {
+            setCustomSport(' '); // mark as "Other" mode
+            updateField('sport', '');
+          } else {
+            setCustomSport('');
+            updateField('sport', e.target.value);
+          }
+        }}
+      >
+        <option value="">Select Sport</option>
+        <option value="Hockey">Hockey</option>
+        <option value="Cricket">Cricket</option>
+        <option value="Football">Football</option>
+        <option value="Badminton">Badminton</option>
+        <option value="Table Tennis">Table Tennis</option>
+        <option value="Tennis">Tennis</option>
+        <option value="Kabaddi">Kabaddi</option>
+        <option value="Wrestling">Wrestling</option>
+        <option value="Boxing">Boxing</option>
+        <option value="Athletics">Athletics</option>
+        <option value="Swimming">Swimming</option>
+        <option value="Archery">Archery</option>
+        <option value="Shooting">Shooting</option>
+        <option value="Weightlifting">Weightlifting</option>
+        <option value="Gymnastics">Gymnastics</option>
+        <option value="Volleyball">Volleyball</option>
+        <option value="Basketball">Basketball</option>
+        <option value="Kho-Kho">Kho-Kho</option>
+        <option value="Cycling">Cycling</option>
+        <option value="Rowing">Rowing</option>
+        <option value="Chess">Chess</option>
+        <option value="Golf">Golf</option>
+        <option value="Rugby">Rugby</option>
+        <option value="Other">Other</option>
+      </select>
+
+      {customSport !== '' && (
+        <input
+          className="wizard-input"
+          placeholder="Enter your sport name"
+          value={draft.sport || ''}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\b\w/g, c => c.toUpperCase());
+            setCustomSport(val || ' ');
+            updateField('sport', val);
+          }}
+          autoFocus
+        />
+      )}
+
       {errors.sport && <p className="error-text">{errors.sport}</p>}
 
       <input

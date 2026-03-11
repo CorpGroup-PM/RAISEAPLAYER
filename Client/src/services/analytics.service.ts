@@ -16,4 +16,7 @@ export const AnalyticsService = {
   payouts(params: { from: string; to: string }) {
     return api.get("/admin/analytics/payouts", { params });
   },
+  documents(params?: { from?: string; to?: string }) {
+    return api.get("/admin/analytics/documents", { params });
+  },
 };

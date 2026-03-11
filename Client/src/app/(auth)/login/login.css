@@ -170,10 +170,13 @@
   display: flex;
   align-items: center;
   border-bottom: 1px solid #ccc;
+  width: 100%;
 }
 
 .password-wrapper .input-field {
   flex: 1;
+  min-width: 0;
+  width: auto;
   border-bottom: none;
 }
 
@@ -186,12 +189,15 @@
 }
 
 .password-toggle-button {
-  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
   cursor: pointer;
-  font-size: 16px;
   background: transparent;
   border: none;
   flex-shrink: 0;
+  color: #6b7280;
 }
 
 .forgot-password-text {

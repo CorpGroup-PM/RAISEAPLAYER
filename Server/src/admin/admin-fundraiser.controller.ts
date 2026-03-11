@@ -168,6 +168,21 @@ export class AdminFundraiserController {
         return this.adminFundraiserService.getCampaignsByCreatorId(creatorId);
     }
 
+    // ------------------------------------------------------------------
+    // LIST BANK / RECIPIENT ACCOUNTS
+    // ------------------------------------------------------------------
+    @Get('bank-accounts')
+    @ApiOperation({
+        summary: 'List recipient bank accounts',
+        description: 'Fetch all recipient accounts. Pass unverified=true to get only unverified.',
+    })
+    @ApiQuery({ name: 'unverified', required: false, type: Boolean })
+    async listBankAccounts(
+        @Query('unverified') unverified?: string,
+    ) {
+        return this.adminFundraiserService.listRecipientAccounts(unverified === 'true');
+    }
+
     //----------------------------------------------------------------------
     //Getting All the Tips with info
     //----------------------------------------------------------------------

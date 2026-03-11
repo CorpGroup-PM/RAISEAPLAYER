@@ -1,0 +1,298 @@
+/* ── Admin Bank Accounts Page ── */
+
+.abPage {
+  background: #f1f5f9;
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+.abContainer {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.abHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 32px 0 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-page-wrapper {
+  padding-top: 70px;
+}
+
+.abTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.abSubtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ── Summary ── */
+.abSummary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) { .abSummary { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .abSummary { grid-template-columns: 1fr; } }
+
+.abSummaryCard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.abSummaryLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
+}
+
+.abSummaryValue {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+.abSummaryValue.warn { color: #b45309; }
+.abSummaryValue.good { color: #15803d; }
+
+/* ── Filters ── */
+.abFilters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.abFilterBtn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.abFilterBtn:hover { border-color: #a5b4fc; color: #4f46e5; background: #eef2ff; }
+.abFilterBtn.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+
+/* ── Panel ── */
+.abPanel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+.abPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.abPanelTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.abCount {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ── Table ── */
+.abTableWrap { overflow-x: auto; }
+
+.abTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.abTable th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.abTable td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.abTable tr:last-child td { border-bottom: none; }
+.abTable tr:hover td { background: #fafbff; }
+
+/* ── Cell content ── */
+.abHolderName {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 13px;
+}
+.abHolderType {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.abBankName {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 13px;
+}
+.abAccountNum {
+  font-size: 12px;
+  color: #64748b;
+  font-family: monospace;
+  margin-top: 2px;
+}
+.abIfsc {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: monospace;
+  margin-top: 1px;
+}
+
+.abCampaignLink {
+  font-weight: 600;
+  color: #4f46e5;
+  font-size: 12px;
+  text-decoration: none;
+  display: block;
+}
+.abCampaignLink:hover { text-decoration: underline; }
+
+.abCampaignStatus {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 3px;
+}
+.abStatus_active    { color: #15803d; }
+.abStatus_approved  { color: #2563eb; }
+.abStatus_pending_review { color: #b45309; }
+.abStatus_rejected  { color: #be123c; }
+.abStatus_suspended { color: #6b7280; }
+.abStatus_completed { color: #7c3aed; }
+
+.abCreatorName {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 12px;
+}
+.abCreatorEmail {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* ── Status Badge ── */
+.abStatusBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.abStatusBadge.verified   { background: #dcfce7; color: #15803d; }
+.abStatusBadge.unverified { background: #fef3c7; color: #b45309; }
+
+/* ── Verify Button ── */
+.abVerifyBtn {
+  padding: 5px 14px;
+  border: 1px solid #4f46e5;
+  border-radius: 7px;
+  background: #fff;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.abVerifyBtn:hover:not(:disabled) {
+  background: #4f46e5;
+  color: #fff;
+}
+.abVerifyBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Buttons ── */
+.abBtn {
+  padding: 7px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.abBtn:hover:not(:disabled) { background: #f8fafc; color: #0f172a; }
+.abBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.abBtnPrimary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.abBtnPrimary:hover:not(:disabled) { background: #4338ca; border-color: #4338ca; }
+
+/* ── Misc ── */
+.abLoading, .abEmpty {
+  text-align: center;
+  padding: 48px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.abError {
+  margin: 12px 0;
+  padding: 13px 18px;
+  background: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fda4af;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .abContainer { padding: 0 16px; }
+  .abHeader { padding-top: 20px; }
+}

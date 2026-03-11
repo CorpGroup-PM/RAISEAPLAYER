@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import "./adminUsers.css";
-import AdminNavbar from "@/components/admin/AdminNavbar";
 import { adminAnalytics } from "@/services/adminAnalytics.service";
 import { useRouter } from "next/navigation";
 
@@ -38,7 +37,6 @@ export default function AdminUsersPage() {
 
   return (
     <>
-      <AdminNavbar />
       <div className="admin-users-page admin-page-wrapper">
         <div className="admin-users-head">
           <h2>All Users</h2>

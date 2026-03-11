@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AdminPayoutsService } from "@/services/adminPayouts.service";
 import { v4 as uuid } from "uuid";
 import AlertModal from "@/components/ui/AlertModal";
@@ -11,6 +11,7 @@ export default function AdminProcessForm({
   requestId: string;
   onDone: () => void;
 }) {
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [transactionId, setTransactionId] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -35,8 +36,9 @@ export default function AdminProcessForm({
     try {
       await AdminPayoutsService.process(requestId, form);
 
-      // Close Bootstrap modal
-      const dismissBtn = document.querySelector('.modal.show [data-bs-dismiss="modal"]') as HTMLElement;
+      const dismissBtn = document.querySelector(
+        '.modal.show [data-bs-dismiss="modal"]',
+      ) as HTMLElement;
       dismissBtn?.click();
 
       onDone();
@@ -47,33 +49,117 @@ export default function AdminProcessForm({
     }
   };
 
+  const fieldStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#64748b",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "10px 14px",
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    fontSize: 14,
+    color: "#0f172a",
+    background: "#fff",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
   return (
-    <div className="admin-process-form">
-      <input
-        placeholder="Transaction ID"
-        value={transactionId}
-        onChange={(e) => setTransactionId(e.target.value)}
-      />
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      {/* Transaction ID */}
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Transaction ID *</label>
+        <input
+          style={inputStyle}
+          placeholder="e.g. TXN123456789"
+          value={transactionId}
+          onChange={(e) => setTransactionId(e.target.value)}
+        />
+      </div>
 
-      <input
-        type="datetime-local"
-        value={paymentDate}
-        onChange={(e) => setPaymentDate(e.target.value)}
-      />
+      {/* Payment Date */}
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Payment Date & Time *</label>
+        <div
+          style={{ position: "relative", cursor: "pointer" }}
+          onClick={() => dateInputRef.current?.showPicker()}
+        >
+          <input
+            ref={dateInputRef}
+            style={{ ...inputStyle, cursor: "pointer" }}
+            type="datetime-local"
+            value={paymentDate}
+            onChange={(e) => setPaymentDate(e.target.value)}
+          />
+        </div>
+      </div>
 
-      <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-      <input
-        placeholder="Notes"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-      />
+      {/* Payment Proof */}
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Payment Proof (optional)</label>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 14px",
+            border: "1px dashed #cbd5e1",
+            borderRadius: 8,
+            cursor: "pointer",
+            background: "#f8fafc",
+            fontSize: 13,
+            color: "#64748b",
+          }}
+        >
+          <span style={{ fontSize: 18 }}>📎</span>
+          <span>{file ? file.name : "Click to upload image"}</span>
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
+        </label>
+      </div>
 
-      <button disabled={loading} onClick={submit}>
-        {loading ? "Processing..." : "Mark Paid"}
+      {/* Notes */}
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Notes (optional)</label>
+        <textarea
+          style={{ ...inputStyle, resize: "vertical", minHeight: 80 }}
+          placeholder="Add any notes about this payment…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+
+      {/* Submit */}
+      <button
+        className="apBtn apBtnPrimary"
+        style={{ alignSelf: "flex-end", padding: "10px 24px", fontSize: 14 }}
+        disabled={loading}
+        onClick={submit}
+      >
+        {loading ? "Processing…" : "Mark as Paid"}
       </button>
 
       {alertMsg && (
-        <AlertModal message={alertMsg} type="warning" onClose={() => setAlertMsg("")} />
+        <AlertModal
+          message={alertMsg}
+          type="warning"
+          onClose={() => setAlertMsg("")}
+        />
       )}
     </div>
   );

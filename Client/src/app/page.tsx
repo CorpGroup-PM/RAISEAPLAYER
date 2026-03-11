@@ -226,7 +226,7 @@ export default function Home() {
                       />
                     </div>
                     {c.creator && (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px" }}>
                         <p className="created-by" style={{ margin: 0 }}>
                           Created by{" "}
                           <strong>

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import "./admin.css";
-import AdminNavbar from "@/components/admin/AdminNavbar";
 import StatusBadge from "@/components/StatusBadge/StatusBadge";
 import { AdminCampaignsService } from "@/services/admin-campaigns.service";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -322,25 +321,19 @@ export default function AdminCampaignDetailsPage() {
 
   if (loading) {
     return (
-      <>
-        <AdminNavbar />
-        <div className="admin-campaign-page">
-          <p style={{ padding: "24px" }}>Loading campaign…</p>
-        </div>
-      </>
+      <div className="admin-campaign-page admin-page-wrapper">
+        <p style={{ padding: "24px" }}>Loading campaign…</p>
+      </div>
     );
   }
 
   if (!campaign) {
     return (
-      <>
-        <AdminNavbar />
-        <div className="admin-campaign-page">
-          <p style={{ padding: "24px", color: "red" }}>
-            Campaign not found
-          </p>
-        </div>
-      </>
+      <div className="admin-campaign-page admin-page-wrapper">
+        <p style={{ padding: "24px", color: "red" }}>
+          Campaign not found
+        </p>
+      </div>
     );
   }
 
@@ -353,8 +346,6 @@ export default function AdminCampaignDetailsPage() {
 
   return (
     <>
-      <AdminNavbar />
-
       <div className="admin-campaign-page admin-page-wrapper">
         {/* ================= TOP BAR ================= */}
         <header className="admin-topbar">
@@ -393,20 +384,20 @@ export default function AdminCampaignDetailsPage() {
             <div className="highlight-row">
               <div className="highlight-item">
                 <span className="highlight-label">Sport</span>
-                <span className="highlight-value">{campaign.sport}</span>
+                <span className="skill-chip">{campaign.sport}</span>
               </div>
 
               {campaign.level && (
                 <div className="highlight-item">
                   <span className="highlight-label">Level</span>
-                  <span className="highlight-value">{campaign.level}</span>
+                  <span className="skill-chip">{campaign.level}</span>
                 </div>
               )}
 
               {campaign.discipline && (
                 <div className="highlight-item">
                   <span className="highlight-label">Discipline</span>
-                  <span className="highlight-value">{campaign.discipline}</span>
+                  <span className="skill-chip">{campaign.discipline}</span>
                 </div>
               )}
             </div>
@@ -415,7 +406,7 @@ export default function AdminCampaignDetailsPage() {
             <div className="highlight-row">
               <div className="highlight-item full">
                 <span className="highlight-label">Location</span>
-                <span className="highlight-value">
+                <span className="skill-chip">
                   {campaign.city}, {campaign.state}, {campaign.country}
                 </span>
               </div>

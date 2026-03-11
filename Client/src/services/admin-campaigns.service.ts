@@ -47,7 +47,16 @@ export const AdminCampaignsService = {
   },
 
   completeCampaign: (id: string) => {
-  return api.post(`/admin/campaigns/${id}/complete`);
-},
+    return api.post(`/admin/campaigns/${id}/complete`);
+  },
 
+  listBankAccounts: (onlyUnverified = false) => {
+    return api.get(`/admin/campaigns/bank-accounts`, {
+      params: onlyUnverified ? { unverified: "true" } : {},
+    });
+  },
+
+  verifyBankAccount: (recipientAccountId: string) => {
+    return api.put(`/admin/campaigns/${recipientAccountId}/verify`);
+  },
 };

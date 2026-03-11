@@ -1,234 +1,276 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AdminPayoutsService } from "@/services/adminPayouts.service";
-import AdminStatusBadge from "./AdminStatusBadge";
 import "./adminPayouts.css";
-import { useRouter } from "next/navigation";
+
+const STATUS_COLORS: Record<string, string> = {
+  PENDING:    "apBadge pending",
+  APPROVED:   "apBadge approved",
+  PROCESSING: "apBadge processing",
+  PAID:       "apBadge paid",
+  FAILED:     "apBadge failed",
+  REJECTED:   "apBadge rejected",
+  CANCELLED:  "apBadge cancelled",
+};
+
+const ALL_STATUSES = ["ALL", "PENDING", "APPROVED", "PROCESSING", "PAID", "FAILED", "REJECTED", "CANCELLED"] as const;
+type FilterStatus = (typeof ALL_STATUSES)[number];
+
+function fmt(n: number) {
+  return "₹" + n.toLocaleString("en-IN");
+}
 
 export default function AdminAllPayoutsTable() {
-  const [items, setItems] = useState<any[]>([]);
-  const [status, setStatus] = useState<string>("ALL");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const [showModal, setShowModal] = useState(false);
+  const [items, setItems]             = useState<any[]>([]);
+  const [filter, setFilter]           = useState<FilterStatus>("ALL");
+  const [loading, setLoading]         = useState(false);
   const [activePayout, setActivePayout] = useState<any>(null);
-
 
   const load = async () => {
     setLoading(true);
-
-    const res =
-      status === "ALL"
-        ? await AdminPayoutsService.allList()
-        : await AdminPayoutsService.allList(status);
-
-    setItems(res.data.data || []);
-    setLoading(false);
+    try {
+      const res = await AdminPayoutsService.allList();
+      setItems(res.data.data || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    load();
-  }, [status]);
+  useEffect(() => { load(); }, []);
 
-  const updateReason = (id: string, reason: string) => {
-    setItems((prev) => prev.map((r) => (r.id === id ? { ...r, reason } : r)));
-  };
+  /* ── summary counts ── */
+  const total      = items.length;
+  const pending    = items.filter((i) => i.status === "PENDING").length;
+  const processing = items.filter((i) => i.status === "PROCESSING").length;
+  const paid       = items.filter((i) => i.status === "PAID").reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const failed     = items.filter((i) => i.status === "FAILED").length;
+  const rejected   = items.filter((i) => i.status === "REJECTED").length;
+
+  const filtered = filter === "ALL" ? items : items.filter((i) => i.status === filter);
 
   return (
-    <div className="admin-payouts-root admin-page-wrapper">
-      <div className="admin-payouts-head">
-        <h2>Payout Requests</h2>
+    <div className="apPage">
+      <div className="apContainer">
 
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="ALL">All</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="PROCESSING">Processing</option>
-          <option value="PAID">Paid</option>
-          <option value="FAILED">Failed</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
+        {/* Header */}
+        <div className="apHeader admin-page-wrapper">
+          <div>
+            <h1 className="apTitle">PAYOUT REQUESTS</h1>
+            <p className="apSubtitle">Manage and track all fundraiser withdrawal requests</p>
+          </div>
+          <button className="apBtn apBtnPrimary" onClick={load} disabled={loading}>
+            {loading ? "Loading…" : "↻ Refresh"}
+          </button>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="apSummary">
+          <div className="apSummaryCard">
+            <div className="apSummaryLabel">Total Requests</div>
+            <div className="apSummaryValue">{total}</div>
+          </div>
+          <div className="apSummaryCard">
+            <div className="apSummaryLabel">Pending</div>
+            <div className={`apSummaryValue ${pending > 0 ? "warn" : ""}`}>{pending}</div>
+          </div>
+          <div className="apSummaryCard">
+            <div className="apSummaryLabel">Processing</div>
+            <div className={`apSummaryValue ${processing > 0 ? "info" : ""}`}>{processing}</div>
+          </div>
+          <div className="apSummaryCard">
+            <div className="apSummaryLabel">Total Paid Out</div>
+            <div className="apSummaryValue good">{fmt(paid)}</div>
+          </div>
+          <div className="apSummaryCard">
+            <div className="apSummaryLabel">Failed</div>
+            <div className={`apSummaryValue ${failed > 0 ? "bad" : ""}`}>{failed}</div>
+          </div>
+          <div className="apSummaryCard">
+            <div className="apSummaryLabel">Rejected</div>
+            <div className={`apSummaryValue ${rejected > 0 ? "warn" : ""}`}>{rejected}</div>
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="apFilters">
+          {ALL_STATUSES.map((s) => {
+            const count = s === "ALL" ? total : items.filter((i) => i.status === s).length;
+            return (
+              <button
+                key={s}
+                className={`apFilterBtn${filter === s ? " active" : ""}`}
+                onClick={() => setFilter(s)}
+              >
+                {s === "ALL" ? `All (${total})` : `${s.charAt(0) + s.slice(1).toLowerCase()} (${count})`}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Table Panel */}
+        <div className="apPanel">
+          <div className="apPanelHeader">
+            <h3 className="apPanelTitle">
+              {filter === "ALL" ? "All Payout Requests" : `${filter.charAt(0) + filter.slice(1).toLowerCase()} Requests`}
+            </h3>
+            <span className="apCount">{filtered.length} request{filtered.length !== 1 ? "s" : ""}</span>
+          </div>
+
+          <div className="apTableWrap">
+            {loading ? (
+              <div className="apLoading">Loading payouts…</div>
+            ) : filtered.length === 0 ? (
+              <div className="apEmpty">No payout requests found.</div>
+            ) : (
+              <table className="apTable">
+                <thead>
+                  <tr>
+                    <th>Fundraiser</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Requested On</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((x) => (
+                    <tr key={x.id}>
+                      <td>
+                        <Link
+                          href={`/admin/campaigns/${x.fundraiserId}`}
+                          className="apCampaignLink"
+                        >
+                          {x.fundraiserName ?? "Fundraiser"}
+                        </Link>
+                        <div className="apFundraiserId">{x.fundraiserId?.slice(0, 8)}…</div>
+                      </td>
+
+                      <td className="apAmount">{fmt(Number(x.amount) || 0)}</td>
+
+                      <td>
+                        <span className={STATUS_COLORS[x.status] || "apBadge"}>
+                          {x.status}
+                        </span>
+                      </td>
+
+                      <td className="apReason">
+                        {x.status === "REJECTED"
+                          ? x.reviewReason || "—"
+                          : x.status === "FAILED"
+                          ? x.failedReason || "—"
+                          : "—"}
+                      </td>
+
+                      <td className="apDate">
+                        {new Date(x.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+
+                      <td>
+                        {x.status === "PAID" ? (
+                          <button
+                            className="apViewBtn"
+                            onClick={() => setActivePayout(x)}
+                          >
+                            View
+                          </button>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
       </div>
 
-      <table className="admin-payouts-table">
-        <thead>
-          <tr>
-            <th>FundraiserId</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Action</th>
-            <th>Request On</th>
-            {items.some((i) => i.status === "PAID") && (
-              <th>View More</th>
-            )}
-            {items.some((i) => i.status === "REJECTED"||i.status === "FAILED") && (
-              <th>Reason</th>
-            )}
-          </tr>
-        </thead>
-
-        <tbody>
-          {items.map((x) => (
-            <tr key={x.id}>
-              <td
-                className="fundraiser-cell clickable"
-                onClick={() =>
-                  router.push(`/admin/campaigns/${x.fundraiserId}`)
-                }
-              >
-                <div className="fundraiser-owner">
-                  <strong>{x.fundraiserName ?? "Fundraiser"}</strong>
-                  <div className="fundraiser-id">
-                    {x.fundraiserId?.slice(0, 8)}
-                  </div>
-                </div>
-              </td>
-
-              <td>₹{x.amount}</td>
-              <td>
-                <AdminStatusBadge status={x.status} />
-              </td>
-
-              <td></td>
-
-              <td>{new Date(x.createdAt).toLocaleDateString("en-IN")}</td>
-              {items.some((i) => i.status === "PAID") && (
-                <td>
-                  {x.status === "PAID" ? (
-                    <button
-                      className="view-btn"
-                      onClick={() => {
-                        setActivePayout(x);
-                        setShowModal(true);
-                      }}
-                    >
-                      View
-                    </button>
-
-                  ) : (
-                    "-"
-                  )}
-                </td>
-              )}
-
-              {items.some((i) => i.status === "REJECTED" || i.status === "FAILED") && (
-                <td>
-                  {x.status === "REJECTED"
-                    ? x.reviewReason || "-"
-                    : x.status === "FAILED"
-                      ? x.failedReason || "-"
-                      : "-"}
-                </td>
-
-              )}
-
-
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {loading && <p>Loading...</p>}
-
-      {showModal && activePayout && (
-        <div className="rp-modal-backdrop">
-          <div className="rp-modal">
-            <h3>Payout Details</h3>
-
-            {/* <div className="modal-row">
-              <span className="label">Fundraiser ID</span>
-              <span className="value">{activePayout.fundraiserId?.slice(0, 8)}</span>
-            </div> */}
-
-            <div className="modal-row">
-              <span className="label">Amount</span>
-              <span className="value">₹{activePayout.amount}</span>
+      {/* Payout Detail Modal */}
+      {activePayout && (
+        <div className="apModalBackdrop" onClick={() => setActivePayout(null)}>
+          <div className="apModal" onClick={(e) => e.stopPropagation()}>
+            <div className="apModalHeader">
+              <h3 className="apModalTitle">Payout Details</h3>
+              <button className="apModalClose" onClick={() => setActivePayout(null)}>✕</button>
             </div>
 
-            <div className="modal-row">
-              <span className="label">Status</span>
-              <AdminStatusBadge status={activePayout.status} />
-            </div>
-            <div className="modal-row">
-              <span className="label">Request date</span>
-              <span className="value">
-                {new Date(activePayout.createdAt).toLocaleDateString("en-IN")}
-              </span>
-            </div>
-            {activePayout.status === "PAID" && (
-              <>
-                {activePayout.processedAt && (
-                  <div className="modal-row">
-                    <span className="label">Process Date</span>
-                    <span className="value">
-                      {new Date(activePayout.processedAt).toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                )}
-
-                {activePayout.transactionId && (
-                  <div className="modal-row">
-                    <span className="label">Transaction ID</span>
-                    <span className="value">
-                      {activePayout.transactionId}
-                    </span>
-                  </div>
-                )}
-                {activePayout?.payout && (
-                  <div className="modal-row">
-                    <span className="label">Note</span>
-                    <span className="value">
-                      {activePayout.payout.notes?.trim() || "-"}
-                    </span>
-                  </div>
-                )}
-
-
-                {activePayout?.payout?.proofImageUrl && (
-                  <div className="modal-proof">
-                    <span className="label">Payment Proof</span>
-
-                    <img
-                      src={activePayout.payout.proofImageUrl}
-                      alt="Payment proof"
-                      className="proof-preview"
-                    />
-
-                    <div className="proof-actions">
-                      <button
-                        className="view-full-btn"
-                        onClick={() =>
-                          window.open(activePayout.payout.proofImageUrl, "_blank")
-                        }
-                      >
-                        View Full Image
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-              </>
-            )}
-
-            {activePayout.reason && (
-              <div className="modal-row">
-                <span className="label">Reason</span>
-                <span className="value">{activePayout.reason}</span>
+            <div className="apModalBody">
+              <div className="apModalRow">
+                <span className="apModalLabel">Fundraiser</span>
+                <span className="apModalValue">{activePayout.fundraiserName ?? "—"}</span>
               </div>
-            )}
+              <div className="apModalRow">
+                <span className="apModalLabel">Amount</span>
+                <span className="apModalValue apModalAmount">{fmt(Number(activePayout.amount) || 0)}</span>
+              </div>
+              <div className="apModalRow">
+                <span className="apModalLabel">Status</span>
+                <span className={STATUS_COLORS[activePayout.status] || "apBadge"}>
+                  {activePayout.status}
+                </span>
+              </div>
+              <div className="apModalRow">
+                <span className="apModalLabel">Requested</span>
+                <span className="apModalValue">
+                  {new Date(activePayout.createdAt).toLocaleDateString("en-IN", {
+                    day: "2-digit", month: "short", year: "numeric",
+                  })}
+                </span>
+              </div>
 
-            <div className="rp-modal-actions">
-              <button
-                className="action-btn"
-                onClick={() => {
-                  setShowModal(false);
-                  setActivePayout(null);
-                }}
-              >
-                Close
-              </button>
+              {activePayout.processedAt && (
+                <div className="apModalRow">
+                  <span className="apModalLabel">Processed</span>
+                  <span className="apModalValue">
+                    {new Date(activePayout.processedAt).toLocaleString("en-IN")}
+                  </span>
+                </div>
+              )}
+
+              {activePayout.transactionId && (
+                <div className="apModalRow">
+                  <span className="apModalLabel">Transaction ID</span>
+                  <span className="apModalValue apModalMono">{activePayout.transactionId}</span>
+                </div>
+              )}
+
+              {activePayout?.payout?.notes?.trim() && (
+                <div className="apModalRow">
+                  <span className="apModalLabel">Note</span>
+                  <span className="apModalValue">{activePayout.payout.notes.trim()}</span>
+                </div>
+              )}
+
+              {activePayout?.payout?.proofImageUrl && (
+                <div className="apModalProof">
+                  <span className="apModalLabel">Payment Proof</span>
+                  <img
+                    src={activePayout.payout.proofImageUrl}
+                    alt="Payment proof"
+                    className="apProofImg"
+                  />
+                  <button
+                    className="apBtn apBtnPrimary"
+                    style={{ marginTop: 8 }}
+                    onClick={() => window.open(activePayout.payout.proofImageUrl, "_blank")}
+                  >
+                    View Full Image
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="apModalFooter">
+              <button className="apBtn" onClick={() => setActivePayout(null)}>Close</button>
             </div>
           </div>
         </div>

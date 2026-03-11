@@ -1,0 +1,116 @@
+/* ── Admin Modal ── */
+
+.adm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  animation: admFadeIn 0.15s ease;
+}
+
+@keyframes admFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.adm-modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: admSlideUp 0.2s ease;
+}
+
+@keyframes admSlideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Icon ── */
+.adm-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.adm-icon-wrap.confirm { background: #eef2ff; color: #4f46e5; }
+.adm-icon-wrap.warning { background: #fef3c7; color: #b45309; }
+.adm-icon-wrap.error   { background: #ffe4e6; color: #be123c; }
+.adm-icon-wrap.success { background: #dcfce7; color: #15803d; }
+
+.adm-icon {
+  line-height: 1;
+  font-style: normal;
+}
+
+/* ── Text ── */
+.adm-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.adm-message {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+
+/* ── Actions ── */
+.adm-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.adm-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+
+.adm-cancel {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+.adm-cancel:hover { background: #e2e8f0; color: #0f172a; }
+
+/* Confirm button variants */
+.adm-confirm.confirm { background: #4f46e5; color: #fff; }
+.adm-confirm.confirm:hover { background: #4338ca; }
+
+.adm-confirm.warning { background: #b45309; color: #fff; }
+.adm-confirm.warning:hover { background: #92400e; }
+
+.adm-confirm.error   { background: #be123c; color: #fff; }
+.adm-confirm.error:hover { background: #9f1239; }
+
+.adm-confirm.success { background: #15803d; color: #fff; }
+.adm-confirm.success:hover { background: #166534; }

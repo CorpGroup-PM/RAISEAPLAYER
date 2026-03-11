@@ -123,13 +123,22 @@ export default function AdminPayoutList({
   /* ================= UI ================= */
 
   return (
-    <div className="admin-payouts">
-      <div className="admin-payouts-head">
-        <h3>Payout Requests</h3>
+    <div className="apPanel">
+      {/* Header */}
+      <div className="apPanelHeader">
+        <h3 className="apPanelTitle">Payout Requests</h3>
 
-        <div className="admin-payout-controls">
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <select
-            className="admin-status-filter"
+            style={{
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid #e2e8f0",
+              fontSize: 13,
+              color: "#0f172a",
+              background: "#fff",
+              cursor: "pointer",
+            }}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -142,282 +151,300 @@ export default function AdminPayoutList({
             <option value="REJECTED">Rejected</option>
           </select>
 
-          <button onClick={load} disabled={loading}>
-            {loading ? "Loading..." : "Refresh"}
+          <button className="apBtn" onClick={load} disabled={loading}>
+            {loading ? "Loading…" : "Refresh"}
           </button>
         </div>
       </div>
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Fundraiser</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Actions</th>
-            <th>Request date</th>
-            {/* {items.some(i => i.status === "REJECTED"||i.status === "FAILED ||i.status === "FAILED") && <th>Reason</th>} */}
-            {(statusFilter === "ALL" || statusFilter === "PAID") && (
-              <th>View More</th>
-            )}
-            {(statusFilter === "REJECTED" ||
-              statusFilter === "FAILED" ||
-              statusFilter === "ALL") && (
-                <th>Reason</th>
+      {/* Table */}
+      <div className="apTableWrap">
+        <table className="apTable">
+          <thead>
+            <tr>
+              <th>Fundraiser</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+              <th>Request Date</th>
+              {(statusFilter === "ALL" || statusFilter === "PAID") && (
+                <th>View More</th>
               )}
+              {(statusFilter === "REJECTED" ||
+                statusFilter === "FAILED" ||
+                statusFilter === "ALL") && <th>Reason</th>}
+            </tr>
+          </thead>
 
-
-          </tr>
-        </thead>
-
-        <tbody>
-          {items.map((x) => {
-            const requestId = getRequestId(x);
-
-            return (
-              <tr key={x._rowKey}>
-                <td>{x.creator?.name ?? "—"}</td>
-                <td>₹{x.amount}</td>
-
-                <td className="admin-status-cell">
-                  <AdminStatusBadge status={x.status} />
-
-                  {x.reason &&
-                    (x.status === "REJECTED" || x.status === "FAILED") && (
-                      <span className="admin-reason-tooltip-wrapper">
-                        ⓘ
-                        <span className="admin-reason-tooltip">{x.reason}</span>
-                      </span>
-                    )}
+          <tbody>
+            {items.length === 0 && (
+              <tr>
+                <td colSpan={7} className="apEmpty">
+                  {loading ? "Loading…" : "No payout requests found."}
                 </td>
+              </tr>
+            )}
 
-                <td>
-                  {x.status === "PENDING" && (
-                    <>
-                      <button onClick={() => doApprove(x)}>Approve</button>
+            {items.map((x) => {
+              const requestId = getRequestId(x);
 
-                      <button
-                        className="btn btn-danger"
-                        data-bs-toggle="modal"
-                        data-bs-target="#rejectModal"
-                        onClick={() => setRejectRowKey(x._rowKey)}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
+              return (
+                <tr key={x._rowKey}>
+                  <td style={{ fontWeight: 600, color: "#0f172a" }}>
+                    {x.creator?.name ?? "—"}
+                  </td>
 
-                  {x.status === "APPROVED" && (
-                    <>
-                      <button onClick={() => doProcessing(x)}>
-                        Processing
-                      </button>
+                  <td className="apAmount">₹{x.amount}</td>
 
-                      <button
-                        className="btn btn-danger"
-                        data-bs-toggle="modal"
-                        data-bs-target="#rejectModal"
-                        onClick={() => setRejectRowKey(x._rowKey)}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
+                  <td>
+                    <AdminStatusBadge status={x.status} />
+                  </td>
 
-                  {x.status === "PROCESSING" && (
-                    <>
-                      <div className="d-flex gap-2">
-                        <button
-                          className="btn btn-primary"
-                          data-bs-toggle="modal"
-                          data-bs-target={`#processModal-${requestId}`}
-                          onClick={() => {
-                            setActiveRequestId(requestId!);
-                            setActiveMode("PAID");
-                          }}
-                        >
-                          Mark Paid
-                        </button>
+                  <td>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {x.status === "PENDING" && (
+                        <>
+                          <button
+                            className="apBtn apBtnPrimary"
+                            onClick={() => doApprove(x)}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#rejectModal"
+                            onClick={() => setRejectRowKey(x._rowKey)}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
 
-                        <button
-                          className="btn btn-danger"
-                          data-bs-toggle="modal"
-                          data-bs-target={`#processModal-${requestId}`}
-                          onClick={() => {
-                            setActiveRequestId(requestId!);
-                            setActiveMode("FAIL");
-                          }}
-                        >
-                          Fail
-                        </button>
-                      </div>
-                      <div
-                        className="modal fade"
-                        id={`processModal-${requestId}`}
-                        tabIndex={-1}
-                      >
-                        <div className="modal-dialog modal-dialog-centered modal-lg">
-                          <div className="modal-content">
-                            <div className="modal-header">
-                              <h5 className="modal-title">
-                                {activeMode === "PAID"
-                                  ? "Process Payout"
-                                  : "Fail Payout"}
-                              </h5>
-                              <button
-                                className="btn-close"
-                                data-bs-dismiss="modal"
-                              />
-                            </div>
+                      {x.status === "APPROVED" && (
+                        <>
+                          <button
+                            className="apBtn apBtnPrimary"
+                            onClick={() => doProcessing(x)}
+                          >
+                            Processing
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#rejectModal"
+                            onClick={() => setRejectRowKey(x._rowKey)}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
 
-                            <div className="modal-body">
-                              {activeMode === "PAID" && (
-                                <AdminProcessForm
-                                  requestId={requestId!}
-                                  onDone={load}
-                                />
-                              )}
+                      {x.status === "PROCESSING" && (
+                        <>
+                          <button
+                            className="apBtn apBtnPrimary"
+                            data-bs-toggle="modal"
+                            data-bs-target={`#processModal-${requestId}`}
+                            onClick={() => {
+                              setActiveRequestId(requestId!);
+                              setActiveMode("PAID");
+                            }}
+                          >
+                            Mark Paid
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target={`#processModal-${requestId}`}
+                            onClick={() => {
+                              setActiveRequestId(requestId!);
+                              setActiveMode("FAIL");
+                            }}
+                          >
+                            Fail
+                          </button>
 
-                              {activeMode === "FAIL" && (
-                                <>
-                                  <label>Failure Reason</label>
-                                  <textarea
-                                    className="form-control"
-                                    rows={4}
-                                    value={x.reason ?? ""}
-                                    onChange={(e) =>
-                                      updateReason(x._rowKey, e.target.value)
-                                    }
+                          <div
+                            className="modal fade"
+                            id={`processModal-${requestId}`}
+                            tabIndex={-1}
+                          >
+                            <div className="modal-dialog modal-dialog-centered modal-lg">
+                              <div className="modal-content">
+                                <div className="modal-header">
+                                  <h5 className="modal-title">
+                                    {activeMode === "PAID"
+                                      ? "Process Payout"
+                                      : "Fail Payout"}
+                                  </h5>
+                                  <button
+                                    className="btn-close"
+                                    data-bs-dismiss="modal"
                                   />
-                                </>
-                              )}
-                            </div>
+                                </div>
 
-                            <div className="modal-footer">
-                              <button
-                                className="btn btn-secondary"
-                                data-bs-dismiss="modal"
-                              >
-                                Close
-                              </button>
+                                <div className="modal-body">
+                                  {activeMode === "PAID" && (
+                                    <AdminProcessForm
+                                      requestId={requestId!}
+                                      onDone={load}
+                                    />
+                                  )}
 
-                              {activeMode === "FAIL" && (
-                                <button
-                                  className="btn btn-danger"
-                                  data-bs-dismiss="modal"
-                                  onClick={() => doFail(x)}
-                                >
-                                  Fail Payout
-                                </button>
-                              )}
+                                  {activeMode === "FAIL" && (
+                                    <>
+                                      <label>Failure Reason</label>
+                                      <textarea
+                                        className="form-control"
+                                        rows={4}
+                                        value={x.reason ?? ""}
+                                        onChange={(e) =>
+                                          updateReason(
+                                            x._rowKey,
+                                            e.target.value,
+                                          )
+                                        }
+                                      />
+                                    </>
+                                  )}
+                                </div>
+
+                                <div className="modal-footer">
+                                  <button
+                                    className="btn btn-secondary"
+                                    data-bs-dismiss="modal"
+                                  >
+                                    Close
+                                  </button>
+                                  {activeMode === "FAIL" && (
+                                    <button
+                                      className="btn btn-danger"
+                                      data-bs-dismiss="modal"
+                                      onClick={() => doFail(x)}
+                                    >
+                                      Fail Payout
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </td>
-                <td>{new Date(x.createdAt).toLocaleDateString("en-IN")}</td>
-                {(statusFilter === "ALL" || statusFilter === "PAID") && (
-                  <td>
-                    {x.status === "PAID" ? (
-                      <button
-                        className="view-btn"
-                        onClick={() => {
-                          setActivePayout(x);
-                          setShowModal(true);
-                        }}
-                      >
-                        View
-                      </button>
-                    ) : (
-                      "-"
-                    )}
+                        </>
+                      )}
+                    </div>
                   </td>
-                )}
-                {(statusFilter === "REJECTED" ||
-                  statusFilter === "FAILED" ||
-                  statusFilter === "ALL") && (
+
+                  <td className="apDate">
+                    {new Date(x.createdAt).toLocaleDateString("en-IN")}
+                  </td>
+
+                  {(statusFilter === "ALL" || statusFilter === "PAID") && (
                     <td>
-                      {x.status === "REJECTED"
-                        ? x.reviewReason || "-"
-                        : x.status === "FAILED"
-                          ? x.failReason || "-"
-                          : "-"}
+                      {x.status === "PAID" ? (
+                        <button
+                          className="apViewBtn"
+                          onClick={() => {
+                            setActivePayout(x);
+                            setShowModal(true);
+                          }}
+                        >
+                          View
+                        </button>
+                      ) : (
+                        <span className="apDate">—</span>
+                      )}
                     </td>
                   )}
 
+                  {(statusFilter === "REJECTED" ||
+                    statusFilter === "FAILED" ||
+                    statusFilter === "ALL") && (
+                    <td className="apReason">
+                      {x.status === "REJECTED"
+                        ? x.reviewReason || "—"
+                        : x.status === "FAILED"
+                          ? x.failReason || "—"
+                          : "—"}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
+      {/* Payout Detail Modal */}
       {showModal && activePayout && (
-        <div className="rp-modal-backdrop">
-          <div className="rp-modal">
-            <h3>Payout Details</h3>
-
-            {/* <div className="modal-row">
-              <span className="label">Fundraiser ID</span>
-              <span className="value">
-                {activePayout.fundraiserId?.slice(0, 8)}
-              </span>
-            </div> */}
-
-            <div className="modal-row">
-              <span className="label">Request ID</span>
-              <span className="value">
-                {activePayout.requestId}
-              </span>
+        <div className="apModalBackdrop">
+          <div className="apModal">
+            <div className="apModalHeader">
+              <h3 className="apModalTitle">Payout Details</h3>
+              <button
+                className="apModalClose"
+                onClick={() => {
+                  setShowModal(false);
+                  setActivePayout(null);
+                }}
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="modal-row">
-              <span className="label">Amount</span>
-              <span className="value">₹{activePayout.amount}</span>
-            </div>
-
-            <div className="modal-row">
-              <span className="label">Status</span>
-              <AdminStatusBadge status={activePayout.status} />
-            </div>
-
-            <div className="modal-row">
-              <span className="label">Request Date</span>
-              <span className="value">
-                {new Date(activePayout.createdAt).toLocaleDateString("en-IN")}
-              </span>
-            </div>
-
-            {activePayout.processedAt && (
-              <div className="modal-row">
-                <span className="label">Process Date</span>
-                <span className="value">
-                  {new Date(activePayout.processedAt).toLocaleString("en-IN")}
+            <div className="apModalBody">
+              <div className="apModalRow">
+                <span className="apModalLabel">Request ID</span>
+                <span className="apModalValue apModalMono">
+                  {activePayout.requestId}
                 </span>
               </div>
-            )}
-            <div className="modal-row">
-              <span className="label">Note</span>
-              <span className="value">
-                {activePayout.notes || "-"}
-              </span>
-            </div>
 
-            {activePayout?.proofImageUrl && (
-              <div className="modal-proof">
-                <span className="label">Payment Proof</span>
+              <div className="apModalRow">
+                <span className="apModalLabel">Amount</span>
+                <span className="apModalValue apModalAmount">
+                  ₹{activePayout.amount}
+                </span>
+              </div>
 
-                <img
-                  src={activePayout.proofImageUrl}
-                  alt="Payment proof"
-                  className="proof-preview"
-                />
+              <div className="apModalRow">
+                <span className="apModalLabel">Status</span>
+                <AdminStatusBadge status={activePayout.status} />
+              </div>
 
-                <div className="proof-actions">
+              <div className="apModalRow">
+                <span className="apModalLabel">Request Date</span>
+                <span className="apModalValue">
+                  {new Date(activePayout.createdAt).toLocaleDateString("en-IN")}
+                </span>
+              </div>
+
+              {activePayout.processedAt && (
+                <div className="apModalRow">
+                  <span className="apModalLabel">Processed At</span>
+                  <span className="apModalValue">
+                    {new Date(activePayout.processedAt).toLocaleString("en-IN")}
+                  </span>
+                </div>
+              )}
+
+              <div className="apModalRow">
+                <span className="apModalLabel">Note</span>
+                <span className="apModalValue">
+                  {activePayout.notes || "—"}
+                </span>
+              </div>
+
+              {activePayout?.proofImageUrl && (
+                <div className="apModalProof">
+                  <span className="apModalLabel">Payment Proof</span>
+                  <img
+                    src={activePayout.proofImageUrl}
+                    alt="Payment proof"
+                    className="apProofImg"
+                  />
                   <button
-                    className="view-full-btn"
+                    className="apBtn apBtnPrimary"
                     onClick={() =>
                       window.open(activePayout.proofImageUrl, "_blank")
                     }
@@ -425,12 +452,12 @@ export default function AdminPayoutList({
                     View Full Image
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            <div className="rp-modal-actions">
+            <div className="apModalFooter">
               <button
-                className="action-btn"
+                className="apBtn"
                 onClick={() => {
                   setShowModal(false);
                   setActivePayout(null);
@@ -443,8 +470,7 @@ export default function AdminPayoutList({
         </div>
       )}
 
-
-      {/* ✅ SINGLE REJECT MODAL */}
+      {/* Reject Modal */}
       <div className="modal fade" id="rejectModal" tabIndex={-1}>
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
@@ -471,7 +497,6 @@ export default function AdminPayoutList({
               <button className="btn btn-secondary" data-bs-dismiss="modal">
                 Cancel
               </button>
-
               <button
                 className="btn btn-danger"
                 data-bs-dismiss="modal"

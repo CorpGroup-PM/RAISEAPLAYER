@@ -92,7 +92,9 @@ export default function WithdrawalHistoryTable({
       {loading ? (
         <div className="withdraw-empty">Loading…</div>
       ) : filteredItems.length === 0 ? (
-        <div className="withdraw-empty">No withdrawals for this filter.</div>
+        <div className="withdraw-empty">
+          No withdrawals found for this filter.
+        </div>
       ) : (
         <div className="withdraw-table-wrap">
           <table className="withdraw-table">

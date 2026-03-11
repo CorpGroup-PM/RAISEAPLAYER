@@ -84,6 +84,18 @@ export default function AdminNavbar() {
             <Link href="/admin/FoundationFunds">Foundation Funds</Link>
           </li>
           <li
+            className={pathname.startsWith("/admin/documents") ? "active" : ""}
+            onClick={() => setMenuOpen(false)}
+          >
+            <Link href="/admin/documents">Documents</Link>
+          </li>
+          <li
+            className={pathname.startsWith("/admin/bank-accounts") ? "active" : ""}
+            onClick={() => setMenuOpen(false)}
+          >
+            <Link href="/admin/bank-accounts">Bank Accounts</Link>
+          </li>
+          <li
             className={pathname.startsWith("/admin/ReviewVerification") ? "active" : ""}
             onClick={() => setMenuOpen(false)}
           >
@@ -128,7 +140,7 @@ export default function AdminNavbar() {
 
           {/* MOBILE HAMBURGER */}
           <button
-            className="rp-hamburger mobile-only"
+            className="rp-hamburger"
             onClick={() => setMenuOpen(true)}
           >
             <span />
@@ -190,8 +202,20 @@ export default function AdminNavbar() {
             <Link href="/admin/FoundationFunds">Foundation Funds</Link>
           </li>
 
-           <li
-            className={pathname.startsWith("/admin/Review Verification") ? "active" : ""}
+          <li
+            className={pathname.startsWith("/admin/documents") ? "active" : ""}
+            onClick={() => setMenuOpen(false)}
+          >
+            <Link href="/admin/documents">Documents</Link>
+          </li>
+          <li
+            className={pathname.startsWith("/admin/bank-accounts") ? "active" : ""}
+            onClick={() => setMenuOpen(false)}
+          >
+            <Link href="/admin/bank-accounts">Bank Accounts</Link>
+          </li>
+          <li
+            className={pathname.startsWith("/admin/ReviewVerification") ? "active" : ""}
             onClick={() => setMenuOpen(false)}
           >
             <Link href="/admin/ReviewVerification">Review Verification</Link>

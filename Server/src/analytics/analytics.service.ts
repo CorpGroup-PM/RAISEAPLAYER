@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { CampaignStatus, DocumentVerificationStatus, PaymentStatus, Prisma, SportsDocumentType, TransferStatus } from '@prisma/client';
-import { count } from 'console';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 
@@ -29,22 +28,30 @@ export class AnalyticsService {
 
         const [
             donationAgg,
-            successfulDonationCount,
+            allTimeTipAgg,
             activeFundraisers,
             pendingReviewFundraisers,
             payoutAgg,
             pendingWithdrawals,
+            pendingDocuments,
+            unverifiedBankAccounts,
+            failedPayments,
+            newUsers,
+            unverifiedReviews,
+            goalReachedRows,
         ] = await Promise.all([
             this.prisma.donation.aggregate({
                 where: donationWhere,
                 _sum: {
                     donationAmount: true,
-                    platformTipAmount: true,
                     totalAmount: true,
                 },
             }),
 
-            this.prisma.donation.count({ where: donationWhere }),
+            this.prisma.donation.aggregate({
+                where: { status: PaymentStatus.SUCCESS, platformTipAmount: { gt: 0 }, createdAt: { gte: fromDate, lte: toDate } },
+                _sum: { platformTipAmount: true },
+            }),
 
             this.prisma.fundraiser.count({
                 where: { status: CampaignStatus.ACTIVE },
@@ -62,10 +69,41 @@ export class AnalyticsService {
             this.prisma.fundTransferRequest.count({
                 where: { status: TransferStatus.PENDING },
             }),
+
+            this.prisma.fundraiserDocument.count({
+                where: { verificationStatus: DocumentVerificationStatus.PENDING },
+            }),
+
+            this.prisma.recipientAccount.count({
+                where: { isVerified: false },
+            }),
+
+            this.prisma.donation.count({
+                where: {
+                    status: PaymentStatus.FAILED,
+                    createdAt: { gte: fromDate, lte: toDate },
+                },
+            }),
+
+            this.prisma.user.count({
+                where: { createdAt: { gte: fromDate, lte: toDate } },
+            }),
+
+            this.prisma.review.count({ where: { isVerified: false } }).catch(() => 0),
+
+            // Active campaigns where goal has been reached (raisedAmount >= goalAmount)
+            this.prisma.$queryRaw<{ count: number }[]>`
+                SELECT COUNT(*)::int AS count
+                FROM "Fundraiser"
+                WHERE status = 'ACTIVE'
+                AND "raisedAmount" >= "goalAmount"
+                AND "goalAmount" > 0
+            `.catch(() => [{ count: 0 }]),
         ]);
 
         const donation = decimalToNumber(donationAgg._sum.donationAmount);
-        const tip = decimalToNumber(donationAgg._sum.platformTipAmount);
+        const tip = decimalToNumber(allTimeTipAgg._sum.platformTipAmount);
+        const goalReachedCampaigns = Number((goalReachedRows as any[])[0]?.count || 0);
 
         return {
             totalDonations: donation,
@@ -73,9 +111,16 @@ export class AnalyticsService {
 
             activeFundraisers,
             pendingReviewFundraisers,
+            goalReachedCampaigns,
 
             paidPayouts: decimalToNumber(payoutAgg._sum.amount),
             pendingWithdrawals,
+
+            pendingDocuments,
+            unverifiedBankAccounts,
+            failedPayments,
+            newUsers,
+            unverifiedReviews,
         };
     }
 
@@ -242,25 +287,28 @@ export class AnalyticsService {
         ]);
 
 
-        //  Platform Tips Analytics
+        //  Platform Tips Analytics (filtered by date range)
 
-        const tipsAgg = await this.prisma.donation.aggregate({
-            where: {
-                status: PaymentStatus.SUCCESS,
-                createdAt: { gte: fromDate, lte: toDate },
-            },
-            _sum: {
-                platformTipAmount: true,
-                totalAmount: true,
-            },
-        });
+        const [tipsAgg, totalCollectedAgg] = await Promise.all([
+            this.prisma.donation.aggregate({
+                where: {
+                    status: PaymentStatus.SUCCESS,
+                    platformTipAmount: { gt: 0 },
+                    createdAt: { gte: fromDate, lte: toDate },
+                },
+                _sum: { platformTipAmount: true },
+            }),
+            this.prisma.donation.aggregate({
+                where: {
+                    status: PaymentStatus.SUCCESS,
+                    createdAt: { gte: fromDate, lte: toDate },
+                },
+                _sum: { totalAmount: true },
+            }),
+        ]);
 
-        const totalTips = decimalToNumber(
-            tipsAgg._sum.platformTipAmount,
-        );
-        const totalCollected = decimalToNumber(
-            tipsAgg._sum.totalAmount,
-        );
+        const totalTips = decimalToNumber(tipsAgg._sum.platformTipAmount);
+        const totalCollected = decimalToNumber(totalCollectedAgg._sum.totalAmount);
 
         const tipPercentage =
             totalCollected > 0
@@ -368,9 +416,32 @@ export class AnalyticsService {
             count: Number(totalRow?.[0]?.count || 0),
             totalAmount: Number((totalRow?.[0]?.totalAmount || 0).toFixed(2)),
         };
+
+        // Processing efficiency: count of PAID requests + avg hours from created → processedAt
+        const [processedCount, avgHoursRows] = await Promise.all([
+            this.prisma.fundTransferRequest.count({
+                where: { status: TransferStatus.PAID },
+            }),
+            this.prisma.$queryRaw<{ avg_hours: number | null }[]>`
+                SELECT AVG(
+                    EXTRACT(EPOCH FROM ("processedAt" - "createdAt")) / 3600
+                ) AS avg_hours
+                FROM "FundTransferRequest"
+                WHERE status = 'PAID' AND "processedAt" IS NOT NULL
+            `,
+        ]);
+
+        const processingEfficiency = {
+            processedCount,
+            averageProcessingTimeHours: Number(
+                (avgHoursRows[0]?.avg_hours ?? 0).toFixed(2),
+            ),
+        };
+
         return {
             statusPipeline,
             totals,
+            processingEfficiency,
         };
     }
 
@@ -478,10 +549,28 @@ export class AnalyticsService {
                 orderBy: { createdAt: 'desc' },
             });
 
+        //  Verified (Approved) Documents Table
+        const verifiedDocuments =
+            await this.prisma.fundraiserDocument.findMany({
+                where: {
+                    verificationStatus: DocumentVerificationStatus.VERIFIED,
+                },
+                select: {
+                    id: true,
+                    fundraiserId: true,
+                    type: true,
+                    fileUrl: true,
+                    createdAt: true,
+                    verifiedAt: true,
+                },
+                orderBy: { verifiedAt: 'desc' },
+            });
+
         return {
             statusBreakdown,
             typeBreakdown,
             pendingDocuments,
+            verifiedDocuments,
         };
     }
 }

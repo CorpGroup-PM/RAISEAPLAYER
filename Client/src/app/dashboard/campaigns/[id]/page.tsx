@@ -656,21 +656,21 @@ export default function CampaignDetailsPage() {
             <div className="highlight-row top">
               <div className="highlight-item">
                 <span className="highlight-label">Sport</span>
-                <span className="highlight-value">{campaign.sport}</span>
+                <span className="skill-chip">{campaign.sport}</span>
               </div>
               <div className="highlight-item">
                 <span className="highlight-label">Level</span>
-                <span className="highlight-value">{campaign.level || "—"}</span>
+                <span className="skill-chip">{campaign.level || "—"}</span>
               </div>
               <div className="highlight-item">
                 <span className="highlight-label">Location</span>
-                <span className="highlight-value">
+                <span className="skill-chip">
                   {campaign.city}, {campaign.state}
                 </span>
               </div>
               <div className="highlight-item">
                 <span className="highlight-label">Discipline</span>
-                <span className="highlight-value">
+                <span className="skill-chip">
                   {campaign.discipline || "—"}
                 </span>
               </div>

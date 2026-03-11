@@ -686,6 +686,42 @@ export class AdminFundraiserService {
   }
 
 
+  // List recipient / bank accounts
+  async listRecipientAccounts(onlyUnverified: boolean) {
+    const accounts = await this.prisma.recipientAccount.findMany({
+      where: onlyUnverified ? { isVerified: false } : undefined,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        recipientType: true,
+        bankName: true,
+        accountNumber: true,
+        ifscCode: true,
+        country: true,
+        isVerified: true,
+        createdAt: true,
+        fundraiser: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            creator: {
+              select: { id: true, firstName: true, lastName: true, email: true },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      count: accounts.length,
+      data: accounts,
+    };
+  }
+
   // recipient-account Verification
   async verifyRecipientAccount(id: string) {
     const account = await this.prisma.recipientAccount.findUnique({
@@ -934,14 +970,11 @@ export class AdminFundraiserService {
 
   async reviewdelete(id: string) {
     const res = await this.prisma.review.deleteMany({
-      where: {
-        id,
-        isVerified: false,
-      },
+      where: { id },
     });
 
     if (res.count === 0) {
-      throw new BadRequestException('Review not found or already approved');
+      throw new BadRequestException('Review not found');
     }
 
     return { message: 'Review Deleted' };
