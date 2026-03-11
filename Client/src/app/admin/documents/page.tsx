@@ -162,10 +162,10 @@ export default function AdminDocumentsPage() {
                       </td>
                       <td>
                         <Link
-                          href={`/admin/campaigns/${doc.fundraiserId}`}
+                          href={`/admin/campaigns/${doc.fundraiserId ?? ""}`}
                           className="adCampaignLink"
                         >
-                          {doc.fundraiserId.slice(0, 8)}…
+                          {(doc.fundraiserId ?? "").slice(0, 8)}…
                         </Link>
                       </td>
                       <td style={{ color: "#64748b", fontSize: 12 }}>
@@ -179,7 +179,7 @@ export default function AdminDocumentsPage() {
                       </td>
                       <td>
                         <a
-                          href={doc.fileUrl}
+                          href={doc.fileUrl ?? "#"}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="adLink"
@@ -230,10 +230,10 @@ export default function AdminDocumentsPage() {
                       </td>
                       <td>
                         <Link
-                          href={`/admin/campaigns/${doc.fundraiserId}`}
+                          href={`/admin/campaigns/${doc.fundraiserId ?? ""}`}
                           className="adCampaignLink"
                         >
-                          {doc.fundraiserId.slice(0, 8)}…
+                          {(doc.fundraiserId ?? "").slice(0, 8)}…
                         </Link>
                       </td>
                       <td style={{ color: "#64748b", fontSize: 12 }}>
@@ -256,7 +256,7 @@ export default function AdminDocumentsPage() {
                       </td>
                       <td>
                         <a
-                          href={doc.fileUrl}
+                          href={doc.fileUrl ?? "#"}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="adLink"

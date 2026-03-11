@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminCampaignsService } from "@/services/admin-campaigns.service";
-import AdminModal from "@/components/admin/AdminModal";
 import "./bank-accounts.css";
 
 type RecipientAccount = {
@@ -47,10 +46,6 @@ export default function AdminBankAccountsPage() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
   const [filter, setFilter]     = useState<"ALL" | "UNVERIFIED" | "VERIFIED">("ALL");
-  const [verifying, setVerifying] = useState<string | null>(null);
-
-  const [confirmModal, setConfirmModal] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
-  const [errorModal, setErrorModal]     = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
   const load = async () => {
     setLoading(true);
@@ -67,26 +62,6 @@ export default function AdminBankAccountsPage() {
 
   useEffect(() => { load(); }, []);
 
-  const handleVerifyClick = (id: string) => {
-    setConfirmModal({ open: true, id });
-  };
-
-  const handleVerifyConfirm = async () => {
-    const id = confirmModal.id!;
-    setConfirmModal({ open: false, id: null });
-    setVerifying(id);
-    try {
-      await AdminCampaignsService.verifyBankAccount(id);
-      setAccounts((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, isVerified: true } : a)),
-      );
-    } catch (e: any) {
-      setErrorModal({ open: true, message: e?.response?.data?.message || "Verification failed." });
-    } finally {
-      setVerifying(null);
-    }
-  };
-
   const total      = accounts.length;
   const unverified = accounts.filter((a) => !a.isVerified).length;
   const verified   = accounts.filter((a) => a.isVerified).length;
@@ -98,7 +73,6 @@ export default function AdminBankAccountsPage() {
   });
 
   return (
-    <>
     <div className="abPage">
       <div className="abContainer">
 
@@ -174,7 +148,6 @@ export default function AdminBankAccountsPage() {
                     <th>Creator</th>
                     <th>Added</th>
                     <th>Status</th>
-                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -224,19 +197,6 @@ export default function AdminBankAccountsPage() {
                           {a.isVerified ? "Verified" : "Unverified"}
                         </span>
                       </td>
-                      <td>
-                        {!a.isVerified ? (
-                          <button
-                            className="abVerifyBtn"
-                            disabled={verifying === a.id}
-                            onClick={() => handleVerifyClick(a.id)}
-                          >
-                            {verifying === a.id ? "Verifying…" : "Verify"}
-                          </button>
-                        ) : (
-                          <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>
-                        )}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -247,27 +207,5 @@ export default function AdminBankAccountsPage() {
 
       </div>
     </div>
-
-    {/* Confirm Modal */}
-    <AdminModal
-      open={confirmModal.open}
-      variant="warning"
-      title="Verify Bank Account"
-      message="Are you sure you want to mark this bank account as verified? This action confirms the account details are correct."
-      confirmLabel="Yes, Verify"
-      cancelLabel="Cancel"
-      onConfirm={handleVerifyConfirm}
-      onClose={() => setConfirmModal({ open: false, id: null })}
-    />
-
-    {/* Error Modal */}
-    <AdminModal
-      open={errorModal.open}
-      variant="error"
-      title="Verification Failed"
-      message={errorModal.message}
-      onClose={() => setErrorModal({ open: false, message: "" })}
-    />
-    </>
   );
 }
