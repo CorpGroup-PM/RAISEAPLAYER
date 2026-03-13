@@ -326,6 +326,18 @@ export default function Home() {
                 </a>
               </div>
             </div>
+            <a
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobileSportsmartPreviewLink"
+            >
+              <img
+                src="/sportsmart-mobile.png"
+                alt={`${s.name} preview`}
+                className="mobileSportsmartPreviewImg"
+              />
+            </a>
           </div>
         ))}
       </div>

@@ -1503,13 +1503,11 @@
   box-sizing: border-box;
 }
 
-
-
 /* ── Sponsor website preview image ── */
 .sbPreviewLink {
   display: block;
   width: 100%;
-  margin-top: 20px;
+  margin-top: 10px;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #e5e7eb;
@@ -1650,6 +1648,26 @@
     line-height: 1.5;
   }
 
+  .mobileSportsmartPreviewLink {
+    display: block;
+    margin-top: 12px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .mobileSportsmartPreviewLink:hover {
+    opacity: 0.9;
+    transform: scale(1.01);
+  }
+
+  .mobileSportsmartPreviewImg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
 }
 
 /* ══════════════════════════════════════════
@@ -1713,7 +1731,6 @@
 .sbLogo {
   width: 100%;
   max-width: 150px;
-  height: 64px;
   object-fit: contain;
 }
 
