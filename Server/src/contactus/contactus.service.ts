@@ -16,7 +16,7 @@ export class ContactusService {
         });
         return {
             success: true,
-            message: 'Thanks for reaching out. We’ll get back to you shortly.',
+            message: "Thanks for reaching out. We'll get back to you shortly.",
         };
     }
 }

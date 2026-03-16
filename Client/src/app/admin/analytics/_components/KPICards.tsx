@@ -74,7 +74,7 @@ const ITEMS = [
     isAlert: true,
   },
   {
-    label: "Pending Reviews",
+    label: "Pending Fundraisers",
     key: "pendingReviewFundraisers",
     fmt: (v: number) => num(v),
     link: "/admin/campaigns?status=PENDING_REVIEW",
@@ -104,7 +104,7 @@ const ITEMS = [
     label: "Failed Payments",
     key: "failedPayments",
     fmt: (v: number) => num(v),
-    link: "/admin/Payouts",
+    link: "/admin/donations?status=FAILED",
     iconType: "bad" as const,
     Icon: XCircle,
     isAlert: true,

@@ -139,7 +139,38 @@ export class FundraiserDocumentsController {
     }
 
 
-    // verified By Admin Document in 
+    /**
+     * Generate a 15-minute pre-signed URL for a private document.
+     * Only the fundraiser owner and admins may request this.
+     */
+    @Get('documents/:documentId/signed-url')
+    @UseGuards(AccessTokenGuard)
+    @ApiOperation({
+        summary: 'Get a pre-signed download URL for a document (15 min TTL)',
+        description: 'Returns a time-limited S3 pre-signed URL. Only the fundraiser owner or an admin may call this endpoint.',
+    })
+    @ApiParam({ name: 'documentId', description: 'Document ID', example: 'doc_xxx' })
+    @ApiResponse({
+        status: 200,
+        description: 'Signed URL generated',
+        schema: {
+            example: {
+                signedUrl: 'https://bucket.s3.region.amazonaws.com/fundraisers/.../uuid.pdf?X-Amz-Signature=...',
+                expiresInSeconds: 900,
+            },
+        },
+    })
+    @ApiResponse({ status: 403, description: 'Access denied' })
+    @ApiResponse({ status: 404, description: 'Document not found' })
+    async getSignedUrl(
+        @Param('documentId') documentId: string,
+        @Req() req,
+    ) {
+        return this.fundraiserDocumentsService.getDocumentSignedUrl(documentId, req.user);
+    }
+
+
+    // verified By Admin Document in
     @Patch('admin/documents/:documentId/verify')
     @UseGuards(AccessTokenGuard, RolesGuard)
     @Roles(UserRole.ADMIN)

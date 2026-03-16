@@ -1,6 +1,14 @@
 # Claude Code
 .claude
 
+# Environment files — NEVER commit secrets to git
+# Server/.gitignore also covers these, but adding here as a root-level
+# safety net so `git add .` from the repository root cannot stage them.
+.env
+.env.*
+!.env.example
+!.env.template
+
 # Build outputs
 Server/dist/
 Client/.next/

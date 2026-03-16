@@ -22,7 +22,7 @@
 .rp-footer__brand {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 .rp-footer__logo {
@@ -61,9 +61,9 @@
   background: rgba(0, 87, 184, 0.18);
   border: 1px solid rgba(0, 87, 184, 0.35);
   color: #93c5fd;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 5px 10px;
   border-radius: 999px;
   width: fit-content;
   letter-spacing: 0.02em;
@@ -75,13 +75,13 @@
 
 .rp-footer__socials {
   display: flex;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 25px;
+  /* margin-top: 4px; */
 }
 
 .rp-footer__social-link {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.1);

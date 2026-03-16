@@ -82,6 +82,7 @@ export default function ForgotPasswordPage() {
         register: registerPassword,
         handleSubmit: submitPasswordForm,
         watch,
+        trigger: triggerPassword,
         formState: { errors: passwordErrors },
         control
     } = useForm({
@@ -263,8 +264,10 @@ export default function ForgotPasswordPage() {
                                         }`}
                                     placeholder="New Password"
                                     {...registerPassword("newPassword", {
-                                        onChange: (e) =>
-                                            setPasswordStrength(getPasswordStrength(e.target.value)),
+                                        onChange: (e) => {
+                                            setPasswordStrength(getPasswordStrength(e.target.value));
+                                            triggerPassword("confirmPassword");
+                                        },
                                     })}
                                 />
 

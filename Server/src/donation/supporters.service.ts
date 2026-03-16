@@ -17,6 +17,7 @@ export class SupportersService {
       throw new BadRequestException('Fundraiser not found');
     }
 
+    // Single query — donor relation resolved via batched IN lookup (no N+1)
     const donations = await this.prisma.donation.findMany({
       where: {
         fundraiserId,
@@ -52,16 +53,8 @@ export class SupportersService {
           currency: donation.currency,
           donatedAt: donation.createdAt,
           donor: donation.isAnonymous
-            ? {
-                id: null,
-                firstName: 'Anonymous',
-                lastName: 'Donor',
-              }
-            : {
-                id: null,
-                firstName: donation.guestName ?? 'Guest',
-                lastName: '',
-              },
+            ? { id: null, firstName: 'Anonymous', lastName: 'Donor' }
+            : { id: null, firstName: donation.guestName ?? 'Guest', lastName: '' },
         };
       }
 
@@ -72,11 +65,7 @@ export class SupportersService {
           donationAmount: donation.donationAmount,
           currency: donation.currency,
           donatedAt: donation.createdAt,
-          donor: {
-            id: null,
-            firstName: 'Anonymous',
-            lastName: 'Donor',
-          },
+          donor: { id: null, firstName: 'Anonymous', lastName: 'Donor' },
         };
       }
 
@@ -94,8 +83,6 @@ export class SupportersService {
       };
     });
 
-    return {
-      donations,
-    }
+    return { supporters };
   }
 }

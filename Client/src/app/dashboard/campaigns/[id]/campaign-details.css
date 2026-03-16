@@ -160,13 +160,15 @@ button {
 
 .cover-section {
   margin: 12px;
+  background: #ffffff;
+  border-radius: 16px;
 }
 
 .cover-box {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #e5e7eb;
+  background: #ffffff;
   border-radius: 16px;
   overflow: hidden;
 }
@@ -176,7 +178,7 @@ button {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center 65%;
 }
 
@@ -307,7 +309,8 @@ button {
 .updates-title {
   font-size: 16px;
   font-weight: 800;
-  margin-bottom: 12px;
+  margin: 0 0 12px 0;
+  padding: 0;
 }
 
 .add-video-btn {
@@ -724,6 +727,9 @@ button {
   border-radius: 12px;
   padding: 16px;
   border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .beneficiary-section {
@@ -750,10 +756,15 @@ button {
 }
 
 /* Rows */
-.highlight-row.top {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+.highlight-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.highlight-row + .highlight-row {
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
 }
 
 
@@ -768,9 +779,6 @@ button {
   background: #e5e7eb;
   margin: 16px 0;
 }
-.highlight-item.full {
-  margin-top: 18px;  /* adjust 16–24px as needed */
-}
 
 
 /* Mobile */
@@ -779,21 +787,27 @@ button {
 /* Item */
 .highlight-item {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
 }
 
 .highlight-item.full {
-  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 }
 
 /* Text */
 .highlight-label {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: #6b7280;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 90px;
+  flex-shrink: 0;
 }
 
 .highlight-value {
@@ -834,51 +848,146 @@ button {
    RECIPIENT BANK ACCOUNT
 ================================ */
 
+/* ── Recipient card ── */
 .recipient-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 16px;
-  padding: 20px;
-  margin: 0px;
+  padding: 24px;
+}
+
+/* Header row */
+.recipient-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.recipient-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 .recipient-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 700;
   color: #111827;
+  margin: 0;
 }
 
-/* ROW-WISE GRID — 2 columns */
+.recipient-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 2px 0 0;
+}
+
+/* Badge (verified / pending) in header */
+.recipient-badge {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.recipient-badge.verified {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.recipient-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.recipient-divider {
+  border: none;
+  border-top: 1px solid #f3f4f6;
+  margin: 16px 0;
+}
+
+/* Field group — label + input stacked */
+.rfield-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+/* Standalone rfield-group (not inside recipient-row) gets bottom spacing */
+.recipient-card > .rfield-group {
+  margin-bottom: 16px;
+}
+
+.rfield-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Masked account badge — inline with label */
+.account-mask-badge {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 2px 8px;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+/* 2-column grid */
 .recipient-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
 }
 
-/* Full-width single row (dropdown + save button) */
-.recipient-row-single {
-  margin-bottom: 14px;
-}
-
-/* INPUT STYLE */
+/* Input */
 .recipient-input {
-  height: 48px;
+  height: 44px;
   padding: 0 14px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
   font-size: 14px;
+  color: #111827;
   outline: none;
-  background: #fff;
+  background: #f9fafb;
   width: 100%;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 .recipient-input:focus {
   border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
 
-/* BUTTON – SAME AS "+ POST UPDATE" */
+select.recipient-input {
+  cursor: pointer;
+}
+
+/* Save button */
 .recipient-save-btn {
   height: 48px;
   width: 100%;
@@ -889,31 +998,26 @@ button {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  padding: 0 18px;
+  margin-top: 4px;
+  transition: background 0.15s;
 }
 
-.recipient-save-btn:hover {
+.recipient-save-btn:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
-/* STATUS */
-.recipient-status {
-  margin-top: 10px;
-  font-size: 13px;
+.recipient-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.recipient-status.pending {
-  color: #d97706;
-}
-
-.recipient-status.verified {
-  color: #059669;
-}
-
-/* Mobile: stack to single column */
+/* Mobile */
 @media (max-width: 640px) {
   .recipient-row {
     grid-template-columns: 1fr;
+  }
+  .recipient-header {
+    flex-wrap: wrap;
   }
 }
 
@@ -965,9 +1069,21 @@ button {
 }
 
 .documents-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .documents-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .documents-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .document-item {
@@ -1045,12 +1161,19 @@ button {
 /* ===== PDF CARD ===== */
 .pdf-card {
   display: flex;
-  gap: 20px;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px;
   border-radius: 16px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
+}
+
+.pdf-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
 }
 
 /* Clickable wrapper */
@@ -1061,11 +1184,10 @@ button {
 
 /* Preview container */
 .pdf-preview-box {
-  width: 140px;
-  height: 140px;
+  width: 100%;
+  height: 160px;
   border-radius: 12px;
   overflow: hidden;
-  /* 🔥 hides scrollbars */
   background: #111827;
   border: 1px solid #e5e7eb;
   position: relative;
@@ -1082,12 +1204,6 @@ button {
   overflow: hidden;
 }
 
-/* Meta */
-.pdf-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 
 /* Status */
 .pdf-status {
@@ -1902,12 +2018,6 @@ button {
 
 /* ================= MOBILE ================= */
 
-@media (max-width: 1024px) {
-  /* Highlights grid: 4-col → 2-col on tablet */
-  .highlight-row.top {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 
 @media (max-width: 900px) {
   .campaign-main-grid {
@@ -1928,11 +2038,6 @@ button {
     gap: 10px;
   }
 
-  /* Highlights grid: 2-col on small mobile */
-  .highlight-row.top {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .update-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1946,4 +2051,3 @@ button {
   font-size: 0.75rem;
   margin: 4px 0 0;
 }
-

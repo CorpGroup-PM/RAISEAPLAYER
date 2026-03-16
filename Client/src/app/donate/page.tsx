@@ -165,8 +165,13 @@ const ExploreFundraisersPage: React.FC = () => {
                     : Math.min(Math.round((raised / goal) * 100), 100);
 
                 return (
-                  <article className="card" key={campaign.id}>
-                    <div className="card-image">
+                  <div
+                    className="campaignCard"
+                    key={campaign.id}
+                    onClick={() => router.push(`/donate/${campaign.id}`)}
+                  >
+                    <div className="campaignImageWrap">
+                      <span className="campaignVerified">Verified</span>
                       <img
                         src={
                           campaign.coverImageURL
@@ -175,73 +180,52 @@ const ExploreFundraisersPage: React.FC = () => {
                         }
                         alt={campaign.title}
                         loading="lazy"
-                        className="card-image-img"
+                        className="campaignImage"
                       />
                     </div>
 
-                    <div className="card-body">
-                      <h3>{campaign.title}</h3>
+                    <div className="campaignBody">
+                      <h3 className="campaignTitle">{campaign.title}</h3>
+                      {campaign.shortDescription && (
+                        <p className="campaignShortDesc">{campaign.shortDescription}</p>
+                      )}
+                      <p className="campaignMeta">
+                        {campaign.sport}
+                        {campaign.level && ` • ${campaign.level}`}
+                        {(campaign.sport || campaign.level) && campaign.city ? " • " : ""}
+                        {campaign.city}
+                        {campaign.state && `, ${campaign.state}`}
+                      </p>
 
-                      <div className="meta-row">
-                        <div className="meta-left">
-                          <p className="meta">
-                            {campaign.sport}
-                            {campaign.level && ` • ${campaign.level}`}
-                          </p>
-
-                          <p className="location">
-                            {campaign.city}
-                            {campaign.state && `, ${campaign.state}`}
-                          </p>
-                        </div>
-
-                        <div className="meta-right">
-                          <span className="supporters-count">
-                            {campaign.totalSupporters ?? 0} supporter
-                            {(campaign.totalSupporters ?? 0) !== 1 && "s"}
-                          </span>
-                        </div>
+                      <div className="campaignMoneyRow">
+                        <span className="campaignRaised">Raised: ₹{raised.toLocaleString()}</span>
+                        <span className="campaignGoal">Goal: ₹{goal.toLocaleString()}</span>
                       </div>
 
-
-                      <div className="progress-box">
-                        <div className="progress-row">
-                          <div>
-                            <strong style={{ color: "orange" }}>Raised:</strong>{" "}
-                            ₹{raised.toLocaleString()}
-                          </div>
-                          <div>Goal: ₹{goal.toLocaleString()}</div>
-                        </div>
-
-                        <div className="progress-bar">
-                          <div style={{ width: `${progress}%` }} />
-                        </div>
+                      <div className="campaignProgressTrack">
+                        <div className="campaignProgressFill" style={{ width: `${progress}%` }} />
                       </div>
 
-                      <div className="card-footer-row">
-                        {campaign.creator && (
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <p className="created-by" style={{ margin: 0 }}>
-                              Created by{" "}
-                              <strong>
-                                {campaign.creator.firstName} {campaign.creator.lastName}
-                              </strong>
-                            </p>
-                            <ShareButton fundraiserId={campaign.id} title={campaign.title} />
-                          </div>
-                        )}
+                      {campaign.creator && (
+                        <p className="created-by">
+                          Created by{" "}
+                          <strong>
+                            {campaign.creator.firstName} {campaign.creator.lastName}
+                          </strong>
+                        </p>
+                      )}
 
-                        <button
-                          className="primary-btn"
-                          onClick={() =>
-                            router.push(`/donate/${campaign.id}`)
-                          }
-                        >
-                          View →
-                        </button>
+                      <div className="campaignFooterRow">
+                        <span className="campaignSupporters">
+                          {(campaign.totalSupporters ?? 0).toLocaleString()} supporter
+                          {(campaign.totalSupporters ?? 0) !== 1 && "s"}
+                        </span>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <ShareButton fundraiserId={campaign.id} title={campaign.title} />
+                        </div>
                       </div>
                     </div>
-                  </article>
+                  </div>
                 );
               })}
             </div>

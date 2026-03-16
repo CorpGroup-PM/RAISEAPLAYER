@@ -61,6 +61,22 @@ export default function AdminCampaignDetailsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+
+  // B-8-1: confirmation before irreversible actions
+  const [confirmAction, setConfirmAction] = useState<{
+    label: string;
+    warning: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  // B-8-2: rejection reason quick-select templates
+  const REJECTION_TEMPLATES = [
+    "Incomplete or missing information",
+    "Unverified or fake claims",
+    "Missing required documents",
+    "Goal amount seems unrealistic",
+    "Violates platform policies",
+  ];
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const account = campaign?.recipientAccount;
 
@@ -105,7 +121,6 @@ export default function AdminCampaignDetailsPage() {
       const campaignData = res?.data?.data;
 
       setCampaign(campaignData);
-      console.log("Admin campaign details", campaignData);
 
       // ✅ fundraiser updates from backend key
       const updatesFromBE = Array.isArray(campaignData?.fundraiserupdates)
@@ -380,27 +395,33 @@ export default function AdminCampaignDetailsPage() {
         {/* ================= CAMPAIGN HIGHLIGHTS ================= */}
         <section className="campaign-highlights">
           <div className="highlights-card">
-            {/* Primary Row */}
+            {/* Sport */}
             <div className="highlight-row">
-              <div className="highlight-item">
+              <div className="highlight-item full">
                 <span className="highlight-label">Sport</span>
                 <span className="skill-chip">{campaign.sport}</span>
               </div>
+            </div>
 
-              {campaign.level && (
-                <div className="highlight-item">
+            {/* Level */}
+            {campaign.level && (
+              <div className="highlight-row">
+                <div className="highlight-item full">
                   <span className="highlight-label">Level</span>
                   <span className="skill-chip">{campaign.level}</span>
                 </div>
-              )}
+              </div>
+            )}
 
-              {campaign.discipline && (
-                <div className="highlight-item">
+            {/* Discipline */}
+            {campaign.discipline && (
+              <div className="highlight-row">
+                <div className="highlight-item full">
                   <span className="highlight-label">Discipline</span>
                   <span className="skill-chip">{campaign.discipline}</span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Location */}
             <div className="highlight-row">
@@ -674,7 +695,12 @@ export default function AdminCampaignDetailsPage() {
                     >
                       {videoMedia.map((v, i) => (
                         <div className="video-box" key={i}>
-                          <iframe src={`${v.embedUrl}?rel=0`} allowFullScreen />
+                          <iframe
+                            src={`${v.embedUrl}?rel=0`}
+                            title={`Campaign video ${i + 1}`}
+                            allowFullScreen
+                            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                          />
                         </div>
                       ))}
                     </div>
@@ -951,7 +977,11 @@ export default function AdminCampaignDetailsPage() {
                   <button
                     className="admin-action-btn approve-btn"
                     disabled={actionLoading}
-                    onClick={handleApprove}
+                    onClick={() => setConfirmAction({
+                      label: "Approve Campaign",
+                      warning: "This will approve the campaign. The fundraiser will be notified and can proceed to activate it.",
+                      onConfirm: handleApprove,
+                    })}
                   >
                     Approve
                   </button>
@@ -970,14 +1000,22 @@ export default function AdminCampaignDetailsPage() {
                   <button
                     className="admin-action-btn activate-btn"
                     disabled={actionLoading}
-                    onClick={handleActivate}
+                    onClick={() => setConfirmAction({
+                      label: "Activate Campaign",
+                      warning: "This will make the campaign live and visible to all donors.",
+                      onConfirm: handleActivate,
+                    })}
                   >
                     Activate
                   </button>
                   <button
                     className="admin-action-btn suspend-btn"
                     disabled={actionLoading}
-                    onClick={handleSuspend}
+                    onClick={() => setConfirmAction({
+                      label: "Suspend Campaign",
+                      warning: "This will immediately suspend the campaign and pause all donations.",
+                      onConfirm: handleSuspend,
+                    })}
                   >
                     Suspend
                   </button>
@@ -988,7 +1026,11 @@ export default function AdminCampaignDetailsPage() {
                 <button
                   className="admin-action-btn suspend-btn"
                   disabled={actionLoading}
-                  onClick={handleSuspend}
+                  onClick={() => setConfirmAction({
+                    label: "Suspend Campaign",
+                    warning: "This will immediately suspend the campaign and pause all donations.",
+                    onConfirm: handleSuspend,
+                  })}
                 >
                   Suspend
                 </button>
@@ -998,25 +1040,58 @@ export default function AdminCampaignDetailsPage() {
                   <button
                     className="admin-action-btn complete-btn"
                     disabled={actionLoading}
-                    onClick={handleComplete}
+                    onClick={() => setConfirmAction({
+                      label: "Complete Campaign",
+                      warning: "This will mark the campaign as complete. No further donations will be accepted.",
+                      onConfirm: handleComplete,
+                    })}
                   >
                     Complete Campaign
                   </button>
                 )}
 
-
               {campaign.status === "SUSPENDED" && (
-
                 <button
                   className="admin-action-btn revoke-btn"
                   disabled={actionLoading}
-                  onClick={handleRevoke}
+                  onClick={() => setConfirmAction({
+                    label: "Revoke Campaign",
+                    warning: "This will permanently revoke the campaign. This action cannot be undone.",
+                    onConfirm: handleRevoke,
+                  })}
                 >
                   Revoke
                 </button>
-
               )}
 
+            </div>
+          </div>
+        )}
+
+        {/* ================= CONFIRM MODAL (B-8-1) ================= */}
+        {confirmAction && (
+          <div className="rp-modal-backdrop">
+            <div className="rp-modal">
+              <h3>{confirmAction.label}</h3>
+              <p className="confirm-warning">{confirmAction.warning}</p>
+              <div className="rp-modal-actions">
+                <button
+                  className="admin-action-btn approve-btn"
+                  disabled={actionLoading}
+                  onClick={async () => {
+                    await confirmAction.onConfirm();
+                    setConfirmAction(null);
+                  }}
+                >
+                  Confirm
+                </button>
+                <button
+                  className="admin-action-btn"
+                  onClick={() => setConfirmAction(null)}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1027,8 +1102,21 @@ export default function AdminCampaignDetailsPage() {
             <div className="rp-modal">
               <h3>Reject Campaign</h3>
 
+              <div className="reject-templates">
+                {REJECTION_TEMPLATES.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`reject-template-chip${rejectionReason === t ? " active" : ""}`}
+                    onClick={() => setRejectionReason(t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+
               <textarea
-                placeholder="Enter rejection reason"
+                placeholder="Enter rejection reason or select one above"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
               />

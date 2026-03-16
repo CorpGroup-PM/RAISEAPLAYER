@@ -109,7 +109,7 @@ export class FundraiserController {
     @UploadedFile() file: Express.Multer.File,
     @Req() req: any,
   ) {
-    validateUploadedFile(
+    await validateUploadedFile(
       file,
       ['image/jpeg', 'image/png', 'image/webp'],
       5,
@@ -163,11 +163,9 @@ export class FundraiserController {
       throw new BadRequestException('No files uploaded');
     }
 
-    files.forEach((file) =>
-      validateUploadedFile(
-        file,
-        ['image/jpeg', 'image/png', 'image/webp'],
-        3,
+    await Promise.all(
+      files.map((file) =>
+        validateUploadedFile(file, ['image/jpeg', 'image/png', 'image/webp'], 3),
       ),
     );
 

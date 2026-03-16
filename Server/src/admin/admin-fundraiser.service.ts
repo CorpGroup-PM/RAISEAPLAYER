@@ -5,17 +5,62 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CampaignStatus, Prisma, UserRole } from '@prisma/client';
+import { CampaignStatus, Prisma } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
+import { CryptoHelper } from 'src/common/helpers/crypto.helper';
 
+/**
+ * Handles admin operations scoped to campaigns (fundraisers):
+ * list, view, approve, reject, activate, re-activate, suspend, complete.
+ *
+ * User management  → AdminUserService
+ * Review management → AdminReviewService
+ * Bank-account mgmt → AdminBankAccountService
+ */
 @Injectable()
-export class AdminFundraiserService {
+export class AdminCampaignService {
 
-  private readonly logger = new Logger(AdminFundraiserService.name);
+  private readonly logger = new Logger(AdminCampaignService.name);
 
-  constructor(private readonly prisma: PrismaService,
+  constructor(
+    private readonly prisma: PrismaService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
+
+  /** Write a best-effort audit log entry. Never throws. */
+  private async audit(
+    adminId: string,
+    action: string,
+    targetId: string,
+    targetTable: string,
+    details?: Prisma.InputJsonObject,
+  ): Promise<void> {
+    try {
+      await this.prisma.adminLog.create({
+        data: { adminId, action, targetId, targetTable, details: details ?? {} },
+      });
+    } catch (err) {
+      this.logger.error(
+        `[AUDIT] Failed to write audit log: ${action} on ${targetTable}:${targetId}`,
+        err,
+      );
+    }
+  }
+
+  /** Decrypt PAN — admin sees full plaintext for KYC validation. */
+  private maskPan(
+    pan: Record<string, any> | null | undefined,
+  ): Record<string, any> | null | undefined {
+    if (!pan?.panNumber) return pan;
+    try {
+      const plain = CryptoHelper.decryptField(pan.panNumber);
+      return { ...pan, panNumber: plain };
+    } catch {
+      return { ...pan, panNumber: '(unreadable)' };
+    }
+  }
+
+  // ── Listing ───────────────────────────────────────────────────────────────
 
   async listCampaigns(status: CampaignStatus) {
     if (!Object.values(CampaignStatus).includes(status)) {
@@ -24,9 +69,7 @@ export class AdminFundraiserService {
 
     const campaigns = await this.prisma.fundraiser.findMany({
       where: { status },
-      orderBy: {
-        createdAt: 'asc',
-      },
+      orderBy: { createdAt: 'asc' },
       select: {
         id: true,
         title: true,
@@ -41,7 +84,6 @@ export class AdminFundraiserService {
         coverImageURL: true,
         createdAt: true,
         updatedAt: true,
-
         creator: {
           select: {
             id: true,
@@ -57,11 +99,21 @@ export class AdminFundraiserService {
     return {
       success: true,
       message: 'Campaigns fetched successfully',
-      data: {
-        count: campaigns.length,
-        campaigns,
-      },
+      data: { count: campaigns.length, campaigns },
     };
+  }
+
+  /** Returns a single-query count per status: { ACTIVE: 3, APPROVED: 1, ... } */
+  async getStatusCounts(): Promise<{ success: boolean; data: Record<string, number> }> {
+    const rows = await this.prisma.fundraiser.groupBy({
+      by: ['status'],
+      _count: { status: true },
+    });
+    const data: Record<string, number> = {};
+    for (const row of rows) {
+      data[row.status] = row._count.status;
+    }
+    return { success: true, data };
   }
 
   async getAllCampaigns(page = 1, limit = 50) {
@@ -93,7 +145,6 @@ export class AdminFundraiserService {
     };
   }
 
-
   async getCampaignsByCreatorId(creatorId: string) {
     const campaigns = await this.prisma.fundraiser.findMany({
       where: { creatorId },
@@ -109,13 +160,8 @@ export class AdminFundraiserService {
       },
     });
 
-    return {
-      success: true,
-      count: campaigns.length,
-      data: campaigns,
-    };
+    return { success: true, count: campaigns.length, data: campaigns };
   }
-
 
   async getCampaignById(id: string) {
     const campaign = await this.prisma.fundraiser.findUnique({
@@ -134,7 +180,6 @@ export class AdminFundraiserService {
             panDetails: true,
           },
         },
-
         beneficiaryUser: {
           select: {
             id: true,
@@ -149,23 +194,16 @@ export class AdminFundraiserService {
             profileImageUrl: true,
             createdAt: true,
             updatedAt: true,
-          }
+          },
         },
-
-        // OTHER campaign
         beneficiaryOther: true,
-
-        media: true,// images / videos
+        media: true,
         recipientAccount: true,
         fundraiserupdates: true,
         documents: true,
         donations: {
-          where: {
-            status: 'SUCCESS',
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
+          where: { status: 'SUCCESS' },
+          orderBy: { createdAt: 'desc' },
           take: 5,
           select: {
             id: true,
@@ -173,63 +211,44 @@ export class AdminFundraiserService {
             createdAt: true,
             isAnonymous: true,
             guestName: true,
-            donor: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
+            donor: { select: { id: true, firstName: true, lastName: true } },
           },
         },
-        _count: {
-          select: {
-            donations: {
-              where: { status: 'SUCCESS' },
-            },
-          },
-        },
+        _count: { select: { donations: { where: { status: 'SUCCESS' } } } },
       },
     });
 
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
-    }
-    //  Handle anonymous donors
-    const donations = campaign.donations.map((donation) => {
+    if (!campaign) throw new NotFoundException('Campaign not found');
 
+    const donations = campaign.donations.map((donation) => {
       if (!donation.donor) {
         return {
           id: donation.id,
           donationAmount: donation.donationAmount,
           createdAt: donation.createdAt,
           donor: donation.isAnonymous
-            ? {
-              id: null,
-              firstName: 'Anonymous',
-              lastName: 'Donor',
-            }
-            : {
-              id: null,
-              firstName: donation.guestName ?? 'Guest',
-              lastName: '',
-            },
+            ? { id: null, firstName: 'Anonymous', lastName: 'Donor' }
+            : { id: null, firstName: donation.guestName ?? 'Guest', lastName: '' },
         };
       }
-      //register anonymous donor
       if (donation.isAnonymous) {
         return {
           ...donation,
-          donor: {
-            id: null,
-            firstName: 'Anonymous',
-            lastName: 'Donor',
-          },
+          donor: { id: null, firstName: 'Anonymous', lastName: 'Donor' },
         };
       }
-
       return donation;
     });
+
+    // Decrypt account number for admin — full plaintext
+    let decryptedRecipientAccount = campaign.recipientAccount;
+    if (campaign.recipientAccount?.accountNumber) {
+      let decrypted = '(unreadable)';
+      try {
+        decrypted = CryptoHelper.decryptField(campaign.recipientAccount.accountNumber);
+      } catch { /* keep fallback */ }
+      decryptedRecipientAccount = { ...campaign.recipientAccount, accountNumber: decrypted };
+    }
 
     return {
       success: true,
@@ -237,33 +256,30 @@ export class AdminFundraiserService {
       totalDonations: campaign._count.donations,
       data: {
         ...campaign,
+        creator: {
+          ...campaign.creator,
+          panDetails: this.maskPan(campaign.creator?.panDetails),
+        },
         donations,
+        recipientAccount: decryptedRecipientAccount,
       },
     };
   }
 
-  async approveCampaign(id: string) {
-    // Fetch campaign (keep as-is)
+  // ── Status transitions ────────────────────────────────────────────────────
+
+  async approveCampaign(id: string, adminId: string) {
     const campaign = await this.prisma.fundraiser.findUnique({
       where: { id },
       select: {
         id: true,
         status: true,
-
-        //ADD THESE (needed for email)
         title: true,
-        creator: {
-          select: {
-            email: true,
-            firstName: true,
-          },
-        },
+        creator: { select: { email: true, firstName: true } },
       },
     });
 
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
-    }
+    if (!campaign) throw new NotFoundException('Campaign not found');
 
     if (campaign.status !== CampaignStatus.PENDING_REVIEW) {
       throw new BadRequestException(
@@ -271,76 +287,53 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Update campaign (keep as-is)
     const updated = await this.prisma.fundraiser.update({
       where: { id },
       data: {
         status: CampaignStatus.APPROVED,
         approvedAt: new Date(),
-
-        // safety cleanup
         rejectedAt: null,
         rejectionReason: null,
       },
     });
 
-    // Send approval email (NEW)
+    await this.audit(adminId, 'CAMPAIGN_APPROVED', id, 'Fundraiser', {
+      previousStatus: campaign.status,
+      newStatus: CampaignStatus.APPROVED,
+    });
+
     try {
-      await this.mailService.sendFundraiserApprovedMail(
-        campaign.creator.email,
-        {
-          name: campaign.creator.firstName ?? 'User',
-          title: campaign.title,
-        },
-      );
+      await this.mailService.sendFundraiserApprovedMail(campaign.creator.email, {
+        name: campaign.creator.firstName ?? 'User',
+        title: campaign.title,
+      });
     } catch (error) {
       this.logger.error('Fundraiser approval mail failed', error);
     }
 
-    // Return response (keep as-is)
     return {
       success: true,
       message: 'Campaign approved successfully',
-      data: {
-        id: updated.id,
-        status: updated.status,
-        approvedAt: updated.approvedAt,
-      },
+      data: { id: updated.id, status: updated.status, approvedAt: updated.approvedAt },
     };
   }
 
-
-  async rejectCampaign(
-    id: string,
-    rejectionReason: string,
-  ) {
+  async rejectCampaign(id: string, rejectionReason: string, adminId: string) {
     if (!rejectionReason?.trim()) {
-      throw new BadRequestException(
-        'Rejection reason is required',
-      );
+      throw new BadRequestException('Rejection reason is required');
     }
 
-    // Fetch campaign (extended only for email)
     const campaign = await this.prisma.fundraiser.findUnique({
       where: { id },
       select: {
         id: true,
         status: true,
-
-        //  required for rejection email
         title: true,
-        creator: {
-          select: {
-            email: true,
-            firstName: true,
-          },
-        },
+        creator: { select: { email: true, firstName: true } },
       },
     });
 
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
-    }
+    if (!campaign) throw new NotFoundException('Campaign not found');
 
     if (campaign.status !== CampaignStatus.PENDING_REVIEW) {
       throw new BadRequestException(
@@ -348,29 +341,28 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Update campaign (unchanged)
     const updated = await this.prisma.fundraiser.update({
       where: { id },
       data: {
         status: CampaignStatus.REJECTED,
         rejectedAt: new Date(),
         rejectionReason,
-
-        // safety cleanup
         approvedAt: null,
       },
     });
 
-    //  Send rejection email (added safely)
+    await this.audit(adminId, 'CAMPAIGN_REJECTED', id, 'Fundraiser', {
+      previousStatus: campaign.status,
+      newStatus: CampaignStatus.REJECTED,
+      rejectionReason,
+    });
+
     try {
-      await this.mailService.sendFundraiserRejectedMail(
-        campaign.creator.email,
-        {
-          name: campaign.creator.firstName ?? 'User',
-          title: campaign.title,
-          reason: rejectionReason,
-        },
-      );
+      await this.mailService.sendFundraiserRejectedMail(campaign.creator.email, {
+        name: campaign.creator.firstName ?? 'User',
+        title: campaign.title,
+        reason: rejectionReason,
+      });
     } catch (error) {
       this.logger.error(
         `Failed to send rejection email for campaign ${campaign.id}`,
@@ -378,7 +370,6 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Response (unchanged)
     return {
       success: true,
       message: 'Campaign rejected.',
@@ -391,30 +382,19 @@ export class AdminFundraiserService {
     };
   }
 
-
-  async activateCampaign(id: string) {
-    //  Fetch campaign (extended only for email)
+  async activateCampaign(id: string, adminId: string) {
     const campaign = await this.prisma.fundraiser.findUnique({
       where: { id },
       select: {
         id: true,
         status: true,
         approvedAt: true,
-
-        //  required for activation email
         title: true,
-        creator: {
-          select: {
-            email: true,
-            firstName: true,
-          },
-        },
+        creator: { select: { email: true, firstName: true } },
       },
     });
 
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
-    }
+    if (!campaign) throw new NotFoundException('Campaign not found');
 
     if (campaign.status !== CampaignStatus.APPROVED) {
       throw new BadRequestException(
@@ -422,24 +402,21 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Activate campaign (unchanged)
     const updated = await this.prisma.fundraiser.update({
       where: { id },
-      data: {
-        status: CampaignStatus.ACTIVE,
-        // optional: activatedAt if you add it later
-      },
+      data: { status: CampaignStatus.ACTIVE },
     });
 
-    //  Send activation email (added safely)
+    await this.audit(adminId, 'CAMPAIGN_ACTIVATED', id, 'Fundraiser', {
+      previousStatus: campaign.status,
+      newStatus: CampaignStatus.ACTIVE,
+    });
+
     try {
-      await this.mailService.sendFundraiserActivatedMail(
-        campaign.creator.email,
-        {
-          name: campaign.creator.firstName ?? 'User',
-          title: campaign.title,
-        },
-      );
+      await this.mailService.sendFundraiserActivatedMail(campaign.creator.email, {
+        name: campaign.creator.firstName ?? 'User',
+        title: campaign.title,
+      });
     } catch (error) {
       this.logger.error(
         `Failed to send activation email for campaign ${campaign.id}`,
@@ -447,39 +424,26 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Response (unchanged)
     return {
       success: true,
-      message: 'Campaign activated successfully. It’s now live.',
-      data: {
-        id: updated.id,
-        status: updated.status,
-      },
+      message: "Campaign activated successfully. It's now live.",
+      data: { id: updated.id, status: updated.status },
     };
   }
 
-  async reActivateCampaign(id: string) {
+  async reActivateCampaign(id: string, adminId: string) {
     const campaign = await this.prisma.fundraiser.findUnique({
       where: { id },
       select: {
         id: true,
         status: true,
         approvedAt: true,
-
-        //  required for activation email
         title: true,
-        creator: {
-          select: {
-            email: true,
-            firstName: true,
-          },
-        },
+        creator: { select: { email: true, firstName: true } },
       },
     });
 
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
-    }
+    if (!campaign) throw new NotFoundException('Campaign not found');
 
     if (campaign.status !== CampaignStatus.SUSPENDED) {
       throw new BadRequestException(
@@ -487,24 +451,21 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Activate campaign (unchanged)
     const updated = await this.prisma.fundraiser.update({
       where: { id },
-      data: {
-        status: CampaignStatus.ACTIVE,
-        // optional: activatedAt if you add it later
-      },
+      data: { status: CampaignStatus.ACTIVE },
     });
 
-    //  Send activation email (added safely)
+    await this.audit(adminId, 'CAMPAIGN_REACTIVATED', id, 'Fundraiser', {
+      previousStatus: campaign.status,
+      newStatus: CampaignStatus.ACTIVE,
+    });
+
     try {
-      await this.mailService.sendFundraiserActivatedMail(
-        campaign.creator.email,
-        {
-          name: campaign.creator.firstName ?? 'User',
-          title: campaign.title,
-        },
-      );
+      await this.mailService.sendFundraiserActivatedMail(campaign.creator.email, {
+        name: campaign.creator.firstName ?? 'User',
+        title: campaign.title,
+      });
     } catch (error) {
       this.logger.error(
         `Failed to send activation email for campaign ${campaign.id}`,
@@ -512,39 +473,25 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Response (unchanged)
     return {
       success: true,
-      message: 'Campaign activated successfully. It’s now live.',
-      data: {
-        id: updated.id,
-        status: updated.status,
-      },
+      message: "Campaign activated successfully. It's now live.",
+      data: { id: updated.id, status: updated.status },
     };
   }
 
-  async suspendCampaign(id: string) {
-    //  Fetch campaign (extended only for email)
+  async suspendCampaign(id: string, adminId: string) {
     const campaign = await this.prisma.fundraiser.findUnique({
       where: { id },
       select: {
         id: true,
         status: true,
-
-        //  required for suspension email
         title: true,
-        creator: {
-          select: {
-            email: true,
-            firstName: true,
-          },
-        },
+        creator: { select: { email: true, firstName: true } },
       },
     });
 
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
-    }
+    if (!campaign) throw new NotFoundException('Campaign not found');
 
     if (campaign.status !== CampaignStatus.ACTIVE) {
       throw new BadRequestException(
@@ -552,24 +499,22 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Suspend campaign (unchanged)
     const updated = await this.prisma.fundraiser.update({
       where: { id },
-      data: {
-        status: CampaignStatus.SUSPENDED,
-      },
+      data: { status: CampaignStatus.SUSPENDED },
     });
 
-    //  Send suspension email (added safely)
+    await this.audit(adminId, 'CAMPAIGN_SUSPENDED', id, 'Fundraiser', {
+      previousStatus: campaign.status,
+      newStatus: CampaignStatus.SUSPENDED,
+    });
+
     try {
-      await this.mailService.sendFundraiserSuspendedMail(
-        campaign.creator.email,
-        {
-          name: campaign.creator.firstName ?? 'User',
-          title: campaign.title,
-          reason: 'Your campaign has been temporarily suspended by admin.',
-        },
-      );
+      await this.mailService.sendFundraiserSuspendedMail(campaign.creator.email, {
+        name: campaign.creator.firstName ?? 'User',
+        title: campaign.title,
+        reason: 'Your campaign has been temporarily suspended by admin.',
+      });
     } catch (error) {
       this.logger.error(
         `Failed to send suspension email for campaign ${campaign.id}`,
@@ -577,18 +522,14 @@ export class AdminFundraiserService {
       );
     }
 
-    //  Response (unchanged)
     return {
       success: true,
-      message: 'Campaign suspended successfully. It’s no longer visible to donors.',
-      data: {
-        id: updated.id,
-        status: updated.status,
-      },
+      message: "Campaign suspended successfully. It's no longer visible to donors.",
+      data: { id: updated.id, status: updated.status },
     };
   }
 
-  async completeCampaign(id: string) {
+  async completeCampaign(id: string, adminId: string) {
     const fundraiser = await this.prisma.fundraiser.findUnique({
       where: { id },
       select: {
@@ -596,14 +537,8 @@ export class AdminFundraiserService {
         status: true,
         goalAmount: true,
         raisedAmount: true,
-
         title: true,
-        creator: {
-          select: {
-            email: true,
-            firstName: true,
-          },
-        },
+        creator: { select: { email: true, firstName: true } },
       },
     });
 
@@ -624,7 +559,7 @@ export class AdminFundraiserService {
       );
     }
 
-    // Atomic conditional update: only completes if still ACTIVE (prevents race condition)
+    // Atomic conditional update prevents race condition
     const result = await this.prisma.fundraiser.updateMany({
       where: { id, status: CampaignStatus.ACTIVE },
       data: { status: CampaignStatus.COMPLETED },
@@ -641,6 +576,13 @@ export class AdminFundraiserService {
       select: { id: true, status: true, goalAmount: true, raisedAmount: true },
     });
 
+    await this.audit(adminId, 'CAMPAIGN_COMPLETED', id, 'Fundraiser', {
+      previousStatus: CampaignStatus.ACTIVE,
+      newStatus: CampaignStatus.COMPLETED,
+      goalAmount: goal.toFixed(2),
+      raisedAmount: raised.toFixed(2),
+    });
+
     const creatorEmail = fundraiser.creator?.email;
     const adminEmails = (process.env.ADMIN_EMAIL ?? '')
       .split(',')
@@ -648,7 +590,6 @@ export class AdminFundraiserService {
       .filter(Boolean);
 
     try {
-      // Send to fundraiser owner
       if (creatorEmail) {
         await this.mailService.sendFundraiserCompletedMail(creatorEmail, {
           name: fundraiser.creator.firstName ?? 'User',
@@ -657,8 +598,6 @@ export class AdminFundraiserService {
           raisedAmount: raised.toFixed(2),
         });
       }
-
-      // Send to admin(s)
       if (adminEmails.length) {
         await this.mailService.sendFundraiserCompletedAdminMail(adminEmails, {
           fundraiserId: fundraiser.id,
@@ -670,7 +609,7 @@ export class AdminFundraiserService {
         });
       }
     } catch (err) {
-      this.logger?.error?.('Fundraiser completed mail failed', err);
+      this.logger.error('Fundraiser completed mail failed', err);
     }
 
     return {
@@ -684,300 +623,7 @@ export class AdminFundraiserService {
       },
     };
   }
-
-
-  // List recipient / bank accounts
-  async listRecipientAccounts(onlyUnverified: boolean) {
-    const accounts = await this.prisma.recipientAccount.findMany({
-      where: onlyUnverified ? { isVerified: false } : undefined,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        recipientType: true,
-        bankName: true,
-        accountNumber: true,
-        ifscCode: true,
-        country: true,
-        isVerified: true,
-        createdAt: true,
-        fundraiser: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-            creator: {
-              select: { id: true, firstName: true, lastName: true, email: true },
-            },
-          },
-        },
-      },
-    });
-
-    return {
-      success: true,
-      count: accounts.length,
-      data: accounts,
-    };
-  }
-
-  // recipient-account Verification
-  async verifyRecipientAccount(id: string) {
-    const account = await this.prisma.recipientAccount.findUnique({
-      where: { id },
-    });
-
-    if (!account) {
-      throw new NotFoundException('Recipient account not found');
-    }
-
-    if (account.isVerified) {
-      return {
-        id: account.id,
-        isVerified: true,
-      };
-    }
-
-    const updated = await this.prisma.recipientAccount.update({
-      where: { id },
-      data: {
-        isVerified: true,
-      },
-    });
-
-    return {
-      message: 'Recipient account verified successfully.',
-      id: updated.id,
-      isVerified: updated.isVerified,
-    };
-  }
-
-  async getAllPlatformTips() {
-    const donations = await this.prisma.donation.findMany({
-      where: {
-        platformTipAmount: { gt: 0 },
-        status: 'SUCCESS',
-      },
-      select: {
-        id: true,
-        platformTipAmount: true,
-        isAnonymous: true,
-        createdAt: true,
-
-        guestName: true,
-        guestEmail: true,
-
-        donor: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    const data = donations.map((donation) => {
-      const isGuest = !donation.donor;
-
-      return {
-        donationId: donation.id,
-        platformTipAmount: donation.platformTipAmount.toString(),
-
-        donorName: isGuest
-          ? donation.guestName ?? 'Guest'
-          : `${donation.donor!.firstName} ${donation.donor!.lastName}`,
-
-        donorEmail: isGuest
-          ? donation.guestEmail
-          : donation.donor!.email,
-
-        isGuest,
-        isAnonymous: donation.isAnonymous,
-        createdAt: donation.createdAt,
-      };
-    });
-
-    return {
-      success: true,
-      count: data.length,
-      data,
-    };
-  }
-
-  //GetallDonor
-  async getAllDonor() {
-    const donations = await this.prisma.donation.findMany({
-      where: {
-        status: 'SUCCESS',
-      },
-      include: {
-        donor: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-      },
-    });
-
-    return donations.map(d => {
-      const base = {
-        id: d.id,
-        fundraiserId: d.fundraiserId,
-        donorId: d.donorId,
-        donationAmount: d.donationAmount,
-        platformTipAmount: d.platformTipAmount,
-        totalAmount: d.totalAmount,
-        currency: d.currency,
-        status: d.status,
-        isAnonymous: d.isAnonymous,
-        createdAt: d.createdAt,
-      };
-
-      // Anonymous donation (HIGHEST PRIORITY)
-      if (d.isAnonymous) {
-        return {
-          ...base,
-          donorName: 'Anonymous',
-        };
-      }
-
-      // Registered donor
-      if (d.donorId && d.donor) {
-        return {
-          ...base,
-          donor: d.donor,
-        };
-      }
-
-      // Guest donor
-      return {
-        ...base,
-        guestName: d.guestName,
-        guestEmail: d.guestEmail,
-        guestMobile: d.guestMobile,
-      };
-    });
-  }
-
-  //Get all User
-  async getAllUser() {
-    return await this.prisma.user.findMany({
-      where: {
-        role: {
-          not: UserRole.ADMIN,
-        },
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phoneNumber: true,
-        isEmailVerified: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-  }
-
-  //GetAllUserBYId
-  async getByUserId(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-        role: {
-          not: UserRole.ADMIN,
-        }
-      },
-      select: {
-        id: true,
-        profileImageUrl: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phoneNumber: true,
-        role: true,
-        panDetails: true,
-        createdAt: true,
-
-        fundraisersCreated: {
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            title: true,
-            status: true,
-            goalAmount: true,
-            raisedAmount: true,
-            createdAt: true,
-          },
-        },
-
-        donations: {
-          where: {
-            status: 'SUCCESS',
-          },
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            fundraiserId: true,
-            donationAmount: true,
-            platformTipAmount: true,
-            totalAmount: true,
-            currency: true,
-            status: true,
-            createdAt: true,
-            fundraiser: { select: { id: true, title: true } },
-          },
-        },
-      },
-    });
-
-    if (!user) throw new BadRequestException('User not found');
-    return user;
-  }
-
-  async getAllReview (){
-    return await this.prisma.review.findMany();
-  }
-
-  async reviewApprove(id: string) {
-    const res = await this.prisma.review.updateMany({
-      where: {
-        id,
-        isVerified: false, 
-      },
-      data: {
-        isVerified: true,
-      },
-    });
-
-    if (res.count === 0) {
-      throw new BadRequestException('Review not found or already approved');
-    }
-
-    return {
-      message: 'Approved Review',
-    };
-  }
-
-  async reviewdelete(id: string) {
-    const res = await this.prisma.review.deleteMany({
-      where: { id },
-    });
-
-    if (res.count === 0) {
-      throw new BadRequestException('Review not found');
-    }
-
-    return { message: 'Review Deleted' };
-  }
 }
 
+/** @deprecated Use AdminCampaignService */
+export { AdminCampaignService as AdminFundraiserService };

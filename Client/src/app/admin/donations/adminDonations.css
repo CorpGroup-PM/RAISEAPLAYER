@@ -126,3 +126,32 @@
 
 
 
+
+.donations-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 0 4px;
+}
+
+.donations-page-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.donations-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.donations-page-info {
+  font-size: 13px;
+  color: #64748b;
+}

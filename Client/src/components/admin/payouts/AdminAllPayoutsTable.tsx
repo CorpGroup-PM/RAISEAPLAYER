@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminPayoutsService } from "@/services/adminPayouts.service";
+import type { AdminPayoutItem } from "@/types/payout.types";
 import "./adminPayouts.css";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -17,16 +18,18 @@ const STATUS_COLORS: Record<string, string> = {
 
 const ALL_STATUSES = ["ALL", "PENDING", "APPROVED", "PROCESSING", "PAID", "FAILED", "REJECTED", "CANCELLED"] as const;
 type FilterStatus = (typeof ALL_STATUSES)[number];
+const ROWS_PER_PAGE = 25;
 
 function fmt(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
 export default function AdminAllPayoutsTable() {
-  const [items, setItems]             = useState<any[]>([]);
+  const [items, setItems]             = useState<AdminPayoutItem[]>([]);
   const [filter, setFilter]           = useState<FilterStatus>("ALL");
   const [loading, setLoading]         = useState(false);
-  const [activePayout, setActivePayout] = useState<any>(null);
+  const [activePayout, setActivePayout] = useState<AdminPayoutItem | null>(null);
+  const [page, setPage]               = useState(1);
 
   const load = async () => {
     setLoading(true);
@@ -49,6 +52,8 @@ export default function AdminAllPayoutsTable() {
   const rejected   = items.filter((i) => i.status === "REJECTED").length;
 
   const filtered = filter === "ALL" ? items : items.filter((i) => i.status === filter);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
+  const paginated = filtered.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
 
   return (
     <div className="apPage">
@@ -101,7 +106,7 @@ export default function AdminAllPayoutsTable() {
               <button
                 key={s}
                 className={`apFilterBtn${filter === s ? " active" : ""}`}
-                onClick={() => setFilter(s)}
+                onClick={() => { setFilter(s); setPage(1); }}
               >
                 {s === "ALL" ? `All (${total})` : `${s.charAt(0) + s.slice(1).toLowerCase()} (${count})`}
               </button>
@@ -136,7 +141,7 @@ export default function AdminAllPayoutsTable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((x) => (
+                  {paginated.map((x) => (
                     <tr key={x.id}>
                       <td>
                         <Link
@@ -188,6 +193,25 @@ export default function AdminAllPayoutsTable() {
                   ))}
                 </tbody>
               </table>
+            )}
+            {totalPages > 1 && (
+              <div className="apPagination">
+                <button
+                  className="apPageBtn"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  ← Prev
+                </button>
+                <span className="apPageInfo">Page {page} of {totalPages}</span>
+                <button
+                  className="apPageBtn"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next →
+                </button>
+              </div>
             )}
           </div>
         </div>

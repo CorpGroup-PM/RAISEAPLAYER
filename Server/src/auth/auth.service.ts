@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { SignupDto } from './dto/signup.dto';
@@ -16,7 +17,6 @@ import { AppConstants } from 'src/common/constants/time.constants';
 import { CryptoHelper } from 'src/common/helpers/crypto.helper';
 
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -25,6 +25,8 @@ import { OtpType, UserRole, AuthProvider } from '@prisma/client';
 import { SendOtpDto } from './dto/send-otp.dto';
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private mailService: MailService,
@@ -32,10 +34,6 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
   ) { }
-
-  private hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
-  }
 
   // ---------------------------------------------------------
   // SIGNUP
@@ -92,9 +90,13 @@ export class AuthService {
       isEmailVerified: true, // You can set this because OTP is verified
     });
 
-    await this.mailService.sendWelcomeMail(newUser.email, {
-      name: newUser.firstName ?? 'Player',
-    });
+    try {
+      await this.mailService.sendWelcomeMail(newUser.email, {
+        name: newUser.firstName ?? 'Player',
+      });
+    } catch (err) {
+      this.logger.error('Failed to send welcome email', err);
+    }
 
     await this.prisma.emailOtp.deleteMany({
       where: { email: normalizedEmail },
@@ -158,7 +160,6 @@ export class AuthService {
     await this.prisma.emailOtp.create({
       data: {
         email: normalizedEmail,
-        otpCode: otp,
         otpHash,
         expiresAt,
         attemptCount: 0,
@@ -320,6 +321,20 @@ export class AuthService {
     );
 
     if (!isValid) {
+      // Token mismatch — an old or unknown refresh token was presented.
+      // This is a strong signal of refresh token theft / replay attack.
+      // Wipe all sessions for this user immediately to force re-authentication
+      // across all devices, limiting the attacker's window.
+      await this.usersService.update(userId, {
+        currentHashedRefreshToken: null,
+        refreshTokenUpdatedAt: null,
+      });
+
+      this.logger.warn(
+        `[SECURITY] Refresh token mismatch for user ${userId}. ` +
+        `Possible token replay attack — all sessions invalidated.`,
+      );
+
       throw new ForbiddenException('Access Denied');
     }
 
@@ -396,8 +411,8 @@ export class AuthService {
     });
 
     //otp generation
-    const otpCode = CryptoHelper.generateOtp();
-    const otpHash = await CryptoHelper.hashOtp(otpCode);
+    const otp = CryptoHelper.generateOtp();
+    const otpHash = await CryptoHelper.hashOtp(otp);
 
     const expiresAt = new Date(
       Date.now() + AppConstants.OTP_REST_EXPIR_MINUTES * 60 * 1000,
@@ -406,7 +421,6 @@ export class AuthService {
     await this.prisma.emailOtp.create({
       data: {
         email: user.email,
-        otpCode,
         otpHash,
         type: OtpType.PASSWORD_RESET,
         expiresAt,
@@ -414,10 +428,10 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendPasswordReset(user.email, otpCode);
+    await this.mailService.sendPasswordReset(user.email, otp);
 
     return {
-      message: 'If an account exists for this email, we’ll send a verification code.',
+      message: "If an account exists for this email, we'll send a verification code.",
     };
   }
 
@@ -459,12 +473,18 @@ export class AuthService {
       throw new UnauthorizedException('Token does not belong to this email.');
     }
 
-    // 5️ Hash & update password
+    // 5️ Hash & update password, and invalidate all active sessions
+    // Wiping the refresh token forces re-authentication on all devices,
+    // preventing an attacker who holds a stolen session from remaining logged in.
     const hashedPassword = await CryptoHelper.hashPassword(newPassword);
 
     await this.prisma.user.update({
       where: { email },
-      data: { passwordHash: hashedPassword },
+      data: {
+        passwordHash: hashedPassword,
+        currentHashedRefreshToken: null,
+        refreshTokenUpdatedAt: null,
+      },
     });
 
     // 6️ Delete token → ONE-TIME USE
@@ -527,6 +547,18 @@ export class AuthService {
 
     if (!record) {
       throw new BadRequestException('Invalid or expired OTP.');
+    }
+
+    // Enforce max attempts before comparing OTP
+    if (record.attemptCount >= 5) {
+      await this.prisma.emailOtp.delete({ where: { id: record.id } });
+      throw new BadRequestException('Too many failed attempts. Please request a new OTP.');
+    }
+
+    // Check OTP expiry
+    if (record.expiresAt < new Date()) {
+      await this.prisma.emailOtp.delete({ where: { id: record.id } });
+      throw new BadRequestException('OTP has expired. Please request a new one.');
     }
 
     const isValid = await CryptoHelper.compareOtp(otp, record.otpHash);

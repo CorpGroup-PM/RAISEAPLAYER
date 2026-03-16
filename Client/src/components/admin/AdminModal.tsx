@@ -37,11 +37,6 @@ export default function AdminModal({
   return (
     <div className="adm-backdrop" onClick={onClose}>
       <div className="adm-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Icon */}
-        <div className={`adm-icon-wrap ${variant}`}>
-          <span className="adm-icon">{ICONS[variant]}</span>
-        </div>
-
         {/* Content */}
         <h3 className="adm-title">{title}</h3>
         <p className="adm-message">{message}</p>

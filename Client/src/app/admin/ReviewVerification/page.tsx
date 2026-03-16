@@ -38,7 +38,7 @@ export default function AdminReviewsPage() {
     try {
       setLoading(true);
       const res = await AdminReviewsService.getAll();
-      setItems(res.data || []);
+      setItems(res.data.data || []);
     } catch (err) {
       console.error("Failed to load reviews", err);
     } finally {
@@ -70,7 +70,7 @@ export default function AdminReviewsPage() {
     try {
       setProcessingId(id);
       await AdminReviewsService.deleteReview(id);
-      setItems((prev) => prev.filter((r) => r.id !== id));
+      await load();
     } catch (err: any) {
       setErrorModal({ open: true, message: err?.response?.data?.message || "Delete failed." });
     } finally {
@@ -248,7 +248,7 @@ export default function AdminReviewsPage() {
     {/* Confirm Delete Modal */}
     <AdminModal
       open={confirmModal.open}
-      variant="error"
+      variant="warning"
       title="Delete Review"
       message="Are you sure you want to delete this review? This action cannot be undone."
       confirmLabel="Yes, Delete"

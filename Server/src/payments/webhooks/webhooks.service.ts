@@ -23,10 +23,9 @@ export class WebhooksService {
     if (!isValid) {
       throw new BadRequestException('Invalid Razorpay signature');
     }
-    console.log(payload);
 
     const event = payload.event;
-    console.log(event);
+    this.logger.log(`Razorpay webhook received: ${event}`);
 
     if (event === 'payment.captured') {
       await this.handlePaymentCaptured(payload);
@@ -62,43 +61,80 @@ export class WebhooksService {
     },
   });
 
+  // Fast-path: already fully processed (late Razorpay retry)
   if (!payment || payment.status === PaymentStatus.SUCCESS) return;
 
-  const updated = await this.prisma.payment.updateMany({
-    where: { id: payment.id, status: PaymentStatus.PENDING },
-    data: {
-      razorpayPaymentId,
-      status: PaymentStatus.SUCCESS,
-      rawResponse: payload,
-    },
-  });
-
-  if (updated.count === 0) return;
-
-  await this.prisma.$transaction([
-    this.prisma.donation.update({
-      where: { id: payment.donationId },
-      data: { status: PaymentStatus.SUCCESS },
-    }),
-    this.prisma.fundraiser.update({
-      where: { id: payment.donation.fundraiserId },
-      data: {
-        raisedAmount: {
-          increment: payment.donation.donationAmount,
+  // ── Single atomic transaction: idempotency guard + donation + fundraiser ──
+  // All three writes succeed or all roll back together, eliminating the gap
+  // where payment = SUCCESS but raisedAmount was never incremented.
+  let processed = false;
+  try {
+    processed = await this.prisma.$transaction(async (tx) => {
+      // Idempotency guard: only one concurrent request can flip PENDING → SUCCESS
+      const updated = await tx.payment.updateMany({
+        where: { id: payment.id, status: PaymentStatus.PENDING },
+        data: {
+          razorpayPaymentId,
+          status: PaymentStatus.SUCCESS,
+          rawResponse: payload,
         },
-      },
-    }),
-  ]);
+      });
 
-  // 📩 Fundraiser notification
-  await this.mailService.sendDonationReceivedMail(
-    payment.donation.fundraiser.creator.email,
-    {
-      fundraiserName:
-        payment.donation.fundraiser.creator.firstName ?? 'User',
-      campaignTitle: payment.donation.fundraiser.title,
-    },
+      // Concurrent webhook already won the race — skip silently
+      if (updated.count === 0) return false;
+
+      await tx.donation.update({
+        where: { id: payment.donationId },
+        data: { status: PaymentStatus.SUCCESS },
+      });
+
+      await tx.fundraiser.update({
+        where: { id: payment.donation.fundraiserId },
+        data: { raisedAmount: { increment: payment.donation.donationAmount } },
+      });
+
+      return true;
+    });
+  } catch (err) {
+    this.logger.error(
+      `[CRITICAL] Payment/donation/fundraiser update failed for payment ${payment.id} — manual reconciliation required`,
+      err,
+    );
+    return;
+  }
+
+  // Concurrent retry already handled — skip emails
+  if (!processed) return;
+
+  // Fire-and-forget: return 200 to Razorpay immediately; emails/PDF run in background
+  this.sendPostPaymentNotifications(payment, razorpayPaymentId).catch((err) =>
+    this.logger.error(
+      `Unhandled error in post-payment notifications for payment ${payment.id}`,
+      err,
+    ),
   );
+}
+
+private async sendPostPaymentNotifications(
+  payment: any,
+  razorpayPaymentId: string,
+) {
+  // 📩 Fundraiser notification (best-effort)
+  try {
+    await this.mailService.sendDonationReceivedMail(
+      payment.donation.fundraiser.creator.email,
+      {
+        fundraiserName:
+          payment.donation.fundraiser.creator.firstName ?? 'User',
+        campaignTitle: payment.donation.fundraiser.title,
+      },
+    );
+  } catch (err) {
+    this.logger.error(
+      `Failed to send donation received email for payment ${payment.id}`,
+      err,
+    );
+  }
 
   const donorEmail =
     payment.donation.guestEmail ?? payment.donation.donor?.email;
@@ -110,6 +146,7 @@ export class WebhooksService {
     payment.donation.donor?.firstName ??
     'Supporter';
 
+  // 📩 Donor receipt (best-effort — receipt generation + email in one block)
   try {
     const receiptNumber = `RAP-DR-${new Date().getFullYear()}-${payment.id}`;
 
@@ -131,11 +168,10 @@ export class WebhooksService {
       campaignTitle: payment.donation.fundraiser.title,
       receiptPdf,
     });
-
-  } catch (error) {
+  } catch (err) {
     this.logger.error(
       `Failed to send donor receipt email for payment ${payment.id}`,
-      error.stack,
+      err,
     );
   }
 }

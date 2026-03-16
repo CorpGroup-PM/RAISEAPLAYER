@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
+import { OAuthCodeStore } from './oauth-code.store';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
@@ -24,6 +25,7 @@ import { PassportModule } from '@nestjs/passport';
   ],
   providers: [
     AuthService,
+    OAuthCodeStore,
     AccessTokenStrategy,
     RefreshTokenStrategy,
     GoogleStrategy,

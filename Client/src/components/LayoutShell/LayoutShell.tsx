@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/UserNavbar/Navbar";
 import Footer from "@/components/Footer/Footer";
+import OfflineBanner from "@/components/OfflineBanner/OfflineBanner";
 
 const HIDE_CHROME_ROUTES = ["/login", "/register", "/forgot-password"];
 
@@ -18,6 +19,7 @@ export default function LayoutShell({
 
   return (
     <>
+      <OfflineBanner />
       {!hideChrome && <Navbar />}
       <main
         style={{

@@ -70,7 +70,7 @@ const MyFundraisersDashboard: React.FC = () => {
         {campaigns.length > 0 && (
           <section className="section">
             <div className="section-header">
-              <h2>My Campaigns</h2>
+              <h2>My Dashboard</h2>
             </div>
 
             <div className="card-grid">
@@ -86,8 +86,15 @@ const MyFundraisersDashboard: React.FC = () => {
                 );
 
                 return (
-                  <article className="card" key={campaign.id}>
-                    <div className="card-image">
+                  <div
+                    className="campaignCard"
+                    key={campaign.id}
+                    onClick={() => router.push(`/dashboard/campaigns/${campaign.id}`)}
+                  >
+                    <div className="campaignImageWrap">
+                      <div style={{ position: "absolute", top: 10, right: 10, zIndex: 2 }}>
+                        <StatusBadge status={campaign.status} />
+                      </div>
                       <img
                         src={
                           campaign.coverImageURL
@@ -96,25 +103,29 @@ const MyFundraisersDashboard: React.FC = () => {
                         }
                         alt={campaign.title || "Campaign cover"}
                         loading="lazy"
-                        className="card-image-img"
+                        className="campaignImage"
                       />
-
-                      <div className="card-image-overlay">
-                        <StatusBadge status={campaign.status} />
-                      </div>
                     </div>
 
-                    <div className="card-body">
-                      <h3>{campaign.title}</h3>
-                      {/* <p className="meta">
-                        {campaign.sport}
-                        {campaign.level && ` • ${campaign.level}`}
-                      </p> */}
-
-                      <p className="location">
+                    <div className="campaignBody">
+                      <h3 className="campaignTitle">{campaign.title}</h3>
+                      {campaign.shortDescription && (
+                        <p className="campaignShortDesc">{campaign.shortDescription}</p>
+                      )}
+                      <p className="campaignMeta">
+                        {campaign.sport && `${campaign.sport} • `}
                         {campaign.city}
                         {campaign.state && `, ${campaign.state}`}
                       </p>
+
+                      <div className="campaignMoneyRow">
+                        <span className="campaignRaised">Raised: ₹{raised.toLocaleString()}</span>
+                        <span className="campaignGoal">Goal: ₹{goal.toLocaleString()}</span>
+                      </div>
+
+                      <div className="campaignProgressTrack">
+                        <div className="campaignProgressFill" style={{ width: `${progress}%` }} />
+                      </div>
 
                       {campaign.createdAt && (
                         <p className="campaign-created-at">
@@ -127,37 +138,22 @@ const MyFundraisersDashboard: React.FC = () => {
                         </p>
                       )}
 
-                      <div className="progress-box">
-                        <div className="progress-row">
-                          <div>
-                            <strong style={{ color: "orange" }}>
-                              Raised:{" "}
-                            </strong>
-                            <strong style={{ color: "orange" }}>
-                              ₹{raised.toLocaleString()}
-                            </strong>
-                          </div>
-                          <div>
-                            <span>Goal: </span>
-                            <span>₹{goal.toLocaleString()}</span>
-                          </div>
-                        </div>
-
-                        <div className="progress-bar">
-                          <div style={{ width: `${progress}%` }} />
-                        </div>
+                      <div className="campaignFooterRow">
+                        <span className="campaignSupporters">
+                          {supporters.toLocaleString()} supporter{supporters !== 1 && "s"}
+                        </span>
+                        <button
+                          className="campaignDonateBtn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/campaigns/${campaign.id}`);
+                          }}
+                        >
+                          Manage →
+                        </button>
                       </div>
-
-                      <button
-                        className="primary-btn"
-                        onClick={() =>
-                          router.push(`/dashboard/campaigns/${campaign.id}`)
-                        }
-                      >
-                        View / Manage →
-                      </button>
                     </div>
-                  </article>
+                  </div>
                 );
               })}
             </div>

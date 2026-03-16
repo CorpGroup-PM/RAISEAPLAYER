@@ -25,7 +25,7 @@ const getPasswordStrength = (password: string) => {
   return Math.min(score, 5);
 };
 
-const phoneRegex = /^[0-9]{10,15}$/;
+const phoneRegex = /^[0-9]{10}$/;
 
 const registerSchema = z
   .object({
@@ -35,7 +35,7 @@ const registerSchema = z
     phoneNumber: z
       .string()
       .trim()
-      .min(10, "Phone number must be at least 10 digits")
+      .length(10, "Phone number must be exactly 10 digits")
       .regex(phoneRegex, "Phone number should contain only digits"),
     password: z
       .string()
@@ -116,7 +116,7 @@ export default function Register() {
       setTimer(30);
       setAttempts(0);
     } catch {
-      //addToast("Failed to send OTP", "error");
+      // error toast is already shown by the API interceptor
     }
   };
 
@@ -136,8 +136,9 @@ export default function Register() {
 
       setIsEmailVerified(true);
       setOtpSent(false);
-    } catch (err: any) {
-
+    } catch {
+      addToast("Invalid or expired OTP. Please try again.", "error");
+      setAttempts((prev) => prev + 1);
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -145,7 +146,7 @@ export default function Register() {
 
   const onSubmit = async (values: RegisterFormValues) => {
     if (!isEmailVerified) {
-      // addToast("Please verify your email before signing up.", "error");
+      addToast("Please verify your email before signing up.", "error");
       return;
     }
 
@@ -163,7 +164,7 @@ export default function Register() {
       reset();
       window.location.href = "/login";
     } catch {
-      // addToast("Registration failed. Try again.", "error");
+      addToast("Registration failed. Please try again.", "error");
     } finally {
       loadingManager.stop();
     }
@@ -240,7 +241,7 @@ export default function Register() {
 
             {/* ✅ ZOD ERROR BELOW */}
             {errors.email && (
-              <p className="error-text">{errors.email.message}</p>
+              <p className="error-text" role="alert">{errors.email.message}</p>
             )}
           </div>
 
@@ -292,7 +293,7 @@ export default function Register() {
                 {...register("firstName")}
               />
               {errors.firstName && (
-                <p className="error-text">{errors.firstName.message}</p>
+                <p className="error-text" role="alert">{errors.firstName.message}</p>
               )}
             </div>
 
@@ -306,23 +307,26 @@ export default function Register() {
                 {...register("lastName")}
               />
               {errors.lastName && (
-                <p className="error-text">{errors.lastName.message}</p>
+                <p className="error-text" role="alert">{errors.lastName.message}</p>
               )}
             </div>
 
             <div className="input-group">
-              <input
-                id="phone"
-                type="tel"
-                inputMode="tel"
-                className={`input-field ${errors.phoneNumber ? "input-error" : ""
-                  }`}
-                placeholder="Phone Number"
-                autoComplete="tel"
-                {...register("phoneNumber")}
-              />
+              <div className={`phone-input-wrapper ${errors.phoneNumber ? "input-error" : ""}`}>
+                <span className="phone-prefix">+91</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  className="input-field phone-input"
+                  placeholder="Phone Number"
+                  autoComplete="tel"
+                  maxLength={10}
+                  {...register("phoneNumber")}
+                />
+              </div>
               {errors.phoneNumber && (
-                <p className="error-text">{errors.phoneNumber.message}</p>
+                <p className="error-text" role="alert">{errors.phoneNumber.message}</p>
               )}
             </div>
 
@@ -394,7 +398,7 @@ export default function Register() {
               </div>
 
               {errors.confirmPassword && (
-                <p className="error-text">{errors.confirmPassword.message}</p>
+                <p className="error-text" role="alert">{errors.confirmPassword.message}</p>
               )}
             </div>
 

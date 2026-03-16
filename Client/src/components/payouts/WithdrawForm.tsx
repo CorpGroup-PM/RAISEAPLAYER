@@ -23,6 +23,11 @@ export default function WithdrawForm({
       return;
     }
 
+    if (num < 100) {
+      toastManager.show("Minimum payout amount is ₹100", "error");
+      return;
+    }
+
     if (num > available) {
       toastManager.show("Amount exceeds available balance", "error");
       return;
@@ -54,8 +59,8 @@ export default function WithdrawForm({
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="Enter amount (₹)"
-          min={1}
+          placeholder="Min ₹100"
+          min={100}
           max={available}
         />
       </div>

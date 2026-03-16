@@ -19,6 +19,7 @@ type FundraiserTop = {
   raisedAmount?: number;
   coverImage?: string;
   totalSupporters?: number;
+  shortDescription?: string;
 
   creator?: {
     firstName: string;
@@ -39,6 +40,18 @@ const formatMoney = (n?: number) => {
   return "₹" + n.toLocaleString("en-IN");
 };
 
+const SPONSORS = [
+  {
+    label: "Official Sponsor",
+    name: "SportsMart",
+    tagline: "Play Happy. Stay Healthy.",
+    displayUrl: "sportsmart.com",
+    href: "https://www.sportsmart.com",
+    logo: "/sportsmart-logo.png",
+    accent: "#16a34a",
+  },
+];
+
 export default function Home() {
   const router = useRouter();
   const {
@@ -47,6 +60,7 @@ export default function Home() {
     isKycModalOpen,
     closeKycModal,
   } = useStartFundraiser();
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const [trustTab, setTrustTab] = useState<"FUNDRAISERS" | "DONORS">(
     "FUNDRAISERS",
   );
@@ -111,6 +125,19 @@ export default function Home() {
     loadPublicReviews();
   }, []);
 
+  // Hide fixed sponsor sidebar when footer enters the viewport
+  useEffect(() => {
+    const checkFooter = () => {
+      const footer = document.querySelector(".rp-footer");
+      if (!footer) return;
+      const footerTop = footer.getBoundingClientRect().top;
+      setSidebarVisible(footerTop > window.innerHeight);
+    };
+    checkFooter();
+    window.addEventListener("scroll", checkFooter, { passive: true });
+    return () => window.removeEventListener("scroll", checkFooter);
+  }, []);
+
   const renderStars = (rating?: number) => {
     const total = 5;
     const value = rating || 0;
@@ -120,8 +147,17 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      {/* ✅ HERO SECTION (Already Built) */}
-      <div className="home-heroOuter">
+      {/* ── 3-COLUMN PAGE GRID: 15% | 70% | 15% ── */}
+      <div className="pageOuter">
+
+        {/* ── LEFT 15% spacer ── */}
+        <div className="pageLeft" />
+
+        {/* ── CENTER 70% ── */}
+        <div className="pageCenter">
+
+      {/* ✅ HERO SECTION */}
+      <div className="home-heroWrap">
         <div className="home-heroCard home-heroBg">
           <div className="home-middleBlendFog" />
           <div className="home-fogOverlay" />
@@ -159,6 +195,7 @@ export default function Home() {
                   {kycCheckLoading ? "Checking..." : "Start a fundraiser"}
                 </button>
               </div>
+
             </div>
 
             <div className="home-heroRightSpacer" />
@@ -190,7 +227,7 @@ export default function Home() {
                 goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
 
               return (
-                <div className="campaignCard" key={c.id}>
+                <div className="campaignCard" key={c.id} onClick={() => router.push(`/donate/${c.id}`)}>
                   <div className="campaignImageWrap">
                     <span className="campaignVerified">Verified</span>
 
@@ -206,6 +243,9 @@ export default function Home() {
 
                   <div className="campaignBody">
                     <h3 className="campaignTitle">{c.title}</h3>
+                    {c.shortDescription && (
+                      <p className="campaignShortDesc">{c.shortDescription}</p>
+                    )}
                     <p className="campaignMeta">
                       {c.sport || "Sports"} • {c.city} • {c.state}
                     </p>
@@ -226,15 +266,12 @@ export default function Home() {
                       />
                     </div>
                     {c.creator && (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px" }}>
-                        <p className="created-by" style={{ margin: 0 }}>
-                          Created by{" "}
-                          <strong>
-                            {c.creator.firstName} {c.creator.lastName}
-                          </strong>
-                        </p>
-                        <ShareButton fundraiserId={c.id} title={c.title} />
-                      </div>
+                      <p className="created-by">
+                        Created by{" "}
+                        <strong>
+                          {c.creator.firstName} {c.creator.lastName}
+                        </strong>
+                      </p>
                     )}
 
                     <div className="campaignFooterRow">
@@ -242,16 +279,9 @@ export default function Home() {
                         {(c.totalSupporters || 0).toLocaleString("en-IN")}{" "}
                         supporters
                       </span>
-
-                      <button
-                        className="campaignDonateBtn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/donate/${c.id}`);
-                        }}
-                      >
-                        View →
-                      </button>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <ShareButton fundraiserId={c.id} title={c.title} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -269,6 +299,48 @@ export default function Home() {
           </button>
         </div>
       </section>
+
+  {/* ── MOBILE ONLY — Sponsor Card (hidden on desktop via CSS) ── */}
+      <div className="mobileSponsorSection">
+        {SPONSORS.map((s) => (
+          <div className="sbSponsorCard" key={`mobile-${s.name}`}>
+            <div className="sbSponsorInner">
+              <p className="sbEyebrow">{s.label}</p>
+              <a
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sbLogoWrap"
+              >
+                <img src={s.logo} alt={s.name} className="sbLogo" />
+              </a>
+              <div className="mobileSpRightCol">
+                <p className="sbSponsorTagline">{s.tagline}</p>
+                <a
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sbVisitBtn"
+                >
+                  Visit Site →
+                </a>
+              </div>
+            </div>
+            <a
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobileSportsmartPreviewLink"
+            >
+              <img
+                src="/sportsmart-mobile.png"
+                alt={`${s.name} preview`}
+                className="mobileSportsmartPreviewImg"
+              />
+            </a>
+          </div>
+        ))}
+      </div>
 
       {/* ✅ HOW IT WORKS SECTION */}
       <section className="hiwSection">
@@ -647,6 +719,57 @@ export default function Home() {
           ))}
         </div>
       </section>
+        </div>{/* end pageCenter */}
+
+        {/* ── RIGHT 15% — Sponsor Sidebar ── */}
+        <aside className="pageRight">
+          <div className={`sidebarStickyWrap${sidebarVisible ? "" : " sidebarHidden"}`}>
+
+            {/* Dynamic sponsor cards */}
+            {SPONSORS.map((s) => (
+              <div className="sbSponsorCard" key={s.name}>
+                <div className="sbSponsorInner">
+                  <p className="sbEyebrow">{s.label}</p>
+                  <a
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="sbLogoWrap"
+                  >
+                    <img src={s.logo} alt={s.name} className="sbLogo" />
+                  </a>
+                  <p className="sbSponsorTagline">{s.tagline}</p>
+                  <a
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="sbVisitBtn"
+                  >
+                    Visit Site →
+                  </a>
+
+                  <a
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="sbPreviewLink"
+                  >
+                    <img
+                      src="/sportsmart-preview.png"
+                      alt={`${s.name} website preview`}
+                      className="sbPreviewImg"
+                    />
+                  </a>
+
+                </div>
+              </div>
+            ))}
+
+          </div>
+        </aside>
+
+      </div>{/* end pageOuter */}
+
       <PanKycModal isOpen={isKycModalOpen} onClose={closeKycModal} />
     </div>
   );

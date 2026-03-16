@@ -1,34 +1,51 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { authManager } from "@/lib/auth-manager";
+import { api } from "@/lib/api-client";
 import "./social-success.css";
 
 export default function SocialSuccess() {
+  const exchanged = useRef(false);
+
   useEffect(() => {
-    // Read from URL fragment (#) — never logged by servers or proxies
-    const fragment = window.location.hash.slice(1); // strip leading '#'
-    const params = new URLSearchParams(fragment);
+    // Guard against React StrictMode double-invocation
+    if (exchanged.current) return;
 
-    const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
 
-    if (accessToken && refreshToken) {
-      authManager.setTokens(accessToken, refreshToken);
-
-      // Clear fragment from URL before redirecting so tokens don't sit in history
-      window.history.replaceState(null, "", window.location.pathname);
-
-      window.location.href = "/";
-    } else if (!authManager.getRefreshToken()) {
-      // Only redirect to login if tokens were never stored.
-      // In React StrictMode, useEffect runs twice — the first run stores tokens
-      // and clears the hash; the second run sees an empty hash. We must not
-      // redirect to /login in that second run, so we check localStorage first.
-      window.location.href = "/login";
+    if (!code) {
+      // No code in URL — if tokens already exist (e.g. direct revisit), go home
+      if (authManager.getRefreshToken()) {
+        window.location.href = "/";
+      } else {
+        window.location.href = "/login";
+      }
+      return;
     }
-    // else: tokens were stored by the first run; navigation to "/" is already
-    // underway — do nothing.
+
+    exchanged.current = true;
+
+    // Clear the code from the URL immediately so it never lingers in history
+    window.history.replaceState(null, "", window.location.pathname);
+
+    // Exchange the one-time code for tokens via a secure POST body
+    api
+      .post("/auth/social/exchange", { code })
+      .then((res) => {
+        const { tokens, user } = res.data;
+        if (tokens?.access_token) {
+          authManager.setTokens(tokens.access_token);
+          authManager.setRoleCookie(user?.role || "USER");
+          window.location.href = "/";
+        } else {
+          window.location.href = "/login";
+        }
+      })
+      .catch(() => {
+        window.location.href = "/login";
+      });
   }, []);
 
   return (

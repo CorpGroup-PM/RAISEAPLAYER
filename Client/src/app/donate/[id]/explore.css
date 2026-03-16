@@ -91,6 +91,17 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
+.highlight-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.highlight-row + .highlight-row {
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+
 .highlight-item {
   display: flex;
   flex-direction: row;
@@ -117,8 +128,6 @@
 .highlight-item.full {
   flex-direction: row;
   align-items: center;
-  padding-top: 12px;
-  border-top: 1px solid #f3f4f6;
   gap: 10px;
 }
 
@@ -140,11 +149,13 @@
 }
 
 .highlight-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  min-width: 90px;
+  flex-shrink: 0;
 }
 
 /* ----------------------------------------------------------------

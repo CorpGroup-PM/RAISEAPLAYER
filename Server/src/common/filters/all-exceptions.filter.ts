@@ -41,32 +41,52 @@ export class AllExceptionsFilter implements ExceptionFilter {
       errorType = exception.name;
     }
 
-    // --- CASE B: Prisma (Database) Exceptions ---
+    // --- CASE B: Prisma Known Request Errors ---
     else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-      // P2002: Unique Constraint Violation (e.g. Email already exists)
+      // Log full Prisma error (code + meta) server-side only
+      this.logger.error(
+        `Prisma error [${exception.code}]: ${JSON.stringify(exception.meta)}`,
+        exception.stack,
+      );
+
       if (exception.code === 'P2002') {
+        // Unique constraint — never expose which field
         httpStatus = HttpStatus.CONFLICT;
-        message = `Unique constraint failed on field: ${(exception.meta as any)?.target}`;
+        message = 'A record with this value already exists.';
         errorType = 'Conflict';
-      }
-      // P2025: Record not found
-      else if (exception.code === 'P2025') {
+      } else if (exception.code === 'P2025') {
+        // Record not found
         httpStatus = HttpStatus.NOT_FOUND;
-        message = 'Record not found';
+        message = 'Record not found.';
         errorType = 'NotFound';
+      } else if (exception.code === 'P2003') {
+        // Foreign key constraint — never expose field name
+        httpStatus = HttpStatus.BAD_REQUEST;
+        message = 'Related record not found.';
+        errorType = 'BadRequest';
+      } else {
+        // All other Prisma known errors — generic 500
+        httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        message = 'A database error occurred.';
+        errorType = 'InternalServerError';
       }
-      // Add other Prisma codes here as needed
+    }
+
+    // --- CASE B2: Prisma Validation Errors ---
+    else if (exception instanceof Prisma.PrismaClientValidationError) {
+      this.logger.error('Prisma validation error', exception.message);
+      httpStatus = HttpStatus.BAD_REQUEST;
+      message = 'Invalid request data.';
+      errorType = 'BadRequest';
     }
 
     // --- CASE C: Generic / Unexpected Errors ---
     else {
-      // In production, never show the raw error message to the user for 500s
-      // message = 'Internal Server Error';
-
-      // For dev, we can see it:
       if (exception instanceof Error) {
-        message = exception.message;
+        // Log full details server-side; never expose raw message to client
+        this.logger.error(exception.message, exception.stack);
       }
+      // message stays 'Internal server error' — set above
     }
 
     // 2. Construct the JSON Response
@@ -80,16 +100,23 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
 
     // 3. Log the Error (Server Side)
-    // We only log stack traces for 500 errors or unexpected crashes
-    if (httpStatus >= 500) {
-      this.logger.error(
-        `Http Status: ${httpStatus} Error Message: ${JSON.stringify(message)}`,
-        exception instanceof Error ? exception.stack : '',
-      );
-    } else {
-      this.logger.warn(
-        `Http Status: ${httpStatus} Error Message: ${JSON.stringify(message)}`,
-      );
+    // Prisma errors are already logged in their own case blocks above.
+    // Only log non-Prisma errors here to avoid duplicate entries.
+    const isPrismaError =
+      exception instanceof Prisma.PrismaClientKnownRequestError ||
+      exception instanceof Prisma.PrismaClientValidationError;
+
+    if (!isPrismaError) {
+      if (httpStatus >= 500) {
+        this.logger.error(
+          `Http Status: ${httpStatus} Error Message: ${JSON.stringify(message)}`,
+          exception instanceof Error ? exception.stack : '',
+        );
+      } else {
+        this.logger.warn(
+          `Http Status: ${httpStatus} Error Message: ${JSON.stringify(message)}`,
+        );
+      }
     }
 
     // 4. Send Response

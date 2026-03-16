@@ -22,15 +22,24 @@ export class RefreshTokenStrategy extends PassportStrategy(
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // Primary: read JWT from the HttpOnly cookie set on login/refresh.
+      // Fallback: Authorization Bearer header (for API tooling / mobile clients
+      // that cannot use cookies).
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => req?.cookies?.refresh_token ?? null,
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
       secretOrKey: secret,
-      passReqToCallback: true, // <--- Important: allows us to access the raw token
+      passReqToCallback: true,
     });
   }
 
   validate(req: Request, payload: JwtPayload) {
-    const authHeader = req.get('authorization');
-    const refreshToken = authHeader?.replace(/Bearer\s*/i, '').trim();
+    // Try cookie first, then Authorization Bearer header
+    const refreshToken =
+      (req.cookies?.refresh_token as string | undefined) ??
+      req.get('authorization')?.replace(/Bearer\s*/i, '').trim();
+
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token missing');
     }
