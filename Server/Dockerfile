@@ -29,6 +29,8 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 COPY --from=builder /app/src/mail/templates ./src/mail/templates
+COPY --from=builder /app/src/scripts ./src/scripts
+COPY --from=builder /app/tsconfig.scripts.json ./
 
 EXPOSE 8080
 
