@@ -3,10 +3,11 @@ import { SupportersController } from './supporters.controller';
 import { SupportersService } from './supporters.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { DonationHistoryModule } from './donation-history/donation-history.module';
+import { IpThrottlerGuard } from 'src/common/guards/throttler/ip-throttler.guard';
 
 @Module({
   controllers: [SupportersController],
-  providers: [SupportersService,PrismaService],
+  providers: [SupportersService, PrismaService, IpThrottlerGuard],
   imports: [DonationHistoryModule]
 })
 export class SuppoertersModule {}

@@ -946,7 +946,6 @@ export default function AdminCampaignDetailsPage() {
 
         {campaign && (
           <section className="admin-payout-section">
-            <h2 className="admin-payout-section-title">Payout Management</h2>
             <AdminPayoutList fundraiserId={campaign.id} />
           </section>
         )}

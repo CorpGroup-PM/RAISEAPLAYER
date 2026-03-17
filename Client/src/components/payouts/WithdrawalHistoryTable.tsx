@@ -110,11 +110,11 @@ export default function WithdrawalHistoryTable({
             <tbody>
               {filteredItems.map((x) => (
                 <tr key={x.id}>
-                  <td>{new Date(x.createdAt).toLocaleDateString("en-IN")}</td>
+                  <td className="wt-date">{new Date(x.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
                   <td className="wt-amount">₹{Number(x.amount).toLocaleString("en-IN")}</td>
-                  <td><StatusCard status={x.status} /></td>
+                  <td className="wt-status"><StatusCard status={x.status} /></td>
                   <td className="wt-note">{getNote(x)}</td>
-                  <td>
+                  <td className="wt-action-cell">
                     <div className="wt-actions">
                       {x.status === "PENDING" && (
                         <button className="wt-cancel-btn" onClick={() => setCancelId(x.id)}>

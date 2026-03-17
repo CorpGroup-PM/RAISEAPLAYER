@@ -77,7 +77,7 @@ export class AuthService {
       throw new ConflictException('Phone number already in use.');
 
     // 4. Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, AppConstants.BCRYPT_SALT_ROUNDS);
 
     // 5. Create user (email already verified from OTP table)
     const newUser = await this.usersService.create({
@@ -351,7 +351,7 @@ export class AuthService {
   // UPDATE REFRESH TOKEN
   // ---------------------------------------------------------
   async updateRefreshToken(userId: string, refreshToken: string) {
-    const bcryptHash = await bcrypt.hash(refreshToken, 10);
+    const bcryptHash = await bcrypt.hash(refreshToken, AppConstants.BCRYPT_SALT_ROUNDS);
 
     await this.usersService.update(userId, {
       currentHashedRefreshToken: bcryptHash,

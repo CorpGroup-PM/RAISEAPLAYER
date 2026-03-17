@@ -17,9 +17,11 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UserprofileService } from './userprofile.service';
 import { UpdateProfileDto } from 'src/userprofile/dto/updateprofile.dto';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
+import { IpThrottlerGuard } from 'src/common/guards/throttler/ip-throttler.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createFileInterceptorOptions } from 'src/common/upload/file-upload.helper';
 
@@ -116,7 +118,8 @@ export class UserprofileController {
   // ------------------------------------------------------------------
   // UPDATE PROFILE PICTURE
   // ------------------------------------------------------------------
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(IpThrottlerGuard, AccessTokenGuard)
+  @Throttle({ upload: { limit: 20, ttl: 3600000 } })
   @Put('profile-picture')
   @ApiOperation({
     summary: 'Update profile picture',

@@ -39,6 +39,7 @@ import { AccessTokenGuard } from '../common/guards/accessToken.guard';
 import { RefreshTokenGuard } from '../common/guards/refreshToken.guard';
 import { LoginThrottlerGuard } from '../common/guards/throttler/login-throttler.guard';
 import { OtpThrottlerGuard } from '../common/guards/throttler/otp-throttler.guard';
+import { SignupThrottlerGuard } from '../common/guards/throttler/signup-throttler.guard';
 
 /** Build cookie options for the HttpOnly refresh_token cookie. */
 function refreshCookieOptions(): CookieOptions {
@@ -62,9 +63,11 @@ export class AuthController {
   ) { }
 
   // ------------------------------------------------------------------
-  // REGISTER
+  // REGISTER — rate limited: max 5 accounts per 10 min per IP
   // ------------------------------------------------------------------
   @Post('register')
+  @UseGuards(SignupThrottlerGuard)
+  @Throttle({ short: { limit: 5, ttl: 600000 } })
   @ApiOperation({
     summary: 'Register new user',
     description: 'Creates a new user account in the system.'

@@ -5,6 +5,6 @@ Sentry.init({
     environment: process.env.NODE_ENV,
     tracesSampleRate: 0.2, // 20% of transactions
     replaysOnErrorSampleRate: 1.0,
-    //enabled: process.env.NODE_ENV === "production", 
-    enabled: true,
+    //enabled: process.env.NODE_ENV === "production",
+    enabled:true,
 });

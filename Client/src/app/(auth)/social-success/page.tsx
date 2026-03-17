@@ -16,8 +16,8 @@ export default function SocialSuccess() {
     const code = params.get("code");
 
     if (!code) {
-      // No code in URL — if tokens already exist (e.g. direct revisit), go home
-      if (authManager.getRefreshToken()) {
+      // No code in URL — if already authenticated (e.g. direct revisit), go home
+      if (authManager.isAuthenticated()) {
         window.location.href = "/";
       } else {
         window.location.href = "/login";

@@ -1,5 +1,5 @@
 import * as bcrypt from 'bcrypt';
-import { createCipheriv, createDecipheriv, randomBytes, randomInt } from 'crypto';
+import { createCipheriv, createDecipheriv, createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { AppConstants } from '../constants/time.constants';
 
 export class CryptoHelper {
@@ -38,6 +38,18 @@ export class CryptoHelper {
   // OTP METHODS
   // ============================
 
+  /**
+   * Returns the OTP HMAC secret from environment.
+   * Must be set in .env as OTP_HMAC_SECRET (any long random string).
+   */
+  private static getOtpSecret(): string {
+    const secret = process.env.OTP_HMAC_SECRET;
+    if (!secret || secret.length < 32) {
+      throw new Error('OTP_HMAC_SECRET must be set and at least 32 characters long');
+    }
+    return secret;
+  }
+
   /** Generate numeric OTP */
   static generateOtp(): string {
     let otp = '';
@@ -47,17 +59,30 @@ export class CryptoHelper {
     return otp;
   }
 
-  /** Hash OTP */
+  /**
+   * Hash OTP using HMAC-SHA256 with a server-side secret.
+   * Faster than bcrypt and resistant to offline DB-leak attacks
+   * because the attacker also needs the server secret.
+   */
   static hashOtp(otp: string): Promise<string> {
-    return this.hashValue(otp);
+    const hash = createHmac('sha256', CryptoHelper.getOtpSecret())
+      .update(otp)
+      .digest('hex');
+    return Promise.resolve(hash);
   }
 
-  /** Compare OTP with hashed OTP */
-  static compareOtp(
-    plainOtp: string,
-    hashedOtp: string,
-  ): Promise<boolean> {
-    return this.compareValue(plainOtp, hashedOtp);
+  /**
+   * Compare plain OTP against stored HMAC-SHA256 digest.
+   * Uses timingSafeEqual to prevent timing attacks.
+   */
+  static compareOtp(plainOtp: string, hashedOtp: string): Promise<boolean> {
+    const candidate = createHmac('sha256', CryptoHelper.getOtpSecret())
+      .update(plainOtp)
+      .digest('hex');
+    const a = Buffer.from(candidate, 'hex');
+    const b = Buffer.from(hashedOtp, 'hex');
+    const match = a.length === b.length && timingSafeEqual(a, b);
+    return Promise.resolve(match);
   }
 
   // ============================

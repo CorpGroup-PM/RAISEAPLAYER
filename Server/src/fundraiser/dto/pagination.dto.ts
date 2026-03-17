@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
 
 export class PaginationDto {
   @ApiPropertyOptional({
@@ -27,7 +27,12 @@ export class PaginationDto {
   limit?: number;
 
 
+  @ApiPropertyOptional({ example: 'cricket', description: 'Search keyword', maxLength: 100 })
   @IsOptional()
   @IsString()
+  @MaxLength(100, { message: 'Search term must not exceed 100 characters' })
+  @Matches(/^[a-zA-Z0-9 .,'"\-]+$/, {
+    message: 'Search term contains invalid characters',
+  })
   search?: string;
 }

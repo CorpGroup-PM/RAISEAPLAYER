@@ -1304,13 +1304,6 @@
   margin: 24px 16px;
 }
 
-.admin-payout-section-title {
-  font-size: 20px;
-  font-weight: 800;
-  margin-bottom: 16px;
-  color: #0f172a;
-  letter-spacing: -0.01em;
-}
 
 .update-content.collapsed {
   display: -webkit-box;

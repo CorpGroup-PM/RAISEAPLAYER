@@ -5,8 +5,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { WebhooksService } from './webhooks.service';
 
+@SkipThrottle() // Razorpay webhook — signature-verified, must never be rate-limited
 @ApiTags('Webhooks')
 @Controller('razorpay')
 export class WebhooksController {

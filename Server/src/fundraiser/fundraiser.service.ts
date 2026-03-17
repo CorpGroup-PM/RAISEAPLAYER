@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFundraiserDto } from './dto/fundraiser.dto';
 import { CampaignFor, CampaignStatus, Prisma } from '@prisma/client';
@@ -546,7 +546,7 @@ export class FundraiserService {
     };
   }
 
-  async getCampaignById(id: string) {
+  async getCampaignById(id: string, requestingUserId?: string) {
     const campaign = await this.prisma.fundraiser.findUnique({
       where: { id },
       include: {
@@ -608,6 +608,12 @@ export class FundraiserService {
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
     }
+
+    // Only the campaign creator may access private details (documents, recipient account)
+    if (requestingUserId && campaign.creatorId !== requestingUserId) {
+      throw new UnauthorizedException('You do not have access to this campaign');
+    }
+
     //  Handle anonymous donors
     const donations = campaign.donations.map((donation) => {
 
@@ -1263,13 +1269,13 @@ export class FundraiserService {
   }
 
   async review(dto: CreateReviewDto) {
-    
+    // isVerified is always false on creation; only admins can approve via admin endpoint
     const createdReview = await this.prisma.review.create({
       data: {
         name: dto.name.trim(),
         rating: dto.rating,
         message: dto.message.trim(),
-        isVerified: dto.isVerified,
+        isVerified: false,
       },
       select: {
         id: true,

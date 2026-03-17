@@ -52,6 +52,30 @@ import { VirusScanModule } from './common/virus-scan/virus-scan.module';
             ttl: 60,
             limit: 100,
          },
+         // 3 contact-form submissions per hour per IP
+         {
+            name: 'contact',
+            ttl: 3600000,
+            limit: 3,
+         },
+         // 20 payment order creations per hour per IP
+         {
+            name: 'payment',
+            ttl: 3600000,
+            limit: 20,
+         },
+         // 20 file uploads per hour per IP
+         {
+            name: 'upload',
+            ttl: 3600000,
+            limit: 20,
+         },
+         // 30 public read requests per minute per IP
+         {
+            name: 'public',
+            ttl: 60000,
+            limit: 30,
+         },
         ],
         storage: new ThrottlerStorageRedisService(redis),
      }),

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsBoolean, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsBoolean, IsString, MaxLength } from 'class-validator';
 import { SportsDocumentType } from '@prisma/client';
 
 export class CreateDocumentDto {
@@ -17,6 +17,7 @@ export class CreateDocumentDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(200, { message: 'Title must not exceed 200 characters' })
   title?: string;
 
   @ApiPropertyOptional({

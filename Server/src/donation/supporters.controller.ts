@@ -1,11 +1,13 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { SupportersService } from './supporters.service';
+import { IpThrottlerGuard } from 'src/common/guards/throttler/ip-throttler.guard';
 
 @ApiTags('Fundraiser Supporters')
 @Controller('fundraisers-supporters')
@@ -15,6 +17,8 @@ export class SupportersController {
   ) {}
 
   @Get(':id/supporters')
+  @UseGuards(IpThrottlerGuard)
+  @Throttle({ public: { limit: 30, ttl: 60000 } })
   @ApiOperation({
     summary: 'Get fundraiser supporters',
     description: 'Fetch all supporters of a fundraiser',

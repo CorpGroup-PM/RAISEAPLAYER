@@ -1,5 +1,6 @@
 import { Controller, Get, Res, VERSION_NEUTRAL, Version } from '@nestjs/common';
 import type { Response } from 'express';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AppService, HealthResult } from './app.service';
 
 @Controller()
@@ -28,6 +29,7 @@ export class AppController {
    */
   @Get('health')
   @Version(VERSION_NEUTRAL)
+  @SkipThrottle() // Load-balancer / Kubernetes liveness probe — must never be blocked
   async getHealth(@Res({ passthrough: true }) res: Response): Promise<HealthResult> {
     const result = await this.appService.checkHealth();
     res.status(result.status === 'ok' ? 200 : 503);

@@ -15,8 +15,10 @@ export class CreateUpdateDto {
   @ApiProperty({
     example: 'I have been selected for the district team...',
     description: 'Detailed progress update',
+    maxLength: 5000,
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(5000, { message: 'Update content must not exceed 5000 characters' })
   content: string;
 }

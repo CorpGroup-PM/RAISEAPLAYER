@@ -7,6 +7,6 @@ export class AppConstants{
     static readonly OTP_REST_EXPIR_MINUTES=5;     // 
 
   // Bcrypt
-    static readonly BCRYPT_SALT_ROUNDS = 10;      // Hash strength
+    static readonly BCRYPT_SALT_ROUNDS = 12;      // Hash strength (OWASP 2023+ minimum)
     static  readonly OTP_COOLDOWN_MS = 30 * 1000; 
 }

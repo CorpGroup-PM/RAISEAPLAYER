@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UserRole } from '@prisma/client';
+import { PaymentStatus, UserRole } from '@prisma/client';
 import { CryptoHelper } from 'src/common/helpers/crypto.helper';
 
 /**
@@ -111,7 +111,17 @@ export class AdminUserService {
 
   async getAllDonor(page = 1, limit = 20, status?: string) {
     const skip = (page - 1) * limit;
-    const where = status ? { status: status as any } : {};
+
+    // Validate status against the PaymentStatus enum — reject anything not in the allowlist.
+    // This prevents Prisma operator injection (e.g. passing { "$gt": "" } as status).
+    const ALLOWED_STATUSES = Object.values(PaymentStatus);
+    if (status && !ALLOWED_STATUSES.includes(status as PaymentStatus)) {
+      throw new BadRequestException(
+        `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(', ')}`,
+      );
+    }
+
+    const where = status ? { status: status as PaymentStatus } : {};
 
     const [donations, total] = await this.prisma.$transaction([
       this.prisma.donation.findMany({
