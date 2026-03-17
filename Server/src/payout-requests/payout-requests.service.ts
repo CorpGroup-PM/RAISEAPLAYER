@@ -103,7 +103,7 @@ export class PayoutRequestsService {
 
         return {
             success: true,
-            message: "Payout request submitted successfully. It’s pending approval.",
+            message: "Payout request submitted successfully. It's pending approval.",
             requestId,
         };
     }

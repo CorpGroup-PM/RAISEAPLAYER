@@ -5,6 +5,7 @@ import { ToastProvider } from "@/components/toast/ToastContext";
 import { GlobalLoader } from "@/components/loading/GlobalLoader";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutShell from "@/components/LayoutShell/LayoutShell";
+import ErrorBoundary from "@/components/ErrorBoundary/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: {
@@ -68,7 +69,9 @@ export default function RootLayout({
           <ToastProvider>
             <AuthProvider>
               <GlobalLoader />
-              <LayoutShell>{children}</LayoutShell>
+              <ErrorBoundary>
+                <LayoutShell>{children}</LayoutShell>
+              </ErrorBoundary>
             </AuthProvider>
           </ToastProvider>
         </AppProviders>

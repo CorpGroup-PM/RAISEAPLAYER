@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 
@@ -19,10 +20,12 @@ export class CreateDonationDto {
   @ApiProperty({
     example: 1500,
     minimum: 1,
-    description: 'Donation amount (must be at least 1)',
+    maximum: 500000,
+    description: 'Donation amount (must be between ₹1 and ₹5,00,000)',
   })
   @IsNumber()
   @Min(1)
+  @Max(500000, { message: 'Donation amount cannot exceed ₹5,00,000' })
   donationAmount: number;
 
   @ApiProperty({

@@ -300,7 +300,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── MOBILE ONLY — Sponsor Card (hidden on desktop via CSS) ── */}
+  {/* ── MOBILE ONLY — Sponsor Card (hidden on desktop via CSS) ── */}
       <div className="mobileSponsorSection">
         {SPONSORS.map((s) => (
           <div className="sbSponsorCard" key={`mobile-${s.name}`}>

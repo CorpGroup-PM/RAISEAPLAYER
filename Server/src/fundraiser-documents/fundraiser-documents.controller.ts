@@ -2,7 +2,10 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UploadedFile, U
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { SportsDocumentType, UserRole } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
+import { IpThrottlerGuard } from 'src/common/guards/throttler/ip-throttler.guard';
+import { validateUploadedFile } from 'src/common/upload/validate-uploaded-file';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { FundraiserDocumentsService } from './fundraiser-documents.service';
 import { VerifyDocumentDto } from './dto/verify-document.dto';
@@ -19,7 +22,8 @@ export class FundraiserDocumentsController {
         summary: 'Upload fundraiser document',
         description: 'Uploads a PDF document for a fundraiser with metadata such as type, title, and visibility.',
     })
-    @UseGuards(AccessTokenGuard)
+    @UseGuards(IpThrottlerGuard, AccessTokenGuard)
+    @Throttle({ upload: { limit: 20, ttl: 3600000 } })
     @UseInterceptors(
         FileInterceptor('document', {
             limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
@@ -53,6 +57,10 @@ export class FundraiserDocumentsController {
         @Body() dto: CreateDocumentDto,
         @Req() req,
     ) {
+        // Magic bytes validation — confirms file content is genuinely PDF,
+        // catching spoofed Content-Type headers before reaching the service layer.
+        await validateUploadedFile(file, ['application/pdf'], 5);
+
         return this.fundraiserDocumentsService.uploadPdf(
             fundraiserId,
             file,
@@ -139,7 +147,38 @@ export class FundraiserDocumentsController {
     }
 
 
-    // verified By Admin Document in 
+    /**
+     * Generate a 15-minute pre-signed URL for a private document.
+     * Only the fundraiser owner and admins may request this.
+     */
+    @Get('documents/:documentId/signed-url')
+    @UseGuards(AccessTokenGuard)
+    @ApiOperation({
+        summary: 'Get a pre-signed download URL for a document (15 min TTL)',
+        description: 'Returns a time-limited S3 pre-signed URL. Only the fundraiser owner or an admin may call this endpoint.',
+    })
+    @ApiParam({ name: 'documentId', description: 'Document ID', example: 'doc_xxx' })
+    @ApiResponse({
+        status: 200,
+        description: 'Signed URL generated',
+        schema: {
+            example: {
+                signedUrl: 'https://bucket.s3.region.amazonaws.com/fundraisers/.../uuid.pdf?X-Amz-Signature=...',
+                expiresInSeconds: 900,
+            },
+        },
+    })
+    @ApiResponse({ status: 403, description: 'Access denied' })
+    @ApiResponse({ status: 404, description: 'Document not found' })
+    async getSignedUrl(
+        @Param('documentId') documentId: string,
+        @Req() req,
+    ) {
+        return this.fundraiserDocumentsService.getDocumentSignedUrl(documentId, req.user);
+    }
+
+
+    // verified By Admin Document in
     @Patch('admin/documents/:documentId/verify')
     @UseGuards(AccessTokenGuard, RolesGuard)
     @Roles(UserRole.ADMIN)

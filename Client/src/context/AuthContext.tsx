@@ -13,6 +13,44 @@ import { useRouter } from "next/navigation";
 import { toastManager } from "@/lib/toast-manager";
 import { UserService } from "@/services/user.service";
 
+// ── Profile cache (sessionStorage, tab-scoped, 5-min TTL) ────────────────────
+// Avoids a redundant /auth/profile call on every hard-refresh by reusing
+// the recently-fetched profile. The cache is cleared on logout and on cache
+// expiry; tokens are never stored here.
+const PROFILE_CACHE_KEY = "auth_profile_v1";
+const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedUser(): User | null {
+  try {
+    const raw = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const { user, ts } = JSON.parse(raw) as { user: User; ts: number };
+    if (Date.now() - ts > PROFILE_CACHE_TTL) return null;
+    return user;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedUser(user: User): void {
+  try {
+    sessionStorage.setItem(
+      PROFILE_CACHE_KEY,
+      JSON.stringify({ user, ts: Date.now() })
+    );
+  } catch {
+    // sessionStorage quota exceeded or unavailable — non-critical
+  }
+}
+
+function clearCachedUser(): void {
+  try {
+    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+  } catch {
+    // non-critical
+  }
+}
+
 interface PanDetails {
   panNumber: string | null;
   panName: string | null;
@@ -29,6 +67,7 @@ interface User {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  role: "USER" | "ADMIN";
   profilePicture?: string | null;
   panDetails?: PanDetails | null;
 }
@@ -59,19 +98,24 @@ useEffect(() => {
   if (typeof window === "undefined") return;
 
   const bootstrapAuth = async () => {
-    if (!authManager.isAuthenticated()) {
+    // The auth_role cookie is a non-HttpOnly session hint set on login/refresh
+    // and cleared on logout. If it's absent the user has no active session, so
+    // we can skip the refresh attempt entirely and avoid an unnecessary API call.
+    const hasSessionHint =
+      typeof document !== "undefined" &&
+      document.cookie.split(";").some((c) => c.trim().startsWith("auth_role="));
+
+    if (!hasSessionHint) {
       setIsLoaded(true);
       return;
     }
 
-    // On hard refresh the access token is wiped from memory. Proactively
-    // exchange the refresh token before calling /user/profile so the request
-    // goes out with a valid Bearer token and avoids a visible 401 in the
-    // network tab (the interceptor would handle it anyway, but this is cleaner).
-    if (!authManager.getAccessToken() && authManager.getRefreshToken()) {
+    // On hard refresh the in-memory access token is wiped. Exchange via the
+    // HttpOnly refresh_token cookie (sent automatically by the browser).
+    if (!authManager.getAccessToken()) {
       const newToken = await refreshAccessToken();
       if (!newToken) {
-        // Refresh token invalid/expired — bail out immediately
+        // Refresh token invalid/expired — clear session hint and bail out
         authManager.logout();
         setIsLoaded(true);
         return;
@@ -79,11 +123,19 @@ useEffect(() => {
     }
 
     try {
-      await refreshUser();
+      // Serve from sessionStorage cache if it's still fresh — avoids an extra
+      // /auth/profile round-trip on every hard-refresh within the TTL window.
+      const cached = getCachedUser();
+      if (cached) {
+        setUser(cached);
+      } else {
+        await refreshUser();
+      }
       setIsAuthenticated(true);
     } catch {
       // Token invalid or network error — clear tokens and show unauthenticated
       authManager.logout();
+      clearCachedUser();
       setIsAuthenticated(false);
       setUser(null);
     } finally {
@@ -106,6 +158,8 @@ useEffect(() => {
     }
 
     authManager.setAuth(tokens);
+    authManager.setRoleCookie(user.role);
+    setCachedUser(user);
 
     setUser(user);
     setIsAuthenticated(true);
@@ -124,6 +178,7 @@ useEffect(() => {
       });
     } finally {
       authManager.logout();
+      clearCachedUser();
       setIsAuthenticated(false);
       setUser(null);
       router.replace("/");
@@ -141,8 +196,18 @@ useEffect(() => {
       router.replace("/");
     };
 
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[AuthContext] Unhandled promise rejection:", event.reason);
+      }
+    };
+
     window.addEventListener("auth-logout", handler);
-    return () => window.removeEventListener("auth-logout", handler);
+    window.addEventListener("unhandledrejection", rejectionHandler);
+    return () => {
+      window.removeEventListener("auth-logout", handler);
+      window.removeEventListener("unhandledrejection", rejectionHandler);
+    };
   }, []);
 
   /* -------------------------
@@ -158,8 +223,9 @@ useEffect(() => {
       profilePicture: data.profileImageUrl ?? null,
     };
 
+    authManager.setRoleCookie(normalizedUser.role);
+    setCachedUser(normalizedUser);
     setUser(normalizedUser);
-    // User data is NOT persisted to localStorage — always fetched fresh from API
   };
 
 

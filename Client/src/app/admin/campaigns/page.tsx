@@ -6,6 +6,8 @@ import {
   AdminCampaignsService,
   CampaignStatus,
 } from "@/services/admin-campaigns.service";
+import type { AdminCampaignRow } from "@/types/campaign.types";
+import Image from "next/image";
 import "./campaigns.css";
 
 const STATUS_OPTIONS: { value: CampaignStatus; label: string; cls: string }[] = [
@@ -24,7 +26,7 @@ function AdminCampaignsContent() {
   const initialTab    = (searchParams.get("status") as FilterTab) || "ALL";
 
   const [activeTab, setActiveTab] = useState<FilterTab>(initialTab);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<AdminCampaignRow[]>([]);
   const [loading, setLoading]     = useState(true);
   const [counts, setCounts]       = useState<Record<string, number>>({});
   const router = useRouter();
@@ -66,20 +68,16 @@ function AdminCampaignsContent() {
     }
   };
 
-  /* load counts for all tabs in background (called when starting on a specific status) */
+  /* load counts for all tabs via a single backend query */
   const loadAllCounts = () => {
-    Promise.all(
-      STATUS_OPTIONS.map((s) =>
-        AdminCampaignsService.listCampaigns(s.value)
-          .then((res) => ({ s: s.value, n: (res.data.data.campaigns || []).length }))
-          .catch(() => ({ s: s.value, n: 0 }))
-      )
-    ).then((results) => {
-      const map: Record<string, number> = {};
-      results.forEach((r) => { map[r.s] = r.n; });
-      map["ALL"] = results.reduce((acc, r) => acc + r.n, 0);
-      setCounts(map);
-    });
+    AdminCampaignsService.getStatusCounts()
+      .then((res) => {
+        const data: Record<string, number> = res.data.data ?? {};
+        const map: Record<string, number> = { ...data };
+        map["ALL"] = Object.values(data).reduce((a: number, b: number) => a + b, 0);
+        setCounts(map);
+      })
+      .catch(() => {/* non-critical — counts remain stale */});
   };
 
   /* fetch ACTIVE campaigns and filter goal-reached client-side */
@@ -215,24 +213,29 @@ function AdminCampaignsContent() {
           </div>
 
           <div className="acTableWrap">
-            {loading ? (
-              <div className="acLoading">Loading campaigns…</div>
-            ) : campaigns.length === 0 ? (
-              <div className="acEmpty">No campaigns found.</div>
-            ) : (
-              <table className="acTable">
-                <thead>
-                  <tr>
-                    <th>Campaign</th>
-                    <th>Creator</th>
-                    <th>Location</th>
-                    <th>Progress</th>
-                    <th>Created</th>
-                    <th>Status</th>
-                    <th>Action</th>
+            <table className="acTable">
+              <thead>
+                <tr>
+                  <th>Campaign</th>
+                  <th>Creator</th>
+                  <th>Location</th>
+                  <th>Progress</th>
+                  <th>Created</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading && Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={`sk-${i}`}>
+                    {Array.from({ length: 7 }).map((__, j) => (
+                      <td key={j}><div className="skeleton-cell" /></td>
+                    ))}
                   </tr>
-                </thead>
-                <tbody>
+                ))}
+                {!loading && campaigns.length === 0 && (
+                  <tr><td colSpan={7} className="acEmpty">No campaigns found.</td></tr>
+                )}
                   {campaigns.map((c) => {
                     const raised   = Number(c.raisedAmount) || 0;
                     const goal     = Number(c.goalAmount) || 1;
@@ -242,10 +245,12 @@ function AdminCampaignsContent() {
                       <tr key={c.id}>
                         <td>
                           <div className="acCampaignCell">
-                            <img
+                            <Image
                               className="acThumb"
                               src={c.coverImageURL || "/background.png"}
                               alt={c.title}
+                              width={56}
+                              height={40}
                             />
                             <div className="acCampaignInfo">
                               <div className="acCampaignTitle">{c.title}</div>
@@ -307,7 +312,6 @@ function AdminCampaignsContent() {
                   })}
                 </tbody>
               </table>
-            )}
           </div>
         </div>
 

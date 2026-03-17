@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -24,11 +24,14 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { ReceiptService } from './receipt/receipt.service';
 import { ContactusModule } from './contactus/contactus.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { VirusScanModule } from './common/virus-scan/virus-scan.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     RedisModule,
+    VirusScanModule,
     ThrottlerModule.forRootAsync({
      imports: [RedisModule],
      inject: ['REDIS_CLIENT'],
@@ -48,6 +51,30 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
             name: 'long',
             ttl: 60,
             limit: 100,
+         },
+         // 3 contact-form submissions per hour per IP
+         {
+            name: 'contact',
+            ttl: 3600000,
+            limit: 3,
+         },
+         // 20 payment order creations per hour per IP
+         {
+            name: 'payment',
+            ttl: 3600000,
+            limit: 20,
+         },
+         // 20 file uploads per hour per IP
+         {
+            name: 'upload',
+            ttl: 3600000,
+            limit: 20,
+         },
+         // 30 public read requests per minute per IP
+         {
+            name: 'public',
+            ttl: 60000,
+            limit: 30,
          },
         ],
         storage: new ThrottlerStorageRedisService(redis),
@@ -77,7 +104,12 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
-    }, ReceiptService,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+    ReceiptService,
   ],
 })
 export class AppModule {}

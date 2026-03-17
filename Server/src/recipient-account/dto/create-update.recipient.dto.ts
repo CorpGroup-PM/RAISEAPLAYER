@@ -1,7 +1,7 @@
 // src/recipient-account/dto/upsert-recipient-account.dto.ts
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Length, Matches, ValidateIf } from 'class-validator';
 import { RecipientType } from '@prisma/client';
 
 export class CreateAndUpsertRecipientAccountDto {
@@ -27,18 +27,16 @@ export class CreateAndUpsertRecipientAccountDto {
   @IsString()
   lastName: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '123456789012',
-    description: 'Bank account number (9–18 digits, numbers only)',
+    description: 'Bank account number (9–18 digits). Omit to keep existing value on update.',
   })
+  @IsOptional()
+  @ValidateIf((o: CreateAndUpsertRecipientAccountDto) => !!o.accountNumber)
   @IsString()
-  @Matches(/^\d+$/, {
-    message: 'Account number must contain digits only',
-  })
-  @Length(9, 18, {
-    message: 'Account number must be between 9 and 18 digits',
-  })
-  accountNumber: string;
+  @Matches(/^\d+$/, { message: 'Account number must contain digits only' })
+  @Length(9, 18, { message: 'Account number must be between 9 and 18 digits' })
+  accountNumber?: string;
 
   @ApiProperty({
     example: 'HDFC Bank',

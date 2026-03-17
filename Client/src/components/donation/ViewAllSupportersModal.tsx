@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { SupportersService } from "@/services/supporters.service";
 import { Donation } from "@/types/donation";
 import "./donate-modal.css";
@@ -19,19 +20,29 @@ export default function ViewAllSupportersModal({
   const [loading, setLoading] = useState(true);
   const [donations, setDonations] = useState<Donation[]>([]);
 
+  // Lock page scroll when open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen || !fundraiserId) return;
 
     const fetchSupporters = async () => {
       try {
         setLoading(true);
-
         const res = await SupportersService.getSupporters(fundraiserId);
-
-        console.log("Supporters response:", res.data);
-
-        setDonations(res.data?.donations || []);
-
+        setDonations(res.data?.supporters || []);
       } catch (err) {
         console.error("Failed to fetch supporters", err);
         setDonations([]);
@@ -45,23 +56,23 @@ export default function ViewAllSupportersModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="donate-overlay">
-      <div className="donate-modal">
-        <div className="donate-modal-scroll">
-          {/* HEADER */}
-          <div className="donate-header">
-            <h3>All Supporters</h3>
-            <button onClick={onClose}>×</button>
-          </div>
+  return createPortal(
+    <div className="donate-overlay" onClick={onClose}>
+      <div className="donate-modal supporters-modal" onClick={(e) => e.stopPropagation()}>
+        {/* HEADER — fixed */}
+        <div className="supporters-header">
+          <h3>All Supporters</h3>
+          <button onClick={onClose}>×</button>
+        </div>
 
-          {/* CONTENT */}
+        {/* SCROLLABLE CONTENT */}
+        <div className="supporters-scroll">
           {loading ? (
-            <p>Loading supporters...</p>
+            <p style={{ padding: "16px" }}>Loading supporters...</p>
           ) : donations?.length === 0 ? (
-            <p>No supporters yet</p>
+            <p style={{ padding: "16px" }}>No supporters yet</p>
           ) : (
-            <div className="donors-list scrollable">
+            <div className="donors-list">
               {donations.map((d) => {
                 const name =
                   d.donor?.firstName === "Anonymous"
@@ -80,7 +91,7 @@ export default function ViewAllSupportersModal({
                       <div className="donor-name">{name}</div>
                       <div className="donor-date">
                         ₹{d.donationAmount.toLocaleString()} •{" "}
-                        {new Date(d.createdAt).toLocaleDateString("en-IN", {
+                        {new Date(d.donatedAt ?? d.createdAt).toLocaleDateString("en-IN", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -94,6 +105,8 @@ export default function ViewAllSupportersModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
+

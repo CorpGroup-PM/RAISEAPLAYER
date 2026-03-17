@@ -6,6 +6,7 @@ import { UpdateProfileDto } from 'src/userprofile/dto/updateprofile.dto';
 import { AwsS3Service } from 'src/aws/aws.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { validateUploadedFile } from 'src/common/upload/validate-uploaded-file';
+import { CryptoHelper } from 'src/common/helpers/crypto.helper';
 
 @Injectable()
 export class UserprofileService {
@@ -14,6 +15,17 @@ export class UserprofileService {
     private readonly config: ConfigService,
     private readonly awsS3Service: AwsS3Service,
   ) {}
+
+  /** Decrypt encrypted panNumber and return masked form (XXXXX1234F). */
+  private maskPan(pan: Record<string, any> | null): Record<string, any> | null {
+    if (!pan?.panNumber) return pan;
+    try {
+      const plain = CryptoHelper.decryptField(pan.panNumber);
+      return { ...pan, panNumber: 'XXXXX' + plain.slice(5) };
+    } catch {
+      return { ...pan, panNumber: 'XXXXXXXXXX' };
+    }
+  }
 
   // async createPan(userId: string, dto: PanDetailsDto) {
 
@@ -50,7 +62,8 @@ export class UserprofileService {
       email: user.email,
       phoneNumber: user.phoneNumber,
       profileImageUrl: user.profileImageUrl,
-      panDetails: user.panDetails ?? null,
+      role: user.role,
+      panDetails: this.maskPan(user.panDetails),
     };
   }
 
@@ -67,16 +80,20 @@ export class UserprofileService {
       data: { firstName, lastName, phoneNumber },
     });
 
-    //  PAN details update and create
+    //  PAN details update and create — encrypt panNumber before persisting
     if (panDetails) {
+      const { panNumber, ...restPanDetails } = panDetails;
+      const encryptedPanNumber = CryptoHelper.encryptField(panNumber);
       await this.prisma.panDetails.upsert({
         where: { userId },
         create: {
           userId,
-          ...panDetails,
+          ...restPanDetails,
+          panNumber: encryptedPanNumber,
         },
         update: {
-          ...panDetails,
+          ...restPanDetails,
+          panNumber: encryptedPanNumber,
         },
       });
     }
@@ -95,7 +112,7 @@ export class UserprofileService {
       firstName: updated.firstName,
       lastName: updated.lastName,
       phoneNumber: updated.phoneNumber,
-      panDetails: updated.panDetails,
+      panDetails: this.maskPan(updated.panDetails),
     };
   }
 
@@ -103,7 +120,7 @@ export class UserprofileService {
     userId: string,
     file: Express.Multer.File,
   ): Promise<{ profilePictureURL: string }> {
-    validateUploadedFile(file, ['image/png', 'image/jpg', 'image/jpeg'], 5);
+    await validateUploadedFile(file, ['image/png', 'image/jpg', 'image/jpeg'], 5);
 
     try {
       const imageUrl = await this.awsS3Service.uploadProfileImage(file, userId);
@@ -135,12 +152,20 @@ export class UserprofileService {
 
     const panCompleted = !!pan?.panNumber;
 
+    let panNumberMasked: string | undefined;
+    if (panCompleted && pan?.panNumber) {
+      try {
+        const plain = CryptoHelper.decryptField(pan.panNumber);
+        panNumberMasked = 'XXXXX' + plain.slice(5);
+      } catch {
+        panNumberMasked = 'XXXXXXXXXX';
+      }
+    }
+
     return {
       panCompleted,
       kycStatus: panCompleted ? 'COMPLETE' : 'INCOMPLETE',
-      ...(panCompleted && pan?.panNumber
-        ? { panNumberMasked: 'XXXXX' + pan.panNumber.slice(5) }
-        : {}),
+      ...(panNumberMasked ? { panNumberMasked } : {}),
     };
   }
 }

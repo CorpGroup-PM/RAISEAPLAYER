@@ -2,22 +2,43 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProcessPayoutDto } from './dto/process-payout.dto';
-import { TransferStatus } from '@prisma/client';
+import { Prisma, TransferStatus } from '@prisma/client';
 import { AwsS3Service } from 'src/aws/aws.service';
 import { StatusPayoutRequestDto } from './dto/status-payout-request.dto';
 import { MailService } from 'src/mail/mail.service';
+import { CryptoHelper } from 'src/common/helpers/crypto.helper';
 
 @Injectable()
 export class AdminPayoutsService {
+  private readonly logger = new Logger(AdminPayoutsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly awsS3Service: AwsS3Service,
     private readonly mailService: MailService,
   ) { }
+
+  /** Write a best-effort audit log entry. Never throws. */
+  private async audit(
+    adminId: string,
+    action: string,
+    targetId: string,
+    targetTable: string,
+    details?: Prisma.InputJsonObject,
+  ): Promise<void> {
+    try {
+      await this.prisma.adminLog.create({
+        data: { adminId, action, targetId, targetTable, details: details ?? {} },
+      });
+    } catch (err) {
+      this.logger.error(`[AUDIT] Failed to write audit log: ${action} on ${targetTable}:${targetId}`, err);
+    }
+  }
 
   async processPayout(
     adminUserId: string,
@@ -86,7 +107,7 @@ export class AdminPayoutsService {
           amount: request.amount,
           currency: 'INR',
           accountHolderName: `${recipient.firstName} ${recipient.lastName}`,
-          maskedAccountNumber: recipient.accountNumber.slice(-4),
+          maskedAccountNumber: CryptoHelper.decryptField(recipient.accountNumber).slice(-4),
           transferredToLabel:
             recipient.recipientType === 'PARENT_GUARDIAN'
               ? 'Family Member'
@@ -118,20 +139,33 @@ export class AdminPayoutsService {
       };
     });
 
-    // Send email OUTSIDE transaction
+    // Audit log (best-effort)
+    if (!result.alreadyPaid) {
+      await this.audit(adminUserId, 'PAYOUT_PROCESSED', requestId, 'FundTransferRequest', {
+        fundraiserId: result.request.fundraiserId,
+        amount: result.request.amount.toFixed(2),
+        transactionId: dto.transactionId,
+      });
+    }
+
+    // Send email OUTSIDE transaction (best-effort)
     if (!result.alreadyPaid) {
       const creator = result.request.fundraiser.creator;
 
       if (creator?.email) {
-        await this.mailService.sendPayoutPaidMail(
-          creator.email,
-          {
-            name: creator.firstName ?? 'User',
-            fundraiserTitle: result.request.fundraiser.title,
-            amount: result.request.amount.toFixed(2),
-            transactionId: dto.transactionId,
-          },
-        );
+        try {
+          await this.mailService.sendPayoutPaidMail(
+            creator.email,
+            {
+              name: creator.firstName ?? 'User',
+              fundraiserTitle: result.request.fundraiser.title,
+              amount: result.request.amount.toFixed(2),
+              transactionId: dto.transactionId,
+            },
+          );
+        } catch (err) {
+          this.logger.error(`Failed to send payout paid email for request ${requestId}`, err);
+        }
       }
     }
 
@@ -356,15 +390,25 @@ export class AdminPayoutsService {
       },
     });
 
-    // Send email (safe)
-    await this.mailService.sendPayoutApprovedMail(
-      request.fundraiser.creator.email,
-      {
-        name: request.fundraiser.creator.firstName ?? 'User',
-        fundraiserTitle: request.fundraiser.title,
-        amount: request.amount.toFixed(2),
-      },
-    );
+    // Audit log
+    await this.audit(adminId, 'PAYOUT_APPROVED', requestId, 'FundTransferRequest', {
+      fundraiserId: request.fundraiserId,
+      amount: request.amount.toFixed(2),
+    });
+
+    // Send email (best-effort)
+    try {
+      await this.mailService.sendPayoutApprovedMail(
+        request.fundraiser.creator.email,
+        {
+          name: request.fundraiser.creator.firstName ?? 'User',
+          fundraiserTitle: request.fundraiser.title,
+          amount: request.amount.toFixed(2),
+        },
+      );
+    } catch (err) {
+      this.logger.error(`Failed to send payout approved email for request ${requestId}`, err);
+    }
 
     return {
       success: true,
@@ -431,16 +475,27 @@ export class AdminPayoutsService {
       },
     });
 
-    //  Send rejection email (SAFE)
-    await this.mailService.sendPayoutRejectedMail(
-      request.fundraiser.creator.email,
-      {
-        name: request.fundraiser.creator.firstName ?? 'User',
-        fundraiserTitle: request.fundraiser.title,
-        amount: request.amount.toFixed(2),
-        reason: dto.reason,
-      },
-    );
+    // Audit log
+    await this.audit(adminId, 'PAYOUT_REJECTED', requestId, 'FundTransferRequest', {
+      fundraiserId: request.fundraiserId,
+      amount: request.amount.toFixed(2),
+      reason: dto.reason,
+    });
+
+    //  Send rejection email (best-effort)
+    try {
+      await this.mailService.sendPayoutRejectedMail(
+        request.fundraiser.creator.email,
+        {
+          name: request.fundraiser.creator.firstName ?? 'User',
+          fundraiserTitle: request.fundraiser.title,
+          amount: request.amount.toFixed(2),
+          reason: dto.reason,
+        },
+      );
+    } catch (err) {
+      this.logger.error(`Failed to send payout rejected email for request ${requestId}`, err);
+    }
 
     return {
       success: true,
@@ -506,18 +561,7 @@ export class AdminPayoutsService {
       );
     }
 
-    //  Send FAILED email (SAFE)
-    await this.mailService.sendPayoutFailedMail(
-      request.fundraiser.creator.email,
-      {
-        name: request.fundraiser.creator.firstName ?? 'User',
-        fundraiserTitle: request.fundraiser.title,
-        amount: request.amount.toFixed(2),
-        reason: dto.reason.trim(),
-      },
-    );
-
-    // Update status
+    // Update status first — email is non-critical
     const updated = await this.prisma.fundTransferRequest.update({
       where: { id: requestId },
       data: {
@@ -527,6 +571,28 @@ export class AdminPayoutsService {
         processedAt: new Date(),
       },
     });
+
+    // Audit log
+    await this.audit(adminId, 'PAYOUT_FAILED', requestId, 'FundTransferRequest', {
+      fundraiserId: request.fundraiserId,
+      amount: request.amount.toFixed(2),
+      reason: dto.reason.trim(),
+    });
+
+    //  Send FAILED email (best-effort — after DB commit)
+    try {
+      await this.mailService.sendPayoutFailedMail(
+        request.fundraiser.creator.email,
+        {
+          name: request.fundraiser.creator.firstName ?? 'User',
+          fundraiserTitle: request.fundraiser.title,
+          amount: request.amount.toFixed(2),
+          reason: dto.reason.trim(),
+        },
+      );
+    } catch (err) {
+      this.logger.error(`Failed to send payout failed email for request ${requestId}`, err);
+    }
 
     return {
       message: 'Fund transfer marked as failed.',
@@ -567,6 +633,12 @@ export class AdminPayoutsService {
         status: TransferStatus.PROCESSING,
         reviewedById: adminId,
       },
+    });
+
+    // Audit log
+    await this.audit(adminId, 'PAYOUT_PROCESSING', requestId, 'FundTransferRequest', {
+      previousStatus: request.status,
+      newStatus: TransferStatus.PROCESSING,
     });
 
     return {

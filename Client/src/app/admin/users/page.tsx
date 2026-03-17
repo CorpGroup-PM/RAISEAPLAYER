@@ -25,7 +25,7 @@ export default function AdminUsersPage() {
     try {
       setLoading(true);
       const res = await adminAnalytics.listAllUsers();
-      setUsers(res.data || []);
+      setUsers(res.data.data || []);
     } finally {
       setLoading(false);
     }
@@ -56,13 +56,13 @@ export default function AdminUsersPage() {
             </thead>
 
             <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={5} className="admin-empty">
-                    Loading...
-                  </td>
+              {loading && Array.from({ length: 6 }).map((_, i) => (
+                <tr key={`sk-${i}`}>
+                  {Array.from({ length: 5 }).map((__, j) => (
+                    <td key={j}><div className="skeleton-cell" /></td>
+                  ))}
                 </tr>
-              )}
+              ))}
 
               {!loading && users.length === 0 && (
                 <tr>

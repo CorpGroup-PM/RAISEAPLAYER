@@ -1,18 +1,41 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Auth uses JWT Bearer tokens stored in memory / localStorage — not cookies.
-// Next.js middleware runs on the Edge and cannot access localStorage or
-// in-memory state, so cookie-based route guarding is not applicable here.
+// Auth uses JWT Bearer tokens stored in memory / localStorage.
+// The JWT itself cannot be read by Edge middleware, so a lightweight
+// `auth_role` cookie (set client-side by auth-manager.ts on login/refresh,
+// cleared on logout) is used as a routing hint.
 //
-// Route protection is handled client-side via the useAuth() hook:
-//   - Unauthenticated users are redirected to /login by each protected page.
-//   - Admin-only pages check req.user.role from the API response.
+// IMPORTANT: this cookie is NOT the auth source-of-truth. All backend API
+// calls are still protected by the real JWT guard. This middleware provides
+// a first-pass server-side redirect so protected HTML is never sent to
+// unauthenticated or unauthorised clients.
 //
-// This middleware is kept as a pass-through so it can be extended later
-// (e.g., if auth is migrated to HTTP-only cookies).
+// If auth is later migrated to HttpOnly cookies (see B-2-1), this middleware
+// can be upgraded to full JWT verification using the `jose` library.
 
-export function middleware(_req: NextRequest) {
+const ROLE_COOKIE = "auth_role";
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const role = req.cookies.get(ROLE_COOKIE)?.value;
+
+  // ── Not logged in → send to /login ────────────────────────────────────────
+  if (!role) {
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("from", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // ── Admin routes → require ADMIN role ─────────────────────────────────────
+  if (pathname.startsWith("/admin") && role !== "ADMIN") {
+    const dashUrl = req.nextUrl.clone();
+    dashUrl.pathname = "/dashboard";
+    dashUrl.searchParams.delete("from");
+    return NextResponse.redirect(dashUrl);
+  }
+
   return NextResponse.next();
 }
 

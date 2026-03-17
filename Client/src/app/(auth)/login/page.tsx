@@ -40,9 +40,18 @@ export default function LoginPage() {
 const onSubmit = async (values: any) => {
   try {
     const response = await AuthService.login(values);
-    const userRole = response.data?.user?.role;
+    // Backend returns { access_token, user } (no tokens wrapper)
+    const accessToken = response.data?.access_token;
+    const userRole    = response.data?.user?.role;
 
-    authManager.setAuth(response.data.tokens);
+    if (!accessToken) {
+      return; // axios interceptor already shows an error toast for bad responses
+    }
+
+    authManager.setAuth({ access_token: accessToken });
+    // Must set the role cookie BEFORE navigating — the Next.js Edge middleware
+    // reads this cookie to route-guard /admin and /dashboard.
+    authManager.setRoleCookie(userRole);
 
     if (userRole === "ADMIN") {
       window.location.href = "/admin";

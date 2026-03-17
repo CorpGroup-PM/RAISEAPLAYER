@@ -18,27 +18,38 @@
  *   This prevents stale PAN / role data being read from storage.
  */
 
-const REFRESH_TOKEN_KEY = "refresh_token";
+const ROLE_COOKIE_KEY = "auth_role";
 
 let _accessToken: string | null = null;
 
+/** Write a client-readable cookie so Next.js Edge middleware can route-guard
+ *  protected paths without requiring the JWT (which lives in memory only).
+ *  This cookie is NOT HttpOnly — middleware reads it on the Edge.
+ *  It is NOT the auth source-of-truth; every protected API call is still
+ *  validated by the backend JWT guard. */
+function setRoleCookie(role: string) {
+  if (typeof document === "undefined") return;
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${ROLE_COOKIE_KEY}=${role}; path=/; SameSite=Strict${secure}`;
+}
+
+function clearRoleCookie() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${ROLE_COOKIE_KEY}=; path=/; max-age=0`;
+}
+
 export const authManager = {
   // ── Write ───────────────────────────────────────────────────────────────────
-  setTokens(access: string, refresh?: string) {
+  // Only the access token is stored client-side. The refresh token lives in
+  // an HttpOnly cookie set by the backend — it cannot be read from JavaScript.
+  setTokens(access: string) {
     _accessToken = access; // memory only
-
-    if (refresh) {
-      try {
-        localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
-      } catch {
-        // Silently fail in environments where localStorage is unavailable
-      }
-    }
   },
 
-  setAuth(tokens: { access_token: string; refresh_token: string }) {
+  setAuth(tokens: { access_token: string; refresh_token?: string }) {
     if (typeof window === "undefined") return;
-    this.setTokens(tokens.access_token, tokens.refresh_token);
+    this.setTokens(tokens.access_token);
+    // refresh_token is now managed via HttpOnly cookie set by the backend
   },
 
   // ── Read ────────────────────────────────────────────────────────────────────
@@ -46,31 +57,27 @@ export const authManager = {
     return _accessToken;
   },
 
-  getRefreshToken(): string | null {
-    if (typeof window === "undefined") return null;
-    try {
-      return localStorage.getItem(REFRESH_TOKEN_KEY);
-    } catch {
-      return null;
-    }
-  },
+  // ── Role cookie (readable by Next.js Edge middleware) ────────────────────────
+  setRoleCookie,
+  clearRoleCookie,
 
   // ── Destroy ─────────────────────────────────────────────────────────────────
   logout() {
     _accessToken = null;
-    try {
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
-    } catch {
-      // ignore
-    }
+    clearRoleCookie();
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("auth-logout"));
     }
   },
 
   // ── Utils ───────────────────────────────────────────────────────────────────
+  /** True when there is an in-memory access token OR a session hint cookie
+   *  (the auth_role cookie persists between hard refreshes). */
   isAuthenticated(): boolean {
-    // Has an in-memory token OR has a refresh token (can silently refresh)
-    return !!_accessToken || !!this.getRefreshToken();
+    if (!!_accessToken) return true;
+    if (typeof document === "undefined") return false;
+    return document.cookie.split(";").some(
+      (c) => c.trim().startsWith(`${ROLE_COOKIE_KEY}=`)
+    );
   },
 };

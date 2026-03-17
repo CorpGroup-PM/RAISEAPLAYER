@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { CreateAndUpsertRecipientAccountDto } from './dto/create-update.recipient.dto';
 import { RecipientAccountService } from './recipient-account.service';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
@@ -43,11 +43,14 @@ export class RecipientAccountController {
         description: 'Fundraiser not found',
     })
     async upsertRecipientAccount(
+        @Req() req: any,
         @Param('fundraiserId') fundraiserId: string,
         @Body() dto: CreateAndUpsertRecipientAccountDto,
     ) {
+        const userId: string = req.user.sub;
         const data = await this.recipientAccountService.upsertRecipientAccount(
             fundraiserId,
+            userId,
             dto,
         );
 

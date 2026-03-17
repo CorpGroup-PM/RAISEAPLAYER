@@ -9,7 +9,9 @@ import {
   Res,
   UnauthorizedException,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
+import type { CookieOptions } from 'express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -23,6 +25,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
+import { OAuthCodeStore } from './oauth-code.store';
+import { ExchangeOAuthCodeDto } from './dto/exchange-oauth-code.dto';
 import { SignupDto } from './dto/signup.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { LoginDto } from './dto/login.dto';
@@ -35,16 +39,35 @@ import { AccessTokenGuard } from '../common/guards/accessToken.guard';
 import { RefreshTokenGuard } from '../common/guards/refreshToken.guard';
 import { LoginThrottlerGuard } from '../common/guards/throttler/login-throttler.guard';
 import { OtpThrottlerGuard } from '../common/guards/throttler/otp-throttler.guard';
+import { SignupThrottlerGuard } from '../common/guards/throttler/signup-throttler.guard';
+
+/** Build cookie options for the HttpOnly refresh_token cookie. */
+function refreshCookieOptions(): CookieOptions {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV !== 'development',
+    sameSite: 'strict',
+    // Restrict to the refresh endpoint so the browser only sends this cookie
+    // when renewing tokens — never to other API endpoints.
+    path: '/api/v1/auth/refresh',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days — matches JWT_REFRESH_EXPIRATION
+  };
+}
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly oauthCodeStore: OAuthCodeStore,
+  ) { }
 
   // ------------------------------------------------------------------
-  // REGISTER
+  // REGISTER — rate limited: max 5 accounts per 10 min per IP
   // ------------------------------------------------------------------
   @Post('register')
+  @UseGuards(SignupThrottlerGuard)
+  @Throttle({ short: { limit: 5, ttl: 600000 } })
   @ApiOperation({
     summary: 'Register new user',
     description: 'Creates a new user account in the system.'
@@ -56,11 +79,11 @@ export class AuthController {
   }
 
   // ------------------------------------------------------------------
-  // SEND OTP  -- rate limited: max 3 per minute per IP
+  // SEND OTP  -- rate limited: max 8 per minute per IP
   // ------------------------------------------------------------------
   @Post('send-otp')
   @UseGuards(OtpThrottlerGuard)
-  @Throttle({ short: { limit: 3, ttl: 60000 } })
+  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @ApiOperation({
     summary: 'Send OTP (email / phone)',
     description: 'Sending OTP To Email.'
@@ -71,11 +94,11 @@ export class AuthController {
   }
 
   // ------------------------------------------------------------------
-  // VERIFY EMAIL OTP -- rate limited: max 5 per minute per IP
+  // VERIFY EMAIL OTP -- rate limited: max 8 per minute per IP
   // ------------------------------------------------------------------
   @Post('verify-email')
   @UseGuards(OtpThrottlerGuard)
-  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @ApiOperation({
     summary: 'Verify email using OTP',
     description: 'Validates OTP to confirm the user\'s email address.'
@@ -89,7 +112,7 @@ export class AuthController {
   // LOGIN
   // ------------------------------------------------------------------
   @UseGuards(LoginThrottlerGuard)
-  @Throttle({ short: { limit: 3, ttl: 60000 } })
+  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user' })
@@ -102,8 +125,12 @@ export class AuthController {
       refresh_token: 'jwt-refresh-token',
     },
   })
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(loginDto);
+    // Set refresh token as HttpOnly cookie — never exposed to JavaScript
+    res.cookie('refresh_token', result.tokens.refresh_token, refreshCookieOptions());
+    // Return access token + user profile; refresh token is in the cookie
+    return { access_token: result.tokens.access_token, user: result.user };
   }
 
   // ------------------------------------------------------------------
@@ -117,11 +144,11 @@ export class AuthController {
     summary: 'Logout user',
     description: 'LogoutSuccessfully',
   })
-  logout(@Req() req: Request & { user?: any }) {
+  logout(@Req() req: Request & { user?: any }, @Res({ passthrough: true }) res: Response) {
     const userId = req.user?.sub;
-    if (!userId) {
-      throw new UnauthorizedException('User payload missing')
-    };
+    if (!userId) throw new UnauthorizedException('User payload missing');
+    // Clear the HttpOnly refresh token cookie on logout
+    res.clearCookie('refresh_token', { path: '/api/v1/auth/refresh' });
     return this.authService.logout(userId);
   }
 
@@ -136,14 +163,21 @@ export class AuthController {
     summary: 'Refresh access token',
     description: 'Issues a new access token using the refresh token.'
   })
-  refreshTokens(@Req() req: Request & { user?: any }) {
+  async refreshTokens(
+    @Req() req: Request & { user?: any },
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const userId = req.user?.sub;
     const refreshToken = req.user?.refreshToken;
 
     if (!userId || !refreshToken) {
       throw new UnauthorizedException('Refresh token payload missing');
     }
-    return this.authService.refreshTokens(userId, refreshToken);
+
+    const tokens = await this.authService.refreshTokens(userId, refreshToken);
+    // Rotate the HttpOnly refresh token cookie
+    res.cookie('refresh_token', tokens.refresh_token, refreshCookieOptions());
+    return { access_token: tokens.access_token };
   }
 
   // ------------------------------------------------------------------
@@ -157,7 +191,7 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiExcludeEndpoint()
-  async googleAuthRedirect(@Req() req, @Res() res: Response) {
+  async googleAuthRedirect(@Req() req: Request & { user?: any }, @Res() res: Response) {
     const { tokens, user } =
       await this.authService.googleOAuthLogin(req.user);
 
@@ -166,26 +200,45 @@ export class AuthController {
       return res.status(500).json({ message: 'FRONTEND_SOCIAL_SUCCESS_URL is not configured' });
     }
 
-    // Use URL fragment (#) instead of query string (?).
-    // Fragments are never sent to the server in HTTP requests, never appear in
-    // server logs, and are not captured by referrer headers -- reducing the risk
-    // of tokens leaking via browser history or proxy/CDN logs.
-    const fragment =
-      `access_token=${encodeURIComponent(tokens.access_token)}&` +
-      `refresh_token=${encodeURIComponent(tokens.refresh_token)}&` +
-      `email=${encodeURIComponent(user.email)}&` +
-      `first_name=${encodeURIComponent(user.firstName || '')}&` +
-      `last_name=${encodeURIComponent(user.lastName || '')}&` +
-      `picture=${encodeURIComponent(user.profileImageUrl || '')}`;
+    // Store tokens server-side under a short-lived one-time code.
+    // The redirect URL carries only the opaque code — never the tokens themselves.
+    // The frontend exchanges the code for tokens via POST /auth/social/exchange.
+    const code = this.oauthCodeStore.generate(tokens, {
+      email: user.email,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      profileImageUrl: user.profileImageUrl || '',
+      role: user.role || 'USER',
+    });
 
-    return res.redirect(`${baseUrl}#${fragment}`);
+    return res.redirect(`${baseUrl}?code=${code}`);
+  }
+
+  // ------------------------------------------------------------------
+  // OAUTH CODE EXCHANGE — frontend calls this with the one-time code
+  // ------------------------------------------------------------------
+  @Post('social/exchange')
+  @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
+  @ApiExcludeEndpoint()
+  exchangeOAuthCode(
+    @Body() dto: ExchangeOAuthCodeDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const entry = this.oauthCodeStore.consume(dto.code);
+    if (!entry) {
+      throw new NotFoundException('OAuth code is invalid or has expired');
+    }
+    // Set the refresh token as HttpOnly cookie — same as regular login
+    res.cookie('refresh_token', entry.tokens.refresh_token, refreshCookieOptions());
+    return { tokens: { access_token: entry.tokens.access_token }, user: entry.user };
   }
 
   // ------------------------------------------------------------------
   // FORGOT PASSWORD
   // ------------------------------------------------------------------
   @UseGuards(OtpThrottlerGuard)
-  @Throttle({ short: { limit: 3, ttl: 60000 } })
+  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -201,6 +254,8 @@ export class AuthController {
   // ------------------------------------------------------------------
   // VERIFY RESET OTP
   // ------------------------------------------------------------------
+  @UseGuards(OtpThrottlerGuard)
+  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @Post('verify-reset-otp')
   @ApiOperation({
     summary: 'Verify password reset OTP',
@@ -214,6 +269,8 @@ export class AuthController {
   // ------------------------------------------------------------------
   // RESET PASSWORD
   // ------------------------------------------------------------------
+  @UseGuards(LoginThrottlerGuard)
+  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

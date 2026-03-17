@@ -24,8 +24,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { Throttle } from '@nestjs/throttler';
 import { FundraiserService } from './fundraiser.service';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
+import { IpThrottlerGuard } from 'src/common/guards/throttler/ip-throttler.guard';
 import { CreateFundraiserDto } from './dto/fundraiser.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { createFileInterceptorOptions } from 'src/common/upload/file-upload.helper';
@@ -66,7 +68,6 @@ export class FundraiserController {
   //==========================================
   //TOP 6 FUNDRAISED Public route
   //==========================================
-
   @Get('fundraisedtopsix')
   async getTopSixFundraised() {
     return this.fundraiserService.getTopSixFundraised();
@@ -109,7 +110,7 @@ export class FundraiserController {
     @UploadedFile() file: Express.Multer.File,
     @Req() req: any,
   ) {
-    validateUploadedFile(
+    await validateUploadedFile(
       file,
       ['image/jpeg', 'image/png', 'image/webp'],
       5,
@@ -163,11 +164,9 @@ export class FundraiserController {
       throw new BadRequestException('No files uploaded');
     }
 
-    files.forEach((file) =>
-      validateUploadedFile(
-        file,
-        ['image/jpeg', 'image/png', 'image/webp'],
-        3,
+    await Promise.all(
+      files.map((file) =>
+        validateUploadedFile(file, ['image/jpeg', 'image/png', 'image/webp'], 3),
       ),
     );
 
@@ -218,7 +217,7 @@ export class FundraiserController {
   }
 
   // ------------------------------------------------------------------
-  // VIEW CAMPAIGN (PRIVATE)
+  // VIEW CAMPAIGN (PRIVATE — owner only)
   // ------------------------------------------------------------------
   @UseGuards(AccessTokenGuard)
   @ApiBearerAuth()
@@ -227,8 +226,8 @@ export class FundraiserController {
     summary: 'View fundraiser details (private)',
     description: 'Retrieves detailed information of a fundraiser for the authenticated creator.',
   })
-  async viewCampaign(@Param('id') id: string) {
-    return this.fundraiserService.getCampaignById(id);
+  async viewCampaign(@Param('id') id: string, @Req() req: any) {
+    return this.fundraiserService.getCampaignById(id, req.user.sub);
   }
 
   //-------------------------------------------------------------------
@@ -383,6 +382,8 @@ export class FundraiserController {
   //Review 
   //=======================================
   @Post('/review')
+  @UseGuards(IpThrottlerGuard)
+  @Throttle({ contact: { limit: 3, ttl: 3600000 } })
   async review( @Body() dto: CreateReviewDto) {
     return await this.fundraiserService.review(
       dto,);

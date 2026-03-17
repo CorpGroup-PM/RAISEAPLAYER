@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CampaignStatus, DocumentVerificationStatus, PaymentStatus, Prisma, SportsDocumentType, TransferStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import type Redis from 'ioredis';
 
 
 function decimalToNumber(val: Prisma.Decimal | number | null | undefined): number {
@@ -11,10 +12,21 @@ function decimalToNumber(val: Prisma.Decimal | number | null | undefined): numbe
 
 @Injectable()
 export class AnalyticsService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    ) { }
 
     async getOverview(range: { fromDate: Date; toDate: Date }) {
         const { fromDate, toDate } = range;
+
+        const cacheKey = `analytics:overview:${fromDate.toISOString()}:${toDate.toISOString()}`;
+        try {
+            const cached = await this.redis.get(cacheKey);
+            if (cached) return JSON.parse(cached);
+        } catch {
+            // Redis unavailable — fall through to DB
+        }
 
         const donationWhere = {
             status: PaymentStatus.SUCCESS,
@@ -42,52 +54,49 @@ export class AnalyticsService {
         ] = await Promise.all([
             this.prisma.donation.aggregate({
                 where: donationWhere,
-                _sum: {
-                    donationAmount: true,
-                    totalAmount: true,
-                },
-            }),
+                _sum: { donationAmount: true, totalAmount: true },
+            }).catch(() => ({ _sum: { donationAmount: null, totalAmount: null } })),
 
             this.prisma.donation.aggregate({
                 where: { status: PaymentStatus.SUCCESS, platformTipAmount: { gt: 0 }, createdAt: { gte: fromDate, lte: toDate } },
                 _sum: { platformTipAmount: true },
-            }),
+            }).catch(() => ({ _sum: { platformTipAmount: null } })),
 
             this.prisma.fundraiser.count({
                 where: { status: CampaignStatus.ACTIVE },
-            }),
+            }).catch(() => 0),
 
             this.prisma.fundraiser.count({
                 where: { status: CampaignStatus.PENDING_REVIEW },
-            }),
+            }).catch(() => 0),
 
             this.prisma.payout.aggregate({
                 where: payoutWhere,
                 _sum: { amount: true },
-            }),
+            }).catch(() => ({ _sum: { amount: null } })),
 
             this.prisma.fundTransferRequest.count({
                 where: { status: TransferStatus.PENDING },
-            }),
+            }).catch(() => 0),
 
             this.prisma.fundraiserDocument.count({
                 where: { verificationStatus: DocumentVerificationStatus.PENDING },
-            }),
+            }).catch(() => 0),
 
             this.prisma.recipientAccount.count({
                 where: { isVerified: false },
-            }),
+            }).catch(() => 0),
 
             this.prisma.donation.count({
                 where: {
                     status: PaymentStatus.FAILED,
                     createdAt: { gte: fromDate, lte: toDate },
                 },
-            }),
+            }).catch(() => 0),
 
             this.prisma.user.count({
                 where: { createdAt: { gte: fromDate, lte: toDate } },
-            }),
+            }).catch(() => 0),
 
             this.prisma.review.count({ where: { isVerified: false } }).catch(() => 0),
 
@@ -105,7 +114,7 @@ export class AnalyticsService {
         const tip = decimalToNumber(allTimeTipAgg._sum.platformTipAmount);
         const goalReachedCampaigns = Number((goalReachedRows as any[])[0]?.count || 0);
 
-        return {
+        const result = {
             totalDonations: donation,
             platformTips: tip,
 
@@ -122,6 +131,14 @@ export class AnalyticsService {
             newUsers,
             unverifiedReviews,
         };
+
+        try {
+            await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 300);
+        } catch {
+            // Cache write failure — not critical, return result anyway
+        }
+
+        return result;
     }
 
     async getFundraiserAnalytics(range: {

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 
 export class BeneficiaryOtherDto {
   @ApiProperty({
@@ -8,6 +8,7 @@ export class BeneficiaryOtherDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(150, { message: 'Beneficiary name must not exceed 150 characters' })
   name: string;
 
   // -------------------------
@@ -17,6 +18,7 @@ export class BeneficiaryOtherDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100, { message: 'Relation must not exceed 100 characters' })
   relation: string;
 
   // -------------------------

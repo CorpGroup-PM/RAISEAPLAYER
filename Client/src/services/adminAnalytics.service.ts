@@ -1,8 +1,8 @@
 import { api } from "@/lib/api-client";
 
 export const adminAnalytics = {
-  listAllDonors() {
-    return api.get("/admin/campaigns/allDonor");
+  listAllDonors(status?: string) {
+    return api.get("/admin/campaigns/allDonor", { params: status ? { status, limit: 100 } : { limit: 100 } });
   },
 
   listAllUsers() {

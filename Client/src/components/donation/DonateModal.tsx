@@ -1,10 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { PaymentService } from "../../services/payment.service";
 import "./donate-modal.css";
 import { useAuth } from "@/context/AuthContext";
 import AlertModal from "@/components/ui/AlertModal";
+import { logger } from "@/lib/logger";
+
+// ── Razorpay SDK type declaration ──────────────────────────────────────────────
+interface RazorpayOptions {
+  key: string;
+  order_id: string;
+  amount: number;
+  currency?: string;
+  name?: string;
+  handler?: (response: {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+  }) => void;
+  modal?: { ondismiss?: () => void };
+}
+
+interface RazorpayInstance {
+  open(): void;
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
 
 type Props = {
     fundraiserId: string;
@@ -34,7 +60,44 @@ export default function DonateModal({
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
+    // B-8-3: show success screen after payment instead of closing immediately
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+    // B-8-4: focus management — store trigger element, focus modal on open
+    const modalRef = useRef<HTMLDivElement>(null);
+    const prevFocusRef = useRef<HTMLElement | null>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            prevFocusRef.current = document.activeElement as HTMLElement;
+            setTimeout(() => modalRef.current?.focus(), 0);
+        } else {
+            setPaymentSuccess(false);
+            prevFocusRef.current?.focus();
+            prevFocusRef.current = null;
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
+
+    // B-8-3: success screen
+    if (paymentSuccess) {
+        return (
+            <div className="donate-overlay" role="dialog" aria-modal="true" aria-label="Donation successful">
+                <div className="donate-modal donate-success-modal" ref={modalRef} tabIndex={-1}>
+                    <div className="donate-header">
+                        <h2>Thank you!</h2>
+                        <button aria-label="Close" onClick={onClose}>×</button>
+                    </div>
+                    <div className="donate-success-body">
+                        <div className="donate-success-icon">✓</div>
+                        <p className="donate-success-msg">Your donation was received successfully. You will get a confirmation shortly.</p>
+                        <button className="pay-btn" onClick={onClose}>Done</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const numAmount = Number(amount) || 0;
     const numTip = Number(tip) || 0;
@@ -107,6 +170,9 @@ export default function DonateModal({
             return;
         }
 
+        // Prevent duplicate submissions (double-click guard)
+        if (loading) return;
+
         try {
             setLoading(true);
 
@@ -143,7 +209,6 @@ export default function DonateModal({
                 return;
             }
 
-            // @ts-ignore
             const rzp = new window.Razorpay({
                 key: razorpay.key,
                 order_id: razorpay.orderId,
@@ -152,7 +217,7 @@ export default function DonateModal({
                 name: "Raise A Player",
 
                 handler: function (_response: any) {
-                    onClose();
+                    setPaymentSuccess(true);
                     onSuccess?.();
                 },
 
@@ -162,7 +227,9 @@ export default function DonateModal({
             });
 
             rzp.open();
-        } catch (_err) {
+        } catch (err) {
+            logger.error("[DonateModal] Payment error", err, { fundraiserId });
+            setErrorMsg("Payment could not be completed. Please try again or contact support.");
         } finally {
             setLoading(false);
         }
@@ -170,11 +237,11 @@ export default function DonateModal({
 
     /* ================= UI ================= */
     return (
-        <div className="donate-overlay">
-            <div className="donate-modal">
+        <div className="donate-overlay" role="dialog" aria-modal="true" aria-label="Make a donation">
+            <div className="donate-modal" ref={modalRef} tabIndex={-1}>
                 <div className="donate-header">
                     <h2>Make a secure donation</h2>
-                    <button onClick={onClose}>×</button>
+                    <button aria-label="Close" onClick={onClose}>×</button>
                 </div>
 
                 {/* DONATION AMOUNT */}
@@ -220,7 +287,7 @@ export default function DonateModal({
                             className={fieldErrors.name ? "input-error" : ""}
                             onChange={(e) => { setGuestName(e.target.value); setFieldErrors((p) => ({ ...p, name: undefined })); }}
                         />
-                        {fieldErrors.name && <span className="field-error">{fieldErrors.name}</span>}
+                        {fieldErrors.name && <span className="field-error" role="alert">{fieldErrors.name}</span>}
 
                         <input
                             placeholder="Email"
@@ -228,7 +295,7 @@ export default function DonateModal({
                             className={fieldErrors.email ? "input-error" : ""}
                             onChange={(e) => { setGuestEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: undefined })); }}
                         />
-                        {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
+                        {fieldErrors.email && <span className="field-error" role="alert">{fieldErrors.email}</span>}
 
                         <div className={`phone-prefix-wrap${fieldErrors.mobile ? " input-error" : ""}`}>
                             <span className="prefix">+91</span>
@@ -243,7 +310,7 @@ export default function DonateModal({
                                 }}
                             />
                         </div>
-                        {fieldErrors.mobile && <span className="field-error">{fieldErrors.mobile}</span>}
+                        {fieldErrors.mobile && <span className="field-error" role="alert">{fieldErrors.mobile}</span>}
                     </div>
                 )}
 

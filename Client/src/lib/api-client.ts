@@ -44,41 +44,84 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 /* ----------------------------------------------
-   REFRESH ACCESS TOKEN (✔ FIXED)
-   🔑 Sends refresh token in Authorization header
+   REFRESH ACCESS TOKEN
+   🍪 The refresh token lives in an HttpOnly cookie set by the backend.
+      withCredentials:true causes the browser to send it automatically —
+      no manual Authorization header needed.
 ---------------------------------------------- */
 export async function refreshAccessToken(): Promise<string | null> {
   try {
-    const refreshToken = authManager.getRefreshToken();
-    if (!refreshToken) return null;
-
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
       null,
-      {
-        headers: {
-          Authorization: `Bearer ${refreshToken}`, // ✅ REQUIRED
-        },
-        withCredentials: true,
-      }
+      { withCredentials: true }
     );
 
-    const { access_token, refresh_token } = response.data || {};
+    const { access_token } = response.data || {};
 
-    if (access_token && refresh_token) {
-      authManager.setTokens(access_token, refresh_token);
+    if (access_token) {
+      authManager.setTokens(access_token);
       return access_token;
     }
 
     return null;
   } catch (err) {
-    // Network failure or 401 — refresh token is invalid/expired
-    const status = (err as AxiosError)?.response?.status;
-    if (status !== 401) {
-      // Log unexpected errors (not normal token-expired 401s)
-      console.warn("[api-client] Token refresh failed:", (err as Error).message);
+    // Network failure or 401 — refresh token is invalid/expired.
+    // Only log in development to avoid leaking token lifecycle info.
+    if (process.env.NODE_ENV === "development") {
+      const status = (err as AxiosError)?.response?.status;
+      if (status !== 401) {
+        console.warn("[api-client] Token refresh failed:", (err as Error).message);
+      }
     }
     return null;
+  }
+}
+
+/* ----------------------------------------------
+   ERROR MESSAGE CLASSIFIER
+   Maps backend/network errors to safe, user-friendly strings.
+   Backend implementation details (stack traces, DB constraint names,
+   service class names) are never surfaced to the UI.
+---------------------------------------------- */
+function toUserMessage(error: AxiosError<any>): string {
+  const status = error.response?.status;
+  const rawMsg: unknown = error.response?.data?.message;
+
+  // NestJS ValidationPipe returns message as string[] — normalise to string
+  const serverMsg: unknown = Array.isArray(rawMsg) ? rawMsg[0] : rawMsg;
+
+  // Short, plain-text server messages on auth/validation routes are safe to show
+  const isShortSafeMsg =
+    typeof serverMsg === "string" &&
+    serverMsg.length <= 120 &&
+    !/\bat\s+\w+[\\/]/.test(serverMsg); // reject stack-trace-like strings
+
+  if (!status) {
+    return "Unable to reach the server. Please check your connection.";
+  }
+
+  switch (status) {
+    case 400:
+      return isShortSafeMsg ? serverMsg as string : "Invalid request. Please check your input and try again.";
+    case 401:
+      return isShortSafeMsg ? serverMsg as string : "Your session has expired. Please log in again.";
+    case 403:
+      return isShortSafeMsg ? serverMsg as string : "You do not have permission to perform this action.";
+    case 404:
+      return isShortSafeMsg ? serverMsg as string : "The requested resource was not found.";
+    case 409:
+      return isShortSafeMsg ? serverMsg as string : "A conflict occurred. The resource may already exist.";
+    case 422:
+      return "The submitted data could not be processed. Please review your input.";
+    case 429:
+      return "Too many requests. Please wait a moment and try again.";
+    case 500:
+    case 502:
+    case 503:
+      return "Something went wrong on our end. Please try again later.";
+    default:
+      return isShortSafeMsg ? serverMsg as string : "An unexpected error occurred. Please try again.";
   }
 }
 
@@ -110,7 +153,11 @@ api.interceptors.response.use(
     loadingManager.stop();
 
     const method = response.config.method?.toUpperCase();
-    if (["POST", "PUT", "DELETE"].includes(method || "")) {
+    const url = response.config.url || "";
+    const silentRoutes = ["/auth/login", "/auth/refresh", "/auth/logout", "/auth/social/exchange"];
+    const isSilent = silentRoutes.some((r) => url.includes(r));
+
+    if (["POST", "PUT", "DELETE"].includes(method || "") && !isSilent) {
       toastManager.show(
         response.data?.message || `${method} successful`,
         "success"
@@ -125,8 +172,7 @@ api.interceptors.response.use(
 
     const originalRequest: any = error.config;
     const status = error.response?.status;
-    const message =
-      error.response?.data?.message || error.message || "Something went wrong";
+    const message = toUserMessage(error);
 
     /* ----------------------------------------------
        AUTH ROUTE IDENTIFICATION
@@ -135,7 +181,8 @@ api.interceptors.response.use(
       originalRequest?.url?.includes("/auth/login") ||
       originalRequest?.url?.includes("/auth/register") ||
       originalRequest?.url?.includes("/auth/forgot-password") ||
-      originalRequest?.url?.includes("/auth/verify-email");
+      originalRequest?.url?.includes("/auth/verify-email") ||
+      originalRequest?.url?.includes("/auth/social/exchange");
 
     const isRefreshRoute = originalRequest?.url?.includes("/auth/refresh");
     const isLogoutRoute  = originalRequest?.url?.includes("/auth/logout");

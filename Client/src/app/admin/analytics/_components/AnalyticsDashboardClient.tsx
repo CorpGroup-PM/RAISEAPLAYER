@@ -9,11 +9,65 @@ import WithdrawalsPanel from "./WithdrawalsPanel";
 import FundraisersPanel from "./FundraisersPanel";
 import DonationsHerochart from "./DonationsHero";
 
+interface OverviewCard {
+  label: string;
+  value: number | string;
+  change?: number;
+  trend?: "up" | "down" | "neutral";
+}
+
+interface OverviewData {
+  cards: OverviewCard[];
+  [key: string]: unknown;
+}
+
+interface TimeSeriesPoint {
+  date: string;
+  amount?: number;
+  count?: number;
+  [key: string]: unknown;
+}
+
+interface FundraisersData {
+  total?: number;
+  active?: number;
+  byStatus?: Record<string, number>;
+  overTime?: TimeSeriesPoint[];
+  [key: string]: unknown;
+}
+
+interface DonationsData {
+  total?: number;
+  totalAmount?: number;
+  overTime?: TimeSeriesPoint[];
+  [key: string]: unknown;
+}
+
+interface PayoutTotals {
+  count: number;
+  totalAmount: number;
+}
+
+interface WithdrawalsData {
+  totals?: {
+    pendingCount?: number;
+    pendingAmount?: number;
+    approvedCount?: number;
+    approvedAmount?: number;
+    payouts?: PayoutTotals;
+    [key: string]: unknown;
+  };
+  overTime?: TimeSeriesPoint[];
+  payoutsOverTime?: TimeSeriesPoint[];
+  payoutsActivity?: TimeSeriesPoint[];
+  [key: string]: unknown;
+}
+
 type DashboardData = {
-  overview: any;
-  fundraisers: any;
-  donations: any;
-  withdrawals: any;
+  overview: OverviewData;
+  fundraisers: FundraisersData;
+  donations: DonationsData;
+  withdrawals: WithdrawalsData;
 };
 
 export default function AnalyticsDashboardClient() {
@@ -72,9 +126,10 @@ export default function AnalyticsDashboardClient() {
       setFrom(f);
       setTo(t);
       setLastUpdated(new Date().toLocaleString("en-IN"));
-    } catch (e: any) {
+    } catch (e: unknown) {
       setData(null);
-      setError(e?.response?.data?.message || "Failed to load analytics.");
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "Failed to load analytics.");
     } finally {
       setLoading(false);
     }

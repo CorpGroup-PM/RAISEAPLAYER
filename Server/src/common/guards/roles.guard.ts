@@ -14,9 +14,11 @@ export class RolesGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    // 2. If no roles required → allow access
+    // 2. No @Roles() decorator present → deny by default.
+    // RolesGuard should only be applied alongside an explicit @Roles() decorator.
+    // Returning false here ensures a missing decorator causes a 403, not open access.
     if (!requiredRoles) {
-      return true;
+      return false;
     }
 
     // 3. Extract authenticated user

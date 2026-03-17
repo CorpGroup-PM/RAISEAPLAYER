@@ -76,10 +76,10 @@ export default function PayoutSummary({ fundraiserId }: { fundraiserId: string }
         <tbody>
           {data.items.map((p: any, i: number) => (
             <tr key={i}>
-              <td>{new Date(p.date).toLocaleDateString()}</td>
-              <td>₹{Number(p.amountTransferred).toLocaleString()}</td>
-              <td>{p.accountHolder}</td>
-              <td>{p.accountDetails}</td>
+              <td className="pt-date">{new Date(p.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+              <td className="pt-amount">₹{Number(p.amountTransferred).toLocaleString()}</td>
+              <td className="pt-name">{p.accountHolder}</td>
+              <td className="pt-account">{p.accountDetails}</td>
             </tr>
           ))}
         </tbody>

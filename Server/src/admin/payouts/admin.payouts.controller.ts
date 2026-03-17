@@ -27,12 +27,15 @@ import { TransferStatus, UserRole } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { validateUploadedFile } from 'src/common/upload/validate-uploaded-file';
 
 import { AdminPayoutsService } from './admin.payouts.service';
 import { ProcessPayoutDto } from './dto/process-payout.dto';
 import { memoryStorage } from 'multer';
 import { AdminListPayoutRequestsDto } from './dto/admin-list-payout-requests.dto';
 import { StatusPayoutRequestDto } from './dto/status-payout-request.dto';
+
+const PROOF_IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png'] as const;
 
 @ApiTags('Admin Payouts')
 @ApiBearerAuth()
@@ -180,10 +183,12 @@ export class AdminPayoutsController {
             storage: memoryStorage(),
             limits: { fileSize: 2 * 1024 * 1024 }, // Max 2MB
             fileFilter: (_, file, cb) => {
-                if (!file.mimetype.match(/jpeg|jpg|png/)) {
+                // Exact whitelist — prevents regex substring bypass
+                // (e.g. "application/x-php+jpeg" would pass the old /jpeg|jpg|png/ regex)
+                if (!(PROOF_IMAGE_ALLOWED_TYPES as readonly string[]).includes(file.mimetype)) {
                     return cb(
                         new BadRequestException(
-                            'Only JPG, JPEG or PNG images are allowed',
+                            `Invalid file type. Allowed: ${PROOF_IMAGE_ALLOWED_TYPES.join(', ')}`,
                         ),
                         false,
                     );
@@ -224,11 +229,11 @@ export class AdminPayoutsController {
     ) {
         const adminUserId = req.user.sub;
 
-        console.log({
-            fileExists: !!proofImage,
-            bufferExists: !!proofImage?.buffer,
-            mimetype: proofImage?.mimetype,
-        });
+        // Magic bytes validation — confirms real file content matches declared type,
+        // catching spoofed Content-Type headers that bypassed the Multer fileFilter.
+        if (proofImage) {
+            await validateUploadedFile(proofImage, [...PROOF_IMAGE_ALLOWED_TYPES], 2);
+        }
 
         return this.adminPayoutsService.processPayout(
             adminUserId,

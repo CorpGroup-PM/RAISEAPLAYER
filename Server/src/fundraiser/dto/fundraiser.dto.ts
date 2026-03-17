@@ -1,5 +1,7 @@
 import { CampaignFor } from '@prisma/client';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsEnum,
   IsNotEmpty,
@@ -7,6 +9,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Min,
   MaxLength,
   MinLength,
   ValidateNested,
@@ -116,7 +119,10 @@ export class CreateFundraiserDto {
     description: 'List of player skills',
   })
   @IsArray()
+  @ArrayMinSize(0)
+  @ArrayMaxSize(20, { message: 'Skills cannot exceed 20 items' })
   @IsString({ each: true })
+  @MaxLength(50, { each: true, message: 'Each skill cannot exceed 50 characters' })
   skills: string[];
   // -------------------------
   // Location
@@ -161,11 +167,12 @@ export class CreateFundraiserDto {
   // -------------------------
   @ApiProperty({
     example: 250000,
-    description: 'Target amount to be raised (must be positive)',
-    minimum: 1,
+    description: 'Target amount to be raised (minimum ₹1000)',
+    minimum: 1000,
   })
   @Type(() => Number)
   @IsNumber()
   @IsPositive()
+  @Min(1000, { message: 'Goal amount must be at least ₹1000' })
   goalAmount: number;
 }

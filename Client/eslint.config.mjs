@@ -13,6 +13,12 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // B-10-2: Warn on console.log/warn in production code; allow console.error
+    rules: {
+      "no-console": ["warn", { allow: ["error"] }],
+    },
+  },
 ]);
 
 export default eslintConfig;

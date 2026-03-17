@@ -382,6 +382,47 @@
 }
 
 
+/* ================= CONFIRM MODAL (B-8-1) ================= */
+.confirm-warning {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+/* ================= REJECT TEMPLATES (B-8-2) ================= */
+.reject-templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.reject-template-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+  font-family: Inter, system-ui, sans-serif;
+  transition: all 0.15s;
+}
+
+.reject-template-chip:hover {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.reject-template-chip.active {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 600;
+}
+
 /* ================= ADMIN ACTION BAR ================= */
 @media (max-width: 640px) {
   .action-bar-inner {
@@ -839,8 +880,6 @@
 .highlight-item.full {
   flex-direction: row;
   align-items: center;
-  padding-top: 10px;
-  border-top: 1px solid #f3f4f6;
   gap: 10px;
 }
 
@@ -1265,13 +1304,6 @@
   margin: 24px 16px;
 }
 
-.admin-payout-section-title {
-  font-size: 20px;
-  font-weight: 800;
-  margin-bottom: 16px;
-  color: #0f172a;
-  letter-spacing: -0.01em;
-}
 
 .update-content.collapsed {
   display: -webkit-box;

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFundraiserDto } from './dto/fundraiser.dto';
 import { CampaignFor, CampaignStatus, Prisma } from '@prisma/client';
@@ -6,10 +6,13 @@ import { AwsS3Service } from 'src/aws/aws.service';
 import { PaginationDto } from './dto/pagination.dto';
 import { CreateUpdateDto } from './dto/create-update.dto';
 import { MailService } from 'src/mail/mail.service';
+import { CryptoHelper } from 'src/common/helpers/crypto.helper';
 import { CreateReviewDto, } from './dto/review.dto';
 
 @Injectable()
 export class FundraiserService {
+  private readonly logger = new Logger(FundraiserService.name);
+
   constructor(private readonly prisma: PrismaService,
     private readonly awsS3Service: AwsS3Service,
     private readonly mailService: MailService,
@@ -108,34 +111,54 @@ export class FundraiserService {
     }
 
     // -------------------------
-    // CREATE — atomic count check + insert to prevent race condition
+    // CREATE — atomic count check + insert (SERIALIZABLE prevents race condition)
     // -------------------------
-    const fundraiser = await this.prisma.$transaction(async (tx) => {
-      const count = await tx.fundraiser.count({
-        where: {
-          creatorId,
-          status: { notIn: ['COMPLETED', 'REJECTED'] },
+    let fundraiser: Awaited<ReturnType<typeof this.prisma.fundraiser.create>>;
+    try {
+      fundraiser = await this.prisma.$transaction(
+        async (tx) => {
+          const count = await tx.fundraiser.count({
+            where: {
+              creatorId,
+              status: { notIn: ['COMPLETED', 'REJECTED'] },
+            },
+          });
+          if (count >= 3) {
+            throw new ForbiddenException('Maximum 3 fundraisers allowed');
+          }
+          return tx.fundraiser.create({
+            data,
+            include: { beneficiaryOther: true },
+          });
         },
-      });
-      if (count >= 3) {
-        throw new ForbiddenException('Maximum 3 fundraisers allowed');
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (err) {
+      // Re-throw NestJS HTTP exceptions as-is (e.g. ForbiddenException from the count check)
+      if (err instanceof ForbiddenException || err instanceof BadRequestException) {
+        throw err;
       }
-      return tx.fundraiser.create({
-        data,
-        include: { beneficiaryOther: true },
-      });
-    });
+      // P2034 = serialization failure / write conflict — concurrent duplicate request
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2034') {
+        throw new ConflictException('Request conflict — please try again.');
+      }
+      throw err;
+    }
 
     // -------------------------
     // SEND EMAIL (AFTER SUCCESS)
     // -------------------------
-    await this.mailService.sendFundraiserCreatedMail(user.email, {
-      name: user.firstName ?? 'Player',
-      title: fundraiser.title,
-    });
+    try {
+      await this.mailService.sendFundraiserCreatedMail(user.email, {
+        name: user.firstName ?? 'Player',
+        title: fundraiser.title,
+      });
+    } catch (err) {
+      this.logger.error('Failed to send fundraiser created email', err);
+    }
 
     return {
-      message: 'Campaign submitted for review. We’ll notify you once it’s approved.',
+      message: "Campaign submitted for review. We'll notify you once it's approved.",
       fundraiser,
     };
   }
@@ -293,6 +316,15 @@ export class FundraiserService {
     const normalizedUnique = Array.from(
       new Set(cleaned.map((u) => this.normalizeYoutubeUrl(u))),
     );
+
+    //  Post-normalization guard: reject anything that isn't a YouTube domain
+    const YOUTUBE_URL_RE = /^https:\/\/(www\.)?youtube\.com\/|^https:\/\/youtu\.be\//;
+    const nonYoutube = normalizedUnique.filter((u) => !YOUTUBE_URL_RE.test(u));
+    if (nonYoutube.length) {
+      throw new BadRequestException(
+        `Only YouTube URLs are allowed: ${nonYoutube.join(', ')}`,
+      );
+    }
 
     //  Fetch existing URLs (if any) and check duplicates
     const existing = await this.prisma.fundraiserMedia.findUnique({
@@ -514,7 +546,7 @@ export class FundraiserService {
     };
   }
 
-  async getCampaignById(id: string) {
+  async getCampaignById(id: string, requestingUserId?: string) {
     const campaign = await this.prisma.fundraiser.findUnique({
       where: { id },
       include: {
@@ -576,6 +608,12 @@ export class FundraiserService {
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
     }
+
+    // Only the campaign creator may access private details (documents, recipient account)
+    if (requestingUserId && campaign.creatorId !== requestingUserId) {
+      throw new UnauthorizedException('You do not have access to this campaign');
+    }
+
     //  Handle anonymous donors
     const donations = campaign.donations.map((donation) => {
 
@@ -649,6 +687,17 @@ export class FundraiserService {
 
     const totalSupporters = supporters.size;
 
+    // Mask recipient account number — never expose plaintext to fundraiser client
+    let maskedRecipientAccount = campaign.recipientAccount;
+    if (campaign.recipientAccount?.accountNumber) {
+      let masked = '****';
+      try {
+        const plain = CryptoHelper.decryptField(campaign.recipientAccount.accountNumber);
+        masked = '*'.repeat(Math.max(0, plain.length - 4)) + plain.slice(-4);
+      } catch { /* keep '****' on decryption failure */ }
+      maskedRecipientAccount = { ...campaign.recipientAccount, accountNumber: masked };
+    }
+
     // FINAL RESPONSE
     return {
       success: true,
@@ -658,6 +707,7 @@ export class FundraiserService {
       data: {
         ...campaign,
         donations,
+        recipientAccount: maskedRecipientAccount,
       },
     };
   }
@@ -1219,13 +1269,13 @@ export class FundraiserService {
   }
 
   async review(dto: CreateReviewDto) {
-    
+    // isVerified is always false on creation; only admins can approve via admin endpoint
     const createdReview = await this.prisma.review.create({
       data: {
         name: dto.name.trim(),
         rating: dto.rating,
         message: dto.message.trim(),
-        isVerified: dto.isVerified,
+        isVerified: false,
       },
       select: {
         id: true,
@@ -1247,11 +1297,12 @@ export class FundraiserService {
     const reviews = await this.prisma.review.findMany({
       where: {
         isVerified: true,
+        deletedAt: null,
       },
       orderBy: {
         createdAt: 'desc',
       },
-    })
+    });
 
     return reviews;
   }

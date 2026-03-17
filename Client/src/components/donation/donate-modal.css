@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 /* MODAL */
@@ -21,11 +21,59 @@
 
 .donate-modal-scroll {
   max-height: 75vh;
-  /* scroll limit */
   overflow-y: auto;
-  /* scrollbar here */
   padding: 24px;
-  /* moved padding here */
+}
+
+/* Supporters modal — fixed header, scrollable list only */
+.supporters-modal {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  height: 70vh;
+  max-height: 600px;
+}
+
+.supporters-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.supporters-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.supporters-header button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+  padding: 0;
+}
+
+.supporters-scroll {
+  overflow-y: auto;
+  flex: 1;
+  padding: 12px 16px;
+}
+
+.supporters-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.supporters-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
 }
 
 .donate-modal-scroll::-webkit-scrollbar {
@@ -430,4 +478,37 @@
     opacity: 1;
     transform: none;
   }
+}
+/* ================= DONATION SUCCESS SCREEN (B-8-3) ================= */
+.donate-success-modal {
+  outline: none;
+}
+
+.donate-success-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0 8px;
+  text-align: center;
+}
+
+.donate-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 32px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donate-success-msg {
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.6;
+  max-width: 340px;
 }

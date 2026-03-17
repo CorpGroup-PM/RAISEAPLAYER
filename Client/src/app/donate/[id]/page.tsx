@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import "../../dashboard/campaigns/[id]/campaign-details.css";
@@ -77,6 +78,7 @@ export default function ExploreFundraiserDetailsPage() {
 
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [openDonate, setOpenDonate] = useState(false);
 
   const [imageMedia, setImageMedia] = useState<string[]>([]);
@@ -132,6 +134,7 @@ export default function ExploreFundraiserDetailsPage() {
     if (!id) return;
     try {
       setLoading(true);
+      setFetchError(false);
       const res = await api.get(`/fundraiser/${id}/public`);
 
       const data = res?.data?.data;
@@ -149,6 +152,7 @@ export default function ExploreFundraiserDetailsPage() {
       );
     } catch {
       setCampaign(null);
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -228,10 +232,18 @@ export default function ExploreFundraiserDetailsPage() {
     return <div className="dashboard-center">Loading campaign…</div>;
   }
 
+  if (fetchError) {
+    return (
+      <div className="dashboard-center">
+        Unable to load this campaign. Please check your connection and try again.
+      </div>
+    );
+  }
+
   if (!campaign || campaign.status !== "ACTIVE") {
     return (
       <div className="dashboard-center">
-        Campaign not available or no longer active.
+        This campaign is not available or is no longer active.
       </div>
     );
   }
@@ -268,10 +280,13 @@ export default function ExploreFundraiserDetailsPage() {
 
           {/* COVER */}
           <div className="cover-box">
-            <img
+            <Image
               src={campaign.coverImageURL || "/background.png"}
               alt="Campaign cover"
               className="cover-image"
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
           </div>
 
@@ -294,43 +309,48 @@ export default function ExploreFundraiserDetailsPage() {
           {/* SPORT / LEVEL / LOCATION */}
           <section className="highlights-card">
 
-            <div className="highlight-item">
-              <span>SPORT</span>
-              <span className="skill-chip">{campaign.sport}</span>
+            <div className="highlight-row">
+              <div className="highlight-item full">
+                <span className="highlight-label">Sport</span>
+                <span className="skill-chip">{campaign.sport}</span>
+              </div>
             </div>
 
-            <div className="highlight-item">
-              <span>LEVEL</span>
-              <span className="skill-chip">{campaign.level}</span>
-            </div>
-
-            <div className="highlight-item">
-              <span>LOCATION</span>
-              <span className="skill-chip">{campaign.city}, {campaign.state}</span>
-            </div>
-
-            <div className="highlight-item">
-              <span>DISCIPLINE</span>
-              <span className="skill-chip">{campaign.discipline || "—"}</span>
-            </div>
-
-            {Array.isArray(campaign.skills) &&
-              campaign.skills.length > 0 && (
+            {campaign.level && (
+              <div className="highlight-row">
                 <div className="highlight-item full">
-                  <span className="highlight-label">
-                    Key Skills
-                  </span>
+                  <span className="highlight-label">Level</span>
+                  <span className="skill-chip">{campaign.level}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="highlight-row">
+              <div className="highlight-item full">
+                <span className="highlight-label">Discipline</span>
+                <span className="skill-chip">{campaign.discipline || "—"}</span>
+              </div>
+            </div>
+
+            <div className="highlight-row">
+              <div className="highlight-item full">
+                <span className="highlight-label">Location</span>
+                <span className="skill-chip">{campaign.city}, {campaign.state}, {campaign.country}</span>
+              </div>
+            </div>
+
+            {Array.isArray(campaign.skills) && campaign.skills.length > 0 && (
+              <div className="highlight-row">
+                <div className="highlight-item full">
+                  <span className="highlight-label">Key Skills</span>
                   <div className="skill-chip-row">
-                    {campaign.skills.map(
-                      (skill: string, idx: number) => (
-                        <span className="skill-chip" key={idx}>
-                          {skill}
-                        </span>
-                      )
-                    )}
+                    {campaign.skills.map((skill: string, idx: number) => (
+                      <span className="skill-chip" key={idx}>{skill}</span>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
 
             {/* BENEFICIARY INSIDE SAME BOX */}
@@ -481,7 +501,7 @@ export default function ExploreFundraiserDetailsPage() {
                   <div className="gallery-image-container">
                     <div className="gallery-track" style={{ transform: `translateX(-${currentImage * 100}%)` }}>
                       {imageMedia.map((url, i) => (
-                        <img key={i} src={url} alt={`Campaign photo ${i + 1}`} className="gallery-image" loading="lazy" />
+                        <Image key={i} src={url} alt={`Campaign photo ${i + 1}`} className="gallery-image" width={800} height={550} />
                       ))}
                     </div>
                     {imageMedia.length > 1 && (
@@ -509,7 +529,12 @@ export default function ExploreFundraiserDetailsPage() {
                     <div className="gallery-track" style={{ transform: `translateX(-${currentVideo * 100}%)` }}>
                       {videoMedia.map((v, i) => (
                         <div className="video-box" key={i}>
-                          <iframe src={`${v.embedUrl}?rel=0`} title={`Campaign video ${i + 1}`} allowFullScreen />
+                          <iframe
+                            src={`${v.embedUrl}?rel=0`}
+                            title={`Campaign video ${i + 1}`}
+                            allowFullScreen
+                            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                          />
                         </div>
                       ))}
                     </div>

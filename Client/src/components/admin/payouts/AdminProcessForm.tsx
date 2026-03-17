@@ -126,11 +126,33 @@ export default function AdminProcessForm({
           <span>{file ? file.name : "Click to upload image"}</span>
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png"
             style={{ display: "none" }}
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            onChange={(e) => {
+              const selected = e.target.files?.[0] || null;
+              if (selected) {
+                const ALLOWED = ["image/jpeg", "image/png"];
+                const MAX_MB = 2;
+                if (!ALLOWED.includes(selected.type)) {
+                  setAlertMsg("Only JPEG or PNG images are allowed.");
+                  e.target.value = "";
+                  return;
+                }
+                if (selected.size > MAX_MB * 1024 * 1024) {
+                  setAlertMsg(
+                    `Payment proof is too large (${(selected.size / 1024 / 1024).toFixed(1)} MB). Maximum size is ${MAX_MB} MB — please reduce the image size and try again.`
+                  );
+                  e.target.value = "";
+                  return;
+                }
+              }
+              setFile(selected);
+            }}
           />
         </label>
+        <span style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+          JPEG or PNG · Max 2 MB
+        </span>
       </div>
 
       {/* Notes */}
