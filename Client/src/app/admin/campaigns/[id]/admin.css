@@ -1316,3 +1316,29 @@
 .update-content.expanded {
   display: block;
 }
+/* ── PAN Inline Header & Verified Chip ── */
+.pan-inline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pan-inline-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+}
+
+.pan-verified-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid #bbf7d0;
+}

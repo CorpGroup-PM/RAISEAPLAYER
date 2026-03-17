@@ -82,7 +82,6 @@ export default function UserProfile() {
     register,
     handleSubmit,
     watch,
-    setValue,
     reset,
     formState: { errors, isDirty, isSubmitting },
   } = useForm({
@@ -92,6 +91,12 @@ export default function UserProfile() {
   });
 
   const phoneValue = watch("phoneNumber");
+
+  /* ----------------------- REFRESH ON MOUNT ----------------------- */
+  useEffect(() => {
+    refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ----------------------- LOAD USER ----------------------- */
   useEffect(() => {
@@ -113,11 +118,15 @@ export default function UserProfile() {
 
   /* ----------------------- UPDATE PROFILE ----------------------- */
   const onSubmit = async (data: any) => {
-    const payload = {
+    const payload: any = {
       firstName: data.firstName,
       lastName: data.lastName,
       phoneNumber: data.phoneNumber,
-      panDetails: {
+    };
+
+    // Only include panDetails in the payload when PAN is NOT yet verified
+    if (!user?.panDetails?.isPanVerified) {
+      payload.panDetails = {
         panNumber: data.panNumber || null,
         panName: data.panName || null,
         address: data.address || null,
@@ -125,8 +134,8 @@ export default function UserProfile() {
         state: data.state || null,
         country: data.country || null,
         pincode: data.pincode || null,
-      },
-    };
+      };
+    }
 
     try {
       await UserService.updateProfile(payload);
@@ -170,6 +179,9 @@ export default function UserProfile() {
   /* ----------------------- GUARDS ----------------------- */
   if (!isLoaded) return null;
   if (!user) return <div>Please login</div>;
+
+  // Extract register result so we can call panReg.onChange after uppercasing
+  const panReg = register("panNumber");
 
   /* ----------------------- UI ----------------------- */
   return (
@@ -263,17 +275,40 @@ export default function UserProfile() {
 
           {/* PAN DETAILS */}
           <div className="up-section">
-            <h3 className="up-section-title">PAN Details</h3>
+            <h3 className="up-section-title">
+              PAN Details
+              {user.panDetails?.isPanVerified && (
+                <span className="pan-verified-badge">&#10003; Verified</span>
+              )}
+            </h3>
+
+            {user.panDetails?.isPanVerified && (
+              <p className="pan-verified-note">
+                Your PAN details have been verified by admin and cannot be edited.
+              </p>
+            )}
 
             <div className="up-field">
               <label>PAN Number</label>
               <input
-                {...register("panNumber")}
-                onChange={(e) =>
-                  setValue("panNumber", e.target.value.toUpperCase(), {
-                    shouldValidate: true,
-                  })
-                }
+                {...panReg}
+                readOnly={!!user.panDetails?.isPanVerified}
+                className={user.panDetails?.isPanVerified ? "up-input-readonly" : ""}
+                placeholder="e.g. ABCDE1234F"
+                maxLength={10}
+                onChange={(e) => {
+                  const raw = e.target.value.toUpperCase();
+                  // Enforce format char-by-char: LLLLL NNNN L (L=letter, N=number)
+                  let filtered = "";
+                  for (let i = 0; i < raw.length && i < 10; i++) {
+                    const ch = raw[i];
+                    if (i < 5 && /[A-Z]/.test(ch)) filtered += ch;
+                    else if (i >= 5 && i < 9 && /[0-9]/.test(ch)) filtered += ch;
+                    else if (i === 9 && /[A-Z]/.test(ch)) filtered += ch;
+                  }
+                  e.target.value = filtered;
+                  panReg.onChange(e);
+                }}
               />
               {errors.panNumber && (
                 <p className="error">{errors.panNumber.message}</p>
@@ -282,13 +317,20 @@ export default function UserProfile() {
 
             <div className="up-field">
               <label>Name on PAN</label>
-              <input {...register("panName")} />
-
+              <input
+                {...register("panName")}
+                readOnly={!!user.panDetails?.isPanVerified}
+                className={user.panDetails?.isPanVerified ? "up-input-readonly" : ""}
+              />
             </div>
 
             <div className="up-field">
               <label>Address</label>
-              <input {...register("address")} />
+              <input
+                {...register("address")}
+                readOnly={!!user.panDetails?.isPanVerified}
+                className={user.panDetails?.isPanVerified ? "up-input-readonly" : ""}
+              />
               {errors.address && (
                 <p className="error">{errors.address.message}</p>
               )}
@@ -297,7 +339,11 @@ export default function UserProfile() {
             <div className="up-row">
               <div className="up-field">
                 <label>City</label>
-                <input {...register("city")} />
+                <input
+                  {...register("city")}
+                  readOnly={!!user.panDetails?.isPanVerified}
+                  className={user.panDetails?.isPanVerified ? "up-input-readonly" : ""}
+                />
                 {errors.city && (
                   <p className="error">{errors.city.message}</p>
                 )}
@@ -305,7 +351,11 @@ export default function UserProfile() {
 
               <div className="up-field">
                 <label>State</label>
-                <input {...register("state")} />
+                <input
+                  {...register("state")}
+                  readOnly={!!user.panDetails?.isPanVerified}
+                  className={user.panDetails?.isPanVerified ? "up-input-readonly" : ""}
+                />
                 {errors.state && (
                   <p className="error">{errors.state.message}</p>
                 )}
@@ -315,7 +365,11 @@ export default function UserProfile() {
             <div className="up-row">
               <div className="up-field">
                 <label>Country</label>
-                <input {...register("country")} />
+                <input
+                  {...register("country")}
+                  readOnly={!!user.panDetails?.isPanVerified}
+                  className={user.panDetails?.isPanVerified ? "up-input-readonly" : ""}
+                />
                 {errors.country && (
                   <p className="error">{errors.country.message}</p>
                 )}
@@ -323,7 +377,11 @@ export default function UserProfile() {
 
               <div className="up-field">
                 <label>Pincode</label>
-                <input {...register("pincode")} />
+                <input
+                  {...register("pincode")}
+                  readOnly={!!user.panDetails?.isPanVerified}
+                  className={user.panDetails?.isPanVerified ? "up-input-readonly" : ""}
+                />
                 {errors.pincode && (
                   <p className="error">{errors.pincode.message}</p>
                 )}

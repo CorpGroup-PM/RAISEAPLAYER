@@ -79,6 +79,48 @@ export class AdminBankAccountService {
     return { success: true, count: data.length, data };
   }
 
+  async verifyPan(campaignId: string, adminId: string) {
+    const campaign = await this.prisma.fundraiser.findUnique({
+      where: { id: campaignId },
+      select: { creatorId: true },
+    });
+
+    if (!campaign) throw new NotFoundException('Campaign not found');
+
+    const panDetails = await this.prisma.panDetails.findUnique({
+      where: { userId: campaign.creatorId },
+      select: { id: true, isPanVerified: true },
+    });
+
+    if (!panDetails) throw new NotFoundException('PAN details not found for this campaign creator');
+
+    if (panDetails.isPanVerified) {
+      return { id: panDetails.id, isPanVerified: true };
+    }
+
+    const updated = await this.prisma.panDetails.update({
+      where: { id: panDetails.id },
+      data: {
+        isPanVerified: true,
+        panVerifiedById: adminId,
+        panVerifiedAt: new Date(),
+      },
+    });
+
+    await this.audit(adminId, 'PAN_VERIFIED', panDetails.id, 'PanDetails', {
+      campaignId,
+      userId: campaign.creatorId,
+    });
+
+    return {
+      message: 'PAN verified successfully.',
+      id: updated.id,
+      isPanVerified: updated.isPanVerified,
+      panVerifiedById: updated.panVerifiedById,
+      panVerifiedAt: updated.panVerifiedAt,
+    };
+  }
+
   async verifyRecipientAccount(id: string, adminId: string) {
     const account = await this.prisma.recipientAccount.findUnique({
       where: { id },

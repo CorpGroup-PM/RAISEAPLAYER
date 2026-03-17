@@ -64,4 +64,8 @@ export const AdminCampaignsService = {
   verifyBankAccount: (recipientAccountId: string) => {
     return api.put(`/admin/campaigns/${recipientAccountId}/verify`);
   },
+
+  verifyPan: (campaignId: string) => {
+    return api.put(`/admin/campaigns/${campaignId}/verify-pan`);
+  },
 };

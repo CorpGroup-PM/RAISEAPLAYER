@@ -314,6 +314,29 @@ export default function AdminCampaignDetailsPage() {
     }
   };
 
+  const handleVerifyPan = async () => {
+    if (!id) return;
+
+    try {
+      setActionLoading(true);
+      await AdminCampaignsService.verifyPan(id);
+      setCampaign((prev: any) => ({
+        ...prev,
+        creator: {
+          ...prev.creator,
+          panDetails: {
+            ...prev.creator?.panDetails,
+            isPanVerified: true,
+          },
+        },
+      }));
+    } catch (err) {
+      console.error("Failed to verify PAN", err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleVerifyDocument = async (documentId: string) => {
     await FundraiserDocumentsService.verifyDocument(documentId, {
       status: "VERIFIED",
@@ -554,6 +577,21 @@ export default function AdminCampaignDetailsPage() {
 
                   {showPan && (
                     <div className="pan-inline-card">
+                      <div className="pan-inline-header">
+                        <span className="pan-inline-title">PAN Details</span>
+                        {campaign.creator.panDetails?.isPanVerified ? (
+                          <span className="pan-verified-chip">&#10003; Verified</span>
+                        ) : (
+                          <button
+                            className="verify-btn"
+                            disabled={actionLoading}
+                            onClick={handleVerifyPan}
+                          >
+                            Verify PAN
+                          </button>
+                        )}
+                      </div>
+
                       <div>
                         <span className="label">PAN Number: </span>
                         <span className="value">
@@ -572,9 +610,9 @@ export default function AdminCampaignDetailsPage() {
                         <span className="label">Address: </span>
                         <span className="value">
                           {campaign.creator.panDetails
-                            ? `${campaign.creator.panDetails.address}, 
-               ${campaign.creator.panDetails.city}, 
-               ${campaign.creator.panDetails.state} - 
+                            ? `${campaign.creator.panDetails.address},
+               ${campaign.creator.panDetails.city},
+               ${campaign.creator.panDetails.state} -
                ${campaign.creator.panDetails.pincode}`
                             : "—"}
                         </span>

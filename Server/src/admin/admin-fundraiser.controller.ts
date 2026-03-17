@@ -241,6 +241,16 @@ export class AdminFundraiserController {
     }
 
     // ------------------------------------------------------------------
+    // VERIFY PAN DETAILS
+    // ------------------------------------------------------------------
+    @Put(':id/verify-pan')
+    @ApiOperation({ summary: 'Verify PAN details for campaign creator' })
+    @ApiParam({ name: 'id', example: 'campaign-uuid' })
+    async verifyPan(@Param('id') id: string, @Req() req: any) {
+        return this.bankAccountService.verifyPan(id, req.user.sub);
+    }
+
+    // ------------------------------------------------------------------
     // GET USER BY ID
     // ------------------------------------------------------------------
     @Get(':id/userinfo')

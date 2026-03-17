@@ -59,6 +59,7 @@ interface PanDetails {
   state: string | null;
   country: string | null;
   pincode: string | null;
+  isPanVerified?: boolean;
 }
 
 interface User {

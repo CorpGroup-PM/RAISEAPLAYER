@@ -175,6 +175,10 @@ model PanDetails {
   country   String?
   pincode   String?
 
+  isPanVerified   Boolean   @default(false)
+  panVerifiedById String?
+  panVerifiedAt   DateTime?
+
   user User @relation(fields: [userId], references: [id])
 }
 

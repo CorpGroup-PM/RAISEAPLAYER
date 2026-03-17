@@ -82,19 +82,33 @@ export class UserprofileService {
 
     //  PAN details update and create — encrypt panNumber before persisting
     if (panDetails) {
+      // Block editing if PAN is already admin-verified
+      const existing = await this.prisma.panDetails.findUnique({
+        where: { userId },
+        select: { isPanVerified: true },
+      });
+      if (existing?.isPanVerified) {
+        throw new BadRequestException('PAN details have been verified by admin and cannot be edited.');
+      }
+
       const { panNumber, ...restPanDetails } = panDetails;
-      const encryptedPanNumber = CryptoHelper.encryptField(panNumber);
+
+      // Only encrypt and update panNumber when a real, unmasked value is provided.
+      // Skip if empty/null or if it's the masked display value (starts with XXXXX).
+      const isRealPan = panNumber && !panNumber.startsWith('XXXXX');
+      const panUpdateData: Record<string, any> = { ...restPanDetails };
+      if (isRealPan) {
+        panUpdateData.panNumber = CryptoHelper.encryptField(panNumber);
+      }
+
       await this.prisma.panDetails.upsert({
         where: { userId },
         create: {
           userId,
           ...restPanDetails,
-          panNumber: encryptedPanNumber,
+          panNumber: isRealPan ? CryptoHelper.encryptField(panNumber!) : null,
         },
-        update: {
-          ...restPanDetails,
-          panNumber: encryptedPanNumber,
-        },
+        update: panUpdateData,
       });
     }
 
