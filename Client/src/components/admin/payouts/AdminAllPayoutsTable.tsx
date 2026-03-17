@@ -270,7 +270,7 @@ export default function AdminAllPayoutsTable() {
               {activePayout?.payout?.notes?.trim() && (
                 <div className="apModalRow">
                   <span className="apModalLabel">Note</span>
-                  <span className="apModalValue">{activePayout.payout.notes.trim()}</span>
+                  <span className="apModalValue">{activePayout.payout?.notes?.trim()}</span>
                 </div>
               )}
 
@@ -285,7 +285,7 @@ export default function AdminAllPayoutsTable() {
                   <button
                     className="apBtn apBtnPrimary"
                     style={{ marginTop: 8 }}
-                    onClick={() => window.open(activePayout.payout.proofImageUrl, "_blank")}
+                    onClick={() => window.open(activePayout.payout?.proofImageUrl ?? undefined, "_blank")}
                   >
                     View Full Image
                   </button>
