@@ -2,9 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UploadedFile, U
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { SportsDocumentType, UserRole } from '@prisma/client';
-import { Throttle } from '@nestjs/throttler';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
-import { IpThrottlerGuard } from 'src/common/guards/throttler/ip-throttler.guard';
 import { validateUploadedFile } from 'src/common/upload/validate-uploaded-file';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { FundraiserDocumentsService } from './fundraiser-documents.service';
@@ -22,8 +20,7 @@ export class FundraiserDocumentsController {
         summary: 'Upload fundraiser document',
         description: 'Uploads a PDF document for a fundraiser with metadata such as type, title, and visibility.',
     })
-    @UseGuards(IpThrottlerGuard, AccessTokenGuard)
-    @Throttle({ upload: { limit: 20, ttl: 3600000 } })
+    @UseGuards(AccessTokenGuard)
     @UseInterceptors(
         FileInterceptor('document', {
             limits: { fileSize: 5 * 1024 * 1024 }, // 5MB

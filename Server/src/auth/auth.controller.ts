@@ -22,7 +22,6 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
-import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
 import { OAuthCodeStore } from './oauth-code.store';
@@ -37,8 +36,6 @@ import { VerifyResetOtpDto } from './dto/reset-otpverify.dto';
 
 import { AccessTokenGuard } from '../common/guards/accessToken.guard';
 import { RefreshTokenGuard } from '../common/guards/refreshToken.guard';
-import { LoginThrottlerGuard } from '../common/guards/throttler/login-throttler.guard';
-import { OtpThrottlerGuard } from '../common/guards/throttler/otp-throttler.guard';
 
 /** Build cookie options for the HttpOnly refresh_token cookie. */
 function refreshCookieOptions(): CookieOptions {
@@ -79,8 +76,6 @@ export class AuthController {
   // SEND OTP  -- rate limited: max 8 per minute per IP
   // ------------------------------------------------------------------
   @Post('send-otp')
-  @UseGuards(OtpThrottlerGuard)
-  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @ApiOperation({
     summary: 'Send OTP (email / phone)',
     description: 'Sending OTP To Email.'
@@ -94,8 +89,6 @@ export class AuthController {
   // VERIFY EMAIL OTP -- rate limited: max 8 per minute per IP
   // ------------------------------------------------------------------
   @Post('verify-email')
-  @UseGuards(OtpThrottlerGuard)
-  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @ApiOperation({
     summary: 'Verify email using OTP',
     description: 'Validates OTP to confirm the user\'s email address.'
@@ -214,7 +207,6 @@ export class AuthController {
   // ------------------------------------------------------------------
   @Post('social/exchange')
   @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
   @ApiExcludeEndpoint()
   exchangeOAuthCode(
     @Body() dto: ExchangeOAuthCodeDto,
@@ -232,8 +224,6 @@ export class AuthController {
   // ------------------------------------------------------------------
   // FORGOT PASSWORD
   // ------------------------------------------------------------------
-  @UseGuards(OtpThrottlerGuard)
-  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -249,8 +239,6 @@ export class AuthController {
   // ------------------------------------------------------------------
   // VERIFY RESET OTP
   // ------------------------------------------------------------------
-  @UseGuards(OtpThrottlerGuard)
-  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @Post('verify-reset-otp')
   @ApiOperation({
     summary: 'Verify password reset OTP',
@@ -264,8 +252,6 @@ export class AuthController {
   // ------------------------------------------------------------------
   // RESET PASSWORD
   // ------------------------------------------------------------------
-  @UseGuards(LoginThrottlerGuard)
-  @Throttle({ short: { limit: 8, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

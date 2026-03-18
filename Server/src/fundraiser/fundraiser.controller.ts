@@ -24,10 +24,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { Throttle } from '@nestjs/throttler';
 import { FundraiserService } from './fundraiser.service';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
-import { IpThrottlerGuard } from 'src/common/guards/throttler/ip-throttler.guard';
 import { CreateFundraiserDto } from './dto/fundraiser.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { createFileInterceptorOptions } from 'src/common/upload/file-upload.helper';
@@ -382,8 +380,6 @@ export class FundraiserController {
   //Review 
   //=======================================
   @Post('/review')
-  @UseGuards(IpThrottlerGuard)
-  @Throttle({ contact: { limit: 3, ttl: 3600000 } })
   async review( @Body() dto: CreateReviewDto) {
     return await this.fundraiserService.review(
       dto,);
