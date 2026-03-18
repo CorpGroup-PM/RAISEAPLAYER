@@ -116,6 +116,7 @@ model User {
   fundraisersCreated       Fundraiser[]          @relation("FundraiserCreator")
   fundraisersBeneficiary   Fundraiser[]          @relation("FundraiserBeneficiaryUser")
   donations                Donation[]            @relation("RegisteredDonor")
+  foundationDonations      FoundationDonation[]  @relation("FoundationDonor")
   processedPayouts         Payout[]              @relation("PayoutProcessedBy")
   adminLogs                AdminLog[]
   otps                     EmailOtp[]
@@ -529,4 +530,58 @@ model Review {
   deletedAt  DateTime? @map("deleted_at")
 
   @@map("reveiw")
+}
+
+// ----------------------------------------------------------------------
+// FOUNDATION DEVELOPMENT DONATIONS
+// ----------------------------------------------------------------------
+
+model FoundationDonation {
+  id          String  @id @default(uuid())
+  donorId     String? @map("donor_id")
+  donorName   String? @map("donor_name")
+
+  guestName   String? @map("guest_name")
+  guestEmail  String? @map("guest_email")
+  guestMobile String? @map("guest_mobile")
+
+  amount    Decimal       @db.Decimal(15, 2)
+  currency  String        @default("INR")
+  status    PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  donor   User?              @relation("FoundationDonor", fields: [donorId], references: [id])
+  payment FoundationPayment?
+
+  @@index([donorId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("foundation_donations")
+}
+
+model FoundationPayment {
+  id        String          @id @default(uuid())
+  donationId String         @unique @map("donation_id")
+  provider  PaymentProvider @default(RAZORPAY)
+
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String?
+
+  status      PaymentStatus @default(PENDING)
+  rawResponse Json?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  donation FoundationDonation @relation(fields: [donationId], references: [id])
+
+  @@index([status])
+  @@map("foundation_payments")
+}
+
+model SponsorClick {
+  id        String   @id @default(uuid())
+  userType  String   @default("GUEST") @map("user_type") // USER or GUEST
+  clickedAt DateTime @default(now()) @map("clicked_at")
+
+  @@map("sponsor_clicks")
 }

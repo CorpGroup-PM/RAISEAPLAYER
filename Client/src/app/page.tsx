@@ -4,6 +4,7 @@ import "./home.css";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FundraiserService } from "@/services/fundraiser.service";
+import { AnalyticsService } from "@/services/analytics.service";
 import { useStartFundraiser } from "@/hooks/useStartFundraiser";
 import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
 import ShareButton from "@/components/ShareButton/ShareButton";
@@ -125,6 +126,10 @@ export default function Home() {
     loadPublicReviews();
   }, []);
 
+  const handleSponsorClick = async () => {
+    try { await AnalyticsService.trackSponsorClick(); } catch { /* non-blocking */ }
+  };
+
   // Hide fixed sponsor sidebar when footer enters the viewport
   useEffect(() => {
     const checkFooter = () => {
@@ -193,6 +198,13 @@ export default function Home() {
                   disabled={kycCheckLoading}
                 >
                   {kycCheckLoading ? "Checking..." : "Start a fundraiser"}
+                </button>
+
+                <button
+                  className="home-secondaryBtn1"
+                  onClick={() => router.push("/foundation-donate")}
+                >
+                  DONATE FOR FOUNDATION DEVELOPMENT
                 </button>
               </div>
 
@@ -308,6 +320,7 @@ export default function Home() {
               <p className="sbEyebrow">{s.label}</p>
               <a
                 href={s.href}
+                onClick={handleSponsorClick}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="sbLogoWrap"
@@ -318,6 +331,7 @@ export default function Home() {
                 <p className="sbSponsorTagline">{s.tagline}</p>
                 <a
                   href={s.href}
+                  onClick={handleSponsorClick}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="sbVisitBtn"
@@ -328,6 +342,7 @@ export default function Home() {
             </div>
             <a
               href={s.href}
+              onClick={handleSponsorClick}
               target="_blank"
               rel="noopener noreferrer"
               className="mobileSportsmartPreviewLink"
@@ -732,6 +747,7 @@ export default function Home() {
                   <p className="sbEyebrow">{s.label}</p>
                   <a
                     href={s.href}
+                    onClick={handleSponsorClick}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="sbLogoWrap"
@@ -741,6 +757,7 @@ export default function Home() {
                   <p className="sbSponsorTagline">{s.tagline}</p>
                   <a
                     href={s.href}
+                    onClick={handleSponsorClick}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="sbVisitBtn"
@@ -750,6 +767,7 @@ export default function Home() {
 
                   <a
                     href={s.href}
+                    onClick={handleSponsorClick}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="sbPreviewLink"

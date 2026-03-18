@@ -6,8 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import "./Navbar.css";
 import { usePathname } from "next/navigation";
 
-import { useStartFundraiser } from "@/hooks/useStartFundraiser";
-import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout, isLoaded } = useAuth();
@@ -16,13 +14,6 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
-  const {
-    handleStartFundraiser,
-    kycCheckLoading,
-    isKycModalOpen,
-    closeKycModal,
-  } = useStartFundraiser();
-
   // Close mobile menu on route change
   useEffect(() => {
     setMenuOpen(false);
@@ -80,14 +71,12 @@ export default function Navbar() {
         </ul>
 
         <div className="rp-right">
-          {/* Start Fundraiser */}
-          <button
-            className="rp-start-btn desktop-only"
-            onClick={handleStartFundraiser}
-            disabled={kycCheckLoading}
-          >
-            {kycCheckLoading ? "Checking..." : "Start a fundraiser"}
-          </button>
+          {/* Foundation Donation Button — Desktop */}
+          <Link href="/foundation-donate">
+            <button className="rp-start-btn desktop-only">
+              DONATE FOR FOUNDATION DEVELOPMENT
+            </button>
+          </Link>
 
           <div ref={profileRef} className="desktop-only">
             {/* Profile Icon */}
@@ -304,7 +293,6 @@ export default function Navbar() {
         <div className="rp-overlay" onClick={() => setMenuOpen(false)} />
       )}
 
-      <PanKycModal isOpen={isKycModalOpen} onClose={closeKycModal} />
     </>
   );
 }

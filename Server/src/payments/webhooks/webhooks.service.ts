@@ -29,10 +29,12 @@ export class WebhooksService {
 
     if (event === 'payment.captured') {
       await this.handlePaymentCaptured(payload);
+      await this.handleFoundationPaymentCaptured(payload);
     }
 
     if (event === 'payment.failed') {
       await this.handlePaymentFailed(payload);
+      await this.handleFoundationPaymentFailed(payload);
     }
   }
 
@@ -175,6 +177,69 @@ private async sendPostPaymentNotifications(
     );
   }
 }
+
+  private async handleFoundationPaymentCaptured(payload: any) {
+    const paymentEntity = payload?.payload?.payment?.entity;
+    if (!paymentEntity) return;
+
+    const razorpayOrderId = paymentEntity.order_id;
+    const razorpayPaymentId = paymentEntity.id;
+
+    const foundationPayment = await this.prisma.foundationPayment.findUnique({
+      where: { razorpayOrderId },
+    });
+
+    if (!foundationPayment || foundationPayment.status === PaymentStatus.SUCCESS) return;
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.foundationPayment.updateMany({
+          where: { id: foundationPayment.id, status: PaymentStatus.PENDING },
+          data: {
+            razorpayPaymentId,
+            status: PaymentStatus.SUCCESS,
+            rawResponse: payload,
+          },
+        });
+
+        if (updated.count === 0) return;
+
+        await tx.foundationDonation.update({
+          where: { id: foundationPayment.donationId },
+          data: { status: PaymentStatus.SUCCESS },
+        });
+      });
+    } catch (err) {
+      this.logger.error(
+        `[CRITICAL] Foundation payment update failed for payment ${foundationPayment.id}`,
+        err,
+      );
+    }
+  }
+
+  private async handleFoundationPaymentFailed(payload: any) {
+    const paymentEntity = payload?.payload?.payment?.entity;
+    if (!paymentEntity) return;
+
+    const razorpayOrderId = paymentEntity.order_id;
+
+    const foundationPayment = await this.prisma.foundationPayment.findUnique({
+      where: { razorpayOrderId },
+    });
+
+    if (!foundationPayment || foundationPayment.status !== PaymentStatus.PENDING) return;
+
+    await this.prisma.$transaction([
+      this.prisma.foundationPayment.update({
+        where: { id: foundationPayment.id },
+        data: { status: PaymentStatus.FAILED, rawResponse: payload },
+      }),
+      this.prisma.foundationDonation.update({
+        where: { id: foundationPayment.donationId },
+        data: { status: PaymentStatus.FAILED },
+      }),
+    ]);
+  }
 
   private async handlePaymentFailed(payload: any) {
     const paymentEntity = payload.payload.payment.entity;

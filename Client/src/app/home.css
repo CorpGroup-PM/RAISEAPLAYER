@@ -1933,8 +1933,8 @@
   cursor: pointer;
   padding: 13px 26px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #ff7a18 0%, #ff9f43 100%);
-  color: #ffffff;
+  background: white;
+  color: black;
   font-weight: 700;
   font-size: 15px;
   box-shadow: 0 8px 24px rgba(255, 122, 24, 0.3);
@@ -1955,13 +1955,34 @@
   cursor: pointer;
   padding: 13px 26px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #0f172a;
+  background: linear-gradient(135deg, #ff7a18 0%, #ff9f43 100%);
+  color: white;
   font-weight: 700;
   font-size: 15px;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(8px);
+}
+
+.home-secondaryBtn1 {
+  border: 1.5px solid rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  padding: 13px 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .home-secondaryBtn1 {
+    display: block;
+  }
 }
 
 .home-secondaryBtn:hover {

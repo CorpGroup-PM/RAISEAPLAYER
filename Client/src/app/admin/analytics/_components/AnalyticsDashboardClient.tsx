@@ -88,13 +88,15 @@ export default function AnalyticsDashboardClient() {
     setError("");
 
     try {
-      const [overview, fundraisers, donations, withdrawals, payouts] = await Promise.all(
+      const [overview, fundraisers, donations, withdrawals, payouts, sponsorClicks, foundationDonations] = await Promise.all(
         [
           AnalyticsService.overview({ from: f, to: t }),
           AnalyticsService.fundraisers({ from: f, to: t }),
           AnalyticsService.donations({ from: f, to: t }),
           AnalyticsService.withdrawals({ from: f, to: t }),
           AnalyticsService.payouts({ from: f, to: t }),
+          AnalyticsService.sponsorClicks(),
+          AnalyticsService.foundationDonations(),
         ],
       );
 
@@ -102,7 +104,15 @@ export default function AnalyticsDashboardClient() {
       const payoutsData = payouts.data;
 
       setData({
-        overview: overview.data,
+        overview: {
+          ...overview.data,
+          cards: {
+            ...overview.data?.cards,
+            sponsorClicks: sponsorClicks.data?.total ?? 0,
+            foundationDonationsCount: foundationDonations.data?.totalDonations ?? 0,
+            foundationDonationsAmount: foundationDonations.data?.totalAmount ?? 0,
+          },
+        },
         fundraisers: fundraisers.data,
         donations: donations.data,
 

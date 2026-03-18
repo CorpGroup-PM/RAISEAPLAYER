@@ -43,6 +43,10 @@
   padding: 0;
 }
 
+#gapn{
+   gap: 18px;
+}
+
 /* LI styling (your style) */
 .rp-menu li {
   font-size: 15px;
@@ -84,9 +88,9 @@
   background: #ff7a21;
   color: #fff;
   border: none;
-  border-radius: 999px;
-  padding: 9px 22px;
-  font-size: 15px;
+  /* border-radius: 999px; */
+  padding: 9px 9px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, box-shadow 0.15s ease;

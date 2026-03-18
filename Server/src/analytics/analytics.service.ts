@@ -512,6 +512,57 @@ export class AnalyticsService {
         };
     }
 
+    async trackSponsorClick(userType: 'USER' | 'GUEST') {
+        await this.prisma.sponsorClick.create({ data: { userType } });
+    }
+
+    async getFoundationDonationsList() {
+        const rows = await this.prisma.foundationDonation.findMany({
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                donorId: true,
+                donorName: true,
+                guestName: true,
+                guestEmail: true,
+                guestMobile: true,
+                amount: true,
+                currency: true,
+                status: true,
+                createdAt: true,
+            },
+        });
+        return rows;
+    }
+
+    async getFoundationDonationStats() {
+        const [totalCount, userCount, guestCount, amountAgg] = await Promise.all([
+            this.prisma.foundationDonation.count({ where: { status: 'SUCCESS' } }),
+            this.prisma.foundationDonation.count({ where: { status: 'SUCCESS', donorId: { not: null } } }),
+            this.prisma.foundationDonation.count({ where: { status: 'SUCCESS', donorId: null } }),
+            this.prisma.foundationDonation.aggregate({
+                where: { status: 'SUCCESS' },
+                _sum: { amount: true },
+            }),
+        ]);
+
+        return {
+            totalDonations: totalCount,
+            userDonations: userCount,
+            guestDonations: guestCount,
+            totalAmount: decimalToNumber(amountAgg._sum.amount),
+        };
+    }
+
+    async getSponsorClickCount() {
+        const [total, user, guest] = await Promise.all([
+            this.prisma.sponsorClick.count(),
+            this.prisma.sponsorClick.count({ where: { userType: 'USER' } }),
+            this.prisma.sponsorClick.count({ where: { userType: 'GUEST' } }),
+        ]);
+        return { total, user, guest };
+    }
+
     async getDocumentsAnalytics() {
 
         //  Document Verification Status Breakdown

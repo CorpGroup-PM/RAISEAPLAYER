@@ -19,4 +19,16 @@ export const AnalyticsService = {
   documents(params?: { from?: string; to?: string }) {
     return api.get("/admin/analytics/documents", { params });
   },
+  trackSponsorClick() {
+    return api.post("/analytics/sponsor-click");
+  },
+  sponsorClicks() {
+    return api.get("/admin/analytics/sponsor-clicks");
+  },
+  foundationDonations() {
+    return api.get("/admin/analytics/foundation-donations");
+  },
+  foundationDonationsList() {
+    return api.get("/admin/analytics/foundation-donations/list");
+  },
 };

@@ -99,4 +99,22 @@ export class AnalyticsController {
 
         return this.service.getDocumentsAnalytics();
     }
+
+    @Get('sponsor-clicks')
+    @ApiOperation({ summary: 'Total SportsMart sponsor click-throughs' })
+    async sponsorClicks() {
+        return this.service.getSponsorClickCount();
+    }
+
+    @Get('foundation-donations')
+    @ApiOperation({ summary: 'Foundation development donation stats' })
+    async foundationDonations() {
+        return this.service.getFoundationDonationStats();
+    }
+
+    @Get('foundation-donations/list')
+    @ApiOperation({ summary: 'Foundation development donation records list' })
+    async foundationDonationsList() {
+        return this.service.getFoundationDonationsList();
+    }
 }

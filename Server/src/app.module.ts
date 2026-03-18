@@ -23,6 +23,7 @@ import { PayoutsModule } from './payouts/payouts.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ReceiptService } from './receipt/receipt.service';
 import { ContactusModule } from './contactus/contactus.module';
+import { FoundationModule } from './foundation/foundation.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { VirusScanModule } from './common/virus-scan/virus-scan.module';
@@ -95,6 +96,7 @@ import { VirusScanModule } from './common/virus-scan/virus-scan.module';
     PayoutRequestsModule,
     PayoutsModule,
     ContactusModule,
+    FoundationModule,
     AnalyticsModule,
   
   ],

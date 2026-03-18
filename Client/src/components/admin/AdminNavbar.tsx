@@ -48,7 +48,7 @@ export default function AdminNavbar() {
         </div>
 
         {/* DESKTOP ADMIN MENU */}
-        <ul className="rp-menu">
+        <ul className="rp-menu" id="gapn">
           <li
             className={pathname.startsWith("/admin/analytics") ? "active" : ""}
            
@@ -82,6 +82,11 @@ export default function AdminNavbar() {
             }
           >
             <Link href="/admin/FoundationFunds">Foundation Funds</Link>
+          </li>
+          <li
+            className={pathname.startsWith("/admin/foundation-development") ? "active" : ""}
+          >
+            <Link href="/admin/foundation-development">Foundation Development</Link>
           </li>
           <li
             className={pathname.startsWith("/admin/bank-accounts") ? "active" : ""}
@@ -194,6 +199,12 @@ export default function AdminNavbar() {
             onClick={() => setMenuOpen(false)}
           >
             <Link href="/admin/FoundationFunds">Foundation Funds</Link>
+          </li>
+          <li
+            className={pathname.startsWith("/admin/foundation-development") ? "active" : ""}
+            onClick={() => setMenuOpen(false)}
+          >
+            <Link href="/admin/foundation-development">Foundation Development</Link>
           </li>
 
           <li

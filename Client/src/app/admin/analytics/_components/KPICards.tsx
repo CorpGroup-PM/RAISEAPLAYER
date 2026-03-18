@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   IndianRupee, TrendingUp, Users, Target, Clock,
-  FileText, Building2, Star, XCircle, CreditCard, ArrowUpCircle, AlertTriangle,
+  FileText, Building2, Star, XCircle, CreditCard, ArrowUpCircle, AlertTriangle, ExternalLink, Heart,
 } from "lucide-react";
 import { inr, n, num } from "@/lib/format";
 import { Skeleton } from "./Skeletons";
@@ -125,6 +125,21 @@ const ITEMS = [
     iconType: "warn" as const,
     Icon: ArrowUpCircle,
     isAlert: true,
+  },
+  {
+    label: "SportsMart Clicks",
+    key: "sponsorClicks",
+    fmt: (v: number) => num(v),
+    iconType: "accent" as const,
+    Icon: ExternalLink,
+  },
+  {
+    label: "Foundation Development",
+    key: "foundationDonationsAmount",
+    fmt: (v: number) => inr(v),
+    link: "/admin/foundation-development",
+    iconType: "good" as const,
+    Icon: Heart,
   },
 ];
 
