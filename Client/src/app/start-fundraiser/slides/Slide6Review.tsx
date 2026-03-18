@@ -20,8 +20,10 @@ export default function Slide6Review({
   back,
 }: any) {
   const [error, setError] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
+  if (isSubmitting) return;
   // 1️⃣ Validate goal amount
   const result = goalAmountSchema.safeParse({
     goalAmount: draft.goalAmount,
@@ -69,12 +71,13 @@ console.log("Payload story:", payload.story);
  // console.log('FINAL PAYLOAD SENT TO BACKEND:', payload);
 
   // 3️⃣ API CALL
+  setIsSubmitting(true);
   try {
-    const response = await FundraiserService.createFundraiser(payload);
-   // console.log('Fundraiser created:', response.data);
-     window.location.href = '/dashboard';
+    await FundraiserService.createFundraiser(payload);
+    window.location.href = '/dashboard';
   } catch (err: any) {
     console.error('Create fundraiser failed', err);
+    setIsSubmitting(false);
   }
 };
 
@@ -101,8 +104,8 @@ console.log("Payload story:", payload.story);
         <button className="btn-secondary" onClick={back}>
           Previous
         </button>
-        <button className="btn-primary" onClick={handleSubmit}>
-          Submit for Review
+        <button className="btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? 'Submitting...' : 'Submit for Review'}
         </button>
       </div>
     </SlideLayout>
