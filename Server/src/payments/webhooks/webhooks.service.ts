@@ -229,8 +229,8 @@ private async sendPostPaymentNotifications(
 
     if (!processed) return;
 
-    // Fire-and-forget thank-you email to the donor
-    this.sendFoundationPostPaymentEmail(foundationPayment).catch((err) =>
+    // Fire-and-forget thank-you email + receipt PDF to the donor
+    this.sendFoundationPostPaymentEmail(foundationPayment, razorpayPaymentId).catch((err) =>
       this.logger.error(
         `Unhandled error sending foundation donor email for payment ${foundationPayment.id}`,
         err,
@@ -238,21 +238,46 @@ private async sendPostPaymentNotifications(
     );
   }
 
-  private async sendFoundationPostPaymentEmail(foundationPayment: any) {
+  private async sendFoundationPostPaymentEmail(
+    foundationPayment: any,
+    razorpayPaymentId: string,
+  ) {
     const donation = foundationPayment.donation;
     const donorEmail = donation.guestEmail ?? donation.donor?.email;
 
     if (!donorEmail) return;
 
-    const donorName =
-      donation.guestName ?? donation.donorName ?? 'Supporter';
-
+    const donorName = donation.guestName ?? donation.donorName ?? 'Supporter';
     const amount = `₹${Number(donation.amount).toLocaleString('en-IN')}`;
 
+    // Generate PDF receipt (best-effort)
+    let receiptPdf: Buffer | undefined;
+    try {
+      const receiptNumber = `RAP-FD-${new Date().getFullYear()}-${foundationPayment.id}`;
+      receiptPdf = await this.receiptService.generateDonationReceipt({
+        receiptNumber,
+        donorName,
+        donorEmail,
+        campaignTitle: 'Foundation Development',
+        fundraiserId: donation.id,
+        fundraiserOwner: 'RaiseAPlayer Foundation',
+        amount: Number(donation.amount),
+        paymentId: razorpayPaymentId,
+        donatedAt: foundationPayment.createdAt,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to generate foundation receipt for payment ${foundationPayment.id}`,
+        err,
+      );
+    }
+
+    // Send thank-you email with receipt attached (best-effort)
     try {
       await this.mailService.sendFoundationDonorThankYouMail(donorEmail, {
         donorName,
         amount,
+        receiptPdf,
       });
     } catch (err) {
       this.logger.error(

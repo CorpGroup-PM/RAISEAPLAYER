@@ -558,6 +558,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
     data: {
       donorName: string;
       amount: string;
+      receiptPdf?: Buffer;
     },
   ) {
     const body = this.renderTemplate('foundation/foundation-thankyou.hbs', data);
@@ -569,10 +570,21 @@ a{color:#b42318;text-decoration:none;font-weight:900}
       css,
     });
 
+    const attachments = data.receiptPdf
+      ? [
+          {
+            filename: 'RaiseAPlayer-Foundation-Receipt.pdf',
+            content: data.receiptPdf,
+            contentType: 'application/pdf',
+          },
+        ]
+      : undefined;
+
     await this.sendMail(
       email,
       '💙 Thank You for Your Foundation Donation',
       html,
+      attachments,
     );
   }
 
