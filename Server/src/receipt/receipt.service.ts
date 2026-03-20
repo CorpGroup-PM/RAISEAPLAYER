@@ -67,13 +67,15 @@ export class ReceiptService {
       // skip if logo missing
     }
 
-    // "PAID" badge — rendered before brand name to avoid PDFKit cursor issue
-    doc.roundedRect(W - mx - 54, 30, 54, 22, 11).fill('#15803d');
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9)
-      .fillColor(C.white)
-      .text('PAID', W - mx - 54, 38, { width: 54, align: 'center' });
+    // "PAID" badge — hidden for foundation receipts
+    if (!data.hideFundraiserDetails) {
+      doc.roundedRect(W - mx - 54, 30, 54, 22, 11).fill('#15803d');
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .fillColor(C.white)
+        .text('PAID', W - mx - 54, 38, { width: 54, align: 'center' });
+    }
 
     // Brand name
     doc
