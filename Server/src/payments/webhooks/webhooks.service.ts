@@ -258,12 +258,10 @@ private async sendPostPaymentNotifications(
         receiptNumber,
         donorName,
         donorEmail,
-        campaignTitle: 'Foundation Development',
-        fundraiserId: donation.id,
-        fundraiserOwner: 'RaiseAPlayer Foundation',
         amount: Number(donation.amount),
         paymentId: razorpayPaymentId,
         donatedAt: foundationPayment.createdAt,
+        hideFundraiserDetails: true,
       });
     } catch (err) {
       this.logger.error(

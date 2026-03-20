@@ -32,12 +32,13 @@ export class ReceiptService {
     receiptNumber: string;
     donorName: string;
     donorEmail: string;
-    campaignTitle: string;
-    fundraiserId: string;
-    fundraiserOwner: string;
+    campaignTitle?: string;
+    fundraiserId?: string;
+    fundraiserOwner?: string;
     amount: number;
     paymentId: string;
     donatedAt: Date;
+    hideFundraiserDetails?: boolean;
   }): Promise<Buffer> {
     const doc = new PDFDocument({ size: 'A4', margin: 0 });
     const buffers: Buffer[] = [];
@@ -161,36 +162,38 @@ export class ReceiptService {
 
     y += 42;
 
-    // ── FUNDRAISER SECTION ────────────────────────────────────
-    y = this.sectionHeader(doc, 'Fundraiser Details', mx, y, cw, C.blueMid);
+    // ── FUNDRAISER SECTION (hidden for foundation donations) ─
+    if (!data.hideFundraiserDetails) {
+      y = this.sectionHeader(doc, 'Fundraiser Details', mx, y, cw, C.blueMid);
 
-    // Campaign Name — full width so long titles never overflow into the right column
-    doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
-    doc.text('CAMPAIGN NAME', mx + 28, y + 2);
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.textDark);
-    doc.text(data.campaignTitle, mx + 28, y + 13, {
-      width: cw - 56,
-      lineBreak: true,
-    });
-    const titleLines = Math.ceil(
-      doc.widthOfString(data.campaignTitle) / (cw - 56),
-    );
-    y += 16 + Math.max(1, titleLines) * 14 + 8;
+      // Campaign Name — full width so long titles never overflow into the right column
+      doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
+      doc.text('CAMPAIGN NAME', mx + 28, y + 2);
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(C.textDark);
+      doc.text(data.campaignTitle ?? '', mx + 28, y + 13, {
+        width: cw - 56,
+        lineBreak: true,
+      });
+      const titleLines = Math.ceil(
+        doc.widthOfString(data.campaignTitle ?? '') / (cw - 56),
+      );
+      y += 16 + Math.max(1, titleLines) * 14 + 8;
 
-    // Campaign ID | Campaign Organizer on the same row below
-    doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
-    doc.text('CAMPAIGN ID', mx + 28, y + 2);
-    doc.font('Helvetica').fontSize(8.5).fillColor(C.textMid);
-    doc.text(data.fundraiserId, mx + 28, y + 13, {
-      width: cw / 2 - 30,
-    });
+      // Campaign ID | Campaign Organizer on the same row below
+      doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
+      doc.text('CAMPAIGN ID', mx + 28, y + 2);
+      doc.font('Helvetica').fontSize(8.5).fillColor(C.textMid);
+      doc.text(data.fundraiserId ?? '', mx + 28, y + 13, {
+        width: cw / 2 - 30,
+      });
 
-    doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
-    doc.text('CAMPAIGN ORGANIZER', mx + 28 + cw / 2, y + 2);
-    doc.font('Helvetica-Bold').fontSize(10).fillColor(C.textDark);
-    doc.text(data.fundraiserOwner, mx + 28 + cw / 2, y + 13);
+      doc.font('Helvetica').fontSize(7.5).fillColor(C.textXLight);
+      doc.text('CAMPAIGN ORGANIZER', mx + 28 + cw / 2, y + 2);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor(C.textDark);
+      doc.text(data.fundraiserOwner ?? '', mx + 28 + cw / 2, y + 13);
 
-    y += 30;
+      y += 30;
+    }
 
     // ── DONATION SECTION ──────────────────────────────────────
     y = this.sectionHeader(doc, 'Donation Details', mx, y, cw, C.greenMid);
