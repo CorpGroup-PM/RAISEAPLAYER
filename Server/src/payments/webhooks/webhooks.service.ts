@@ -187,12 +187,20 @@ private async sendPostPaymentNotifications(
 
     const foundationPayment = await this.prisma.foundationPayment.findUnique({
       where: { razorpayOrderId },
+      include: {
+        donation: {
+          include: {
+            donor: { select: { email: true } },
+          },
+        },
+      },
     });
 
     if (!foundationPayment || foundationPayment.status === PaymentStatus.SUCCESS) return;
 
+    let processed = false;
     try {
-      await this.prisma.$transaction(async (tx) => {
+      processed = await this.prisma.$transaction(async (tx) => {
         const updated = await tx.foundationPayment.updateMany({
           where: { id: foundationPayment.id, status: PaymentStatus.PENDING },
           data: {
@@ -202,16 +210,53 @@ private async sendPostPaymentNotifications(
           },
         });
 
-        if (updated.count === 0) return;
+        if (updated.count === 0) return false;
 
         await tx.foundationDonation.update({
           where: { id: foundationPayment.donationId },
           data: { status: PaymentStatus.SUCCESS },
         });
+
+        return true;
       });
     } catch (err) {
       this.logger.error(
         `[CRITICAL] Foundation payment update failed for payment ${foundationPayment.id}`,
+        err,
+      );
+      return;
+    }
+
+    if (!processed) return;
+
+    // Fire-and-forget thank-you email to the donor
+    this.sendFoundationPostPaymentEmail(foundationPayment).catch((err) =>
+      this.logger.error(
+        `Unhandled error sending foundation donor email for payment ${foundationPayment.id}`,
+        err,
+      ),
+    );
+  }
+
+  private async sendFoundationPostPaymentEmail(foundationPayment: any) {
+    const donation = foundationPayment.donation;
+    const donorEmail = donation.guestEmail ?? donation.donor?.email;
+
+    if (!donorEmail) return;
+
+    const donorName =
+      donation.guestName ?? donation.donorName ?? 'Supporter';
+
+    const amount = `₹${Number(donation.amount).toLocaleString('en-IN')}`;
+
+    try {
+      await this.mailService.sendFoundationDonorThankYouMail(donorEmail, {
+        donorName,
+        amount,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to send foundation thank-you email to ${donorEmail}`,
         err,
       );
     }

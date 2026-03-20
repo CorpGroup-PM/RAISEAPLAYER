@@ -552,6 +552,30 @@ a{color:#b42318;text-decoration:none;font-weight:900}
     );
   }
 
+  // FOUNDATION DEVELOPMENT DONOR THANK-YOU EMAIL
+  async sendFoundationDonorThankYouMail(
+    email: string,
+    data: {
+      donorName: string;
+      amount: string;
+    },
+  ) {
+    const body = this.renderTemplate('foundation/foundation-thankyou.hbs', data);
+    const css = this.renderTemplate('foundation/foundation-thankyou.css.hbs');
+
+    const html = this.renderTemplate('layouts/main.hbs', {
+      title: 'Thank You for Supporting Foundation Development 💙',
+      body,
+      css,
+    });
+
+    await this.sendMail(
+      email,
+      '💙 Thank You for Your Foundation Donation',
+      html,
+    );
+  }
+
   // CONTACT US EMAIL
   async sendContactUsMail(
     data: {
