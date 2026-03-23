@@ -60,13 +60,15 @@ export default function AdminCampaignDetailsPage() {
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [suspendReason, setSuspendReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
   // B-8-1: confirmation before irreversible actions
   const [confirmAction, setConfirmAction] = useState<{
     label: string;
     warning: string;
-    onConfirm: () => void;
+    onConfirm: () => Promise<void> | void;
   } | null>(null);
 
   // B-8-2: rejection reason quick-select templates
@@ -76,6 +78,14 @@ export default function AdminCampaignDetailsPage() {
     "Missing required documents",
     "Goal amount seems unrealistic",
     "Violates platform policies",
+  ];
+
+  const SUSPENSION_TEMPLATES = [
+    "Violation of platform guidelines",
+    "Suspicious activity detected",
+    "Pending document verification",
+    "Fraudulent claims reported",
+    "Under review by admin",
   ];
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const account = campaign?.recipientAccount;
@@ -241,9 +251,11 @@ export default function AdminCampaignDetailsPage() {
   };
 
   const handleSuspend = async () => {
-    if (!id) return;
+    if (!id || !suspendReason.trim()) return;
     setActionLoading(true);
-    await AdminCampaignsService.suspendCampaign(id);
+    await AdminCampaignsService.suspendCampaign(id, { reason: suspendReason });
+    setShowSuspendModal(false);
+    setSuspendReason("");
     await fetchCampaign();
     setActionLoading(false);
   };
@@ -1048,11 +1060,7 @@ export default function AdminCampaignDetailsPage() {
                   <button
                     className="admin-action-btn suspend-btn"
                     disabled={actionLoading}
-                    onClick={() => setConfirmAction({
-                      label: "Suspend Campaign",
-                      warning: "This will immediately suspend the campaign and pause all donations.",
-                      onConfirm: handleSuspend,
-                    })}
+                    onClick={() => setShowSuspendModal(true)}
                   >
                     Suspend
                   </button>
@@ -1063,11 +1071,7 @@ export default function AdminCampaignDetailsPage() {
                 <button
                   className="admin-action-btn suspend-btn"
                   disabled={actionLoading}
-                  onClick={() => setConfirmAction({
-                    label: "Suspend Campaign",
-                    warning: "This will immediately suspend the campaign and pause all donations.",
-                    onConfirm: handleSuspend,
-                  })}
+                  onClick={() => setShowSuspendModal(true)}
                 >
                   Suspend
                 </button>
@@ -1125,6 +1129,50 @@ export default function AdminCampaignDetailsPage() {
                 <button
                   className="admin-action-btn"
                   onClick={() => setConfirmAction(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= SUSPEND MODAL ================= */}
+        {showSuspendModal && (
+          <div className="rp-modal-backdrop">
+            <div className="rp-modal">
+              <h3>Suspend Campaign</h3>
+
+              <div className="reject-templates">
+                {SUSPENSION_TEMPLATES.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`reject-template-chip${suspendReason === t ? " active" : ""}`}
+                    onClick={() => setSuspendReason(t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                placeholder="Enter suspension reason or select one above"
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+              />
+
+              <div className="rp-modal-actions">
+                <button
+                  className="admin-action-btn suspend-btn"
+                  disabled={!suspendReason.trim() || actionLoading}
+                  onClick={handleSuspend}
+                >
+                  Confirm Suspend
+                </button>
+                <button
+                  className="admin-action-btn"
+                  onClick={() => setShowSuspendModal(false)}
                 >
                   Cancel
                 </button>

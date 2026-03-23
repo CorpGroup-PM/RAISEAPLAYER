@@ -14,6 +14,10 @@ export type RejectCampaignBody = {
   rejectionReason: string;
 };
 
+export type SuspendCampaignBody = {
+  reason: string;
+};
+
 export const AdminCampaignsService = {
   /** GET /admin/campaigns?status=... */
   listCampaigns: (status: CampaignStatus) => {
@@ -34,8 +38,8 @@ export const AdminCampaignsService = {
     return api.post(`/admin/campaigns/${id}/reject`, body);
   },
 
-  suspendCampaign: (id: string) => {
-    return api.post(`/admin/campaigns/${id}/suspend`);
+  suspendCampaign: (id: string, body: SuspendCampaignBody) => {
+    return api.post(`/admin/campaigns/${id}/suspend`, body);
   },
 
   activateCampaign: (id: string) => {

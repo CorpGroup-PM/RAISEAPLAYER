@@ -480,7 +480,10 @@ export class AdminCampaignService {
     };
   }
 
-  async suspendCampaign(id: string, adminId: string) {
+  async suspendCampaign(id: string, adminId: string, reason: string) {
+    if (!reason?.trim()) {
+      throw new BadRequestException('Suspension reason is required');
+    }
     const campaign = await this.prisma.fundraiser.findUnique({
       where: { id },
       select: {
@@ -513,13 +516,10 @@ export class AdminCampaignService {
       await this.mailService.sendFundraiserSuspendedMail(campaign.creator.email, {
         name: campaign.creator.firstName ?? 'User',
         title: campaign.title,
-        reason: 'Your campaign has been temporarily suspended by admin.',
+        reason,
       });
     } catch (error) {
-      this.logger.error(
-        `Failed to send suspension email for campaign ${campaign.id}`,
-        error,
-      );
+      this.logger.error(`Failed to send suspension email for campaign ${campaign.id}`, error);
     }
 
     return {

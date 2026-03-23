@@ -81,7 +81,7 @@ async function seedAdmin(): Promise<void> {
     await prisma.user.create({
       data: {
         email: adminEmail.toLowerCase(),
-        phoneNumber: '0000000002',
+        phoneNumber: '0000000003',
         firstName: 'System',
         lastName: 'Admin',
         passwordHash: hashedPassword,

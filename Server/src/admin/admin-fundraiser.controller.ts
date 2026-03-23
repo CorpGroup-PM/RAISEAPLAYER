@@ -216,8 +216,19 @@ export class AdminFundraiserController {
     @Post(':id/suspend')
     @ApiOperation({ summary: 'Suspend campaign' })
     @ApiParam({ name: 'id', example: 'campaign-uuid' })
-    async suspendCampaign(@Param('id') id: string, @Req() req: any) {
-        return this.campaignService.suspendCampaign(id, req.user.sub);
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: { reason: { type: 'string', example: 'Violation of community guidelines' } },
+            required: ['reason'],
+        },
+    })
+    async suspendCampaign(
+        @Param('id') id: string,
+        @Body('reason') reason: string,
+        @Req() req: any,
+    ) {
+        return this.campaignService.suspendCampaign(id, req.user.sub, reason);
     }
 
     // ------------------------------------------------------------------

@@ -24,7 +24,7 @@ export class MailService {
       }
 
       this.transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
+        host: "p3plzcpnl505439.prod.phx3.secureserver.net",
         port: 465,
         secure: true,
         auth: {
@@ -204,26 +204,14 @@ export class MailService {
       reason: string;
     },
   ) {
-    const body = this.renderTemplate(
-      'fundraisers/suspended.hbs',
-      data,
-    );
-
-    const css = this.renderTemplate(
-      'fundraisers/suspended.css.hbs',
-    );
-
+    const body = this.renderTemplate('fundraisers/suspended.hbs', data);
+    const css = this.renderTemplate('fundraisers/suspended.css.hbs');
     const html = this.renderTemplate('layouts/main.hbs', {
       title: 'Your Fundraiser Has Been Suspended',
       body,
       css,
     });
-
-    await this.sendMail(
-      email,
-      '⚠️ Your Fundraiser Has Been Suspended',
-      html,
-    );
+    await this.sendMail(email, 'Important Notice About Your RaiseAPlayer Fundraiser', html);
   }
 
   // DONATION RECEIVED EMAIL (FUNDRAISER – NO AMOUNT)
