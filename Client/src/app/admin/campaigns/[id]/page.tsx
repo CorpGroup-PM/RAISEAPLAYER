@@ -902,7 +902,7 @@ export default function AdminCampaignDetailsPage() {
           <section className="recipient-admin-card empty">
             <h3 className="recipient-admin-title">Recipient Bank Account</h3>
             <p className="empty-text">
-              ❌ No recipient bank account added yet.
+               No recipient bank account added yet.
             </p>
           </section>
         )}
