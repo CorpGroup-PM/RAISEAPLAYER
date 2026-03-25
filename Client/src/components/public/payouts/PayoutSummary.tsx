@@ -12,8 +12,6 @@ export default function PayoutSummary({ fundraiserId }: { fundraiserId: string }
     try {
       setLoading(true);
       const res = await PublicPayoutsService.getSummary(fundraiserId);
-      console.log(res);
-      
       setData(res.data);
     } finally {
       setLoading(false);

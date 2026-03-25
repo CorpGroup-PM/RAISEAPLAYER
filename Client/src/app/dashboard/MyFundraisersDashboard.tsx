@@ -24,7 +24,6 @@ const MyFundraisersDashboard: React.FC = () => {
       try {
         setLoading(true);
         const res = await FundraiserService.getMyCampaigns();
-        console.log(res);
         setCampaigns(res.data);
       } catch (err) {
         console.error("Failed to fetch campaigns", err);
@@ -70,7 +69,14 @@ const MyFundraisersDashboard: React.FC = () => {
         {campaigns.length > 0 && (
           <section className="section">
             <div className="section-header">
-              <h2>My Dashboard</h2>
+              <h2>My Fundraisers</h2>
+              <button
+                className="primary-btn"
+                onClick={handleStartFundraiser}
+                disabled={kycCheckLoading}
+              >
+                {kycCheckLoading ? "Checking..." : "Start Fundraiser"}
+              </button>
             </div>
 
             <div className="card-grid">

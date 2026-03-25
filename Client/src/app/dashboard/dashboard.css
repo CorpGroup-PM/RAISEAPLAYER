@@ -28,7 +28,16 @@
 }
 
 .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
+}
+
+.section-header .primary-btn {
+  width: auto;
+  padding: 0 20px;
+  margin-top: 0;
 }
 
 .section-header h2 {

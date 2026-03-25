@@ -124,11 +124,31 @@
   background: #ffb36b;
   color: #fff;
   border: none;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  background: #f59332;
+}
+
+.btn-primary:active {
+  background: #e07d1a;
+  transform: scale(0.98);
 }
 
 .btn-secondary {
   background: #eee;
   border: none;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-secondary:hover {
+  background: #ddd;
+}
+
+.btn-secondary:active {
+  background: #ccc;
+  transform: scale(0.98);
 }
 
 .btn-primary:disabled {

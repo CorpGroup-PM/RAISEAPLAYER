@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./adminUserDetails.css";
 import { useParams, useRouter } from "next/navigation";
 import { UserInfoService } from "@/services/userinfo.service";
@@ -66,23 +66,9 @@ export default function AdminUserDetailsPage() {
       setLoading(true);
       setError("");
 
-      console.log("Calling API for userId:", userId);
-
       const res = await UserInfoService.getByCampaignId(userId);
-
-
-      console.log("UserInfo API success:", res.data);
-
       setData(res.data);
     } catch (err: any) {
-      console.log("UserInfo API failed:", {
-        message: err?.message,
-        status: err?.response?.status,
-        data: err?.response?.data,
-        url: err?.config?.url,
-        baseURL: err?.config?.baseURL,
-      });
-
       setError(err?.response?.data?.message || "Failed to fetch user");
     } finally {
       setLoading(false);

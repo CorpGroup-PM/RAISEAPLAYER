@@ -564,7 +564,15 @@ export class FundraiserService {
         beneficiaryUser: true,
 
         // OTHER campaign
-        beneficiaryOther: true,
+        beneficiaryOther: {
+          select: {
+            id: true,
+            fullName: true,
+            relationshipToCreator: true,
+            fundraiserId: true,
+            createdAt: true,
+          },
+        },
 
         media: true,// images / videos
         recipientAccount: true,
@@ -735,7 +743,16 @@ export class FundraiserService {
             updatedAt: true,
           },
         },
-        beneficiaryOther: true,
+        beneficiaryOther: {
+          select:{
+            id: true,
+            fullName: true,
+            relationshipToCreator: true,
+            age: true,
+            createdAt: true,
+            fundraiserId: true,
+          }
+        },
 
         media: true,
         fundraiserupdates: true,

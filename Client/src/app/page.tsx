@@ -143,13 +143,6 @@ export default function Home() {
     return () => window.removeEventListener("scroll", checkFooter);
   }, []);
 
-  const renderStars = (rating?: number) => {
-    const total = 5;
-    const value = rating || 0;
-
-    return "★".repeat(value) + "☆".repeat(total - value);
-  };
-
   return (
     <div className="home-page">
       {/* ── 3-COLUMN PAGE GRID: 15% | 70% | 15% ── */}

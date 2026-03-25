@@ -129,7 +129,7 @@ export default function Navbar() {
                         className="rp-dd-btn"
                         onClick={() => setProfileOpen(false)}
                       >
-                        My dashboard
+                        My Fundraisers
                       </button>
                     </Link>
 
@@ -253,7 +253,7 @@ export default function Navbar() {
                   className={pathname.startsWith("/dashboard") ? "rp-mobile-primary" : "rp-mobile-secondary"}
                   onClick={() => setMenuOpen(false)}
                 >
-                  My Dashboard
+                  My Fundraisers
                 </button>
               </Link>
 

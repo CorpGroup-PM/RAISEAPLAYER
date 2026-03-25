@@ -30,8 +30,6 @@ async function main() {
   const outPath = join(__dirname, '..', '..', '..', '..', 'Client', 'openapi.json');
   writeFileSync(outPath, JSON.stringify(document, null, 2), 'utf8');
 
-  console.log(`OpenAPI spec written to ${outPath}`);
-
   await app.close();
 }
 

@@ -21,7 +21,6 @@ export const createRedisClient = (config: ConfigService): Redis => {
   });
 
   redis.on('connect', () => {
-    console.log(`✅ Redis connected (${isTls ? 'TLS enabled' : 'No TLS'})`);
   });
 
   redis.on('error', (err) => {

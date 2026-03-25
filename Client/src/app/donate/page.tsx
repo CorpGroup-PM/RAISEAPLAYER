@@ -35,8 +35,8 @@ const ExploreFundraisersPage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [sportFilter, setSportFilter] = useState("");
-  const [cityFilter, setCityFilter] = useState("");
+  const [sportFilter, _setSportFilter] = useState("");
+  const [cityFilter, _setCityFilter] = useState("");
   const [totalResults, setTotalResults] = useState(0);
 
 
@@ -56,8 +56,6 @@ const ExploreFundraisersPage: React.FC = () => {
       });
 
       const fundraisers = res?.data?.data?.fundraisers ?? [];
-      console.log(fundraisers);
-
       setCampaigns(fundraisers);
       setTotalResults(res?.data?.data?.total ?? fundraisers.length);
     } catch (err) {

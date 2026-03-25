@@ -22,10 +22,8 @@ export class OptionalAuthGuard implements CanActivate {
         secret: process.env.JWT_ACCESS_SECRET,
       });
 
-      console.log('JWT PAYLOAD =>', payload);
       request.user = payload;
     } catch (e) {
-      console.log('JWT VERIFY FAILED');
       request.user = null;
     }
 

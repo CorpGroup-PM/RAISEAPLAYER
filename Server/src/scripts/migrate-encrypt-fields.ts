@@ -90,10 +90,7 @@ async function main() {
   const prisma = new PrismaClient({ adapter });
 
   try {
-    console.log('=== Field Encryption Migration ===\n');
-
     // ── 1. RecipientAccount.accountNumber ──────────────────────────────────
-    console.log('▶ Scanning RecipientAccount records…');
     const accounts = await prisma.recipientAccount.findMany({
       select: { id: true, accountNumber: true },
     });
@@ -126,16 +123,10 @@ async function main() {
         where: { id: acc.id },
         data: { accountNumber: encrypted },
       });
-      console.log(`  ✅ RecipientAccount ${acc.id}: encrypted`);
       accountFixed++;
     }
 
-    console.log(
-      `   Done — fixed: ${accountFixed}, already encrypted: ${accountAlreadyOk}, skipped: ${accountSkipped}\n`,
-    );
-
     // ── 2. PanDetails.panNumber ────────────────────────────────────────────
-    console.log('▶ Scanning PanDetails records…');
     const pans = await prisma.panDetails.findMany({
       select: { id: true, panNumber: true, userId: true },
     });
@@ -166,15 +157,9 @@ async function main() {
         where: { id: pan.id },
         data: { panNumber: encrypted },
       });
-      console.log(`  ✅ PanDetails ${pan.id} (user ${pan.userId}): encrypted`);
       panFixed++;
     }
 
-    console.log(
-      `   Done — fixed: ${panFixed}, already encrypted: ${panAlreadyOk}, skipped: ${panSkipped}\n`,
-    );
-
-    console.log('=== Migration complete ===');
   } finally {
     await prisma.$disconnect();
     await pool.end();

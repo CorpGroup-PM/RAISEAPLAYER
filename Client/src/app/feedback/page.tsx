@@ -6,9 +6,7 @@ import { FundraiserReviewService } from "@/services/fundraiser-review.service";
 import AlertModal from "@/components/ui/AlertModal";
 
 export default function FundraiserReviewPage() {
-  const { fundraiserId } = useParams();
   const router = useRouter();
-
   const [name, setName] = useState("");
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(5);
@@ -18,11 +16,6 @@ export default function FundraiserReviewPage() {
   const [redirectOnClose, setRedirectOnClose] = useState(false);
 
   const submitReview = async () => {
-    console.log({
-    name,
-    rating,
-    message: feedback,
-  });
     if (!name.trim()) {
       setAlertType("error");
       setAlertMsg("Please enter your name");

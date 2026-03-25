@@ -70,9 +70,6 @@ async function seedAdmin(): Promise<void> {
     });
 
     if (existing) {
-      console.log(
-        `[seed-admin] Admin already exists (${adminEmail}). Nothing to do.`,
-      );
       return;
     }
 
@@ -91,7 +88,6 @@ async function seedAdmin(): Promise<void> {
       },
     });
 
-    console.log(`[seed-admin] Admin user created successfully (${adminEmail})`);
   } finally {
     await prisma.$disconnect();
     await pool.end();

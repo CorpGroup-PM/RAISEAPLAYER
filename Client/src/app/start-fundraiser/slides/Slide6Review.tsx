@@ -65,8 +65,6 @@ export default function Slide6Review({
     email: draft.beneficiaryOther.email || null,
   };
 }
-console.log("Payload story:", payload.story);
-
 
  // console.log('FINAL PAYLOAD SENT TO BACKEND:', payload);
 
