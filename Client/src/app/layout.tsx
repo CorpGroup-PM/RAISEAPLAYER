@@ -6,7 +6,7 @@ import { GlobalLoader } from "@/components/loading/GlobalLoader";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutShell from "@/components/LayoutShell/LayoutShell";
 import ErrorBoundary from "@/components/ErrorBoundary/ErrorBoundary";
-import DisableActions from "@/lib/disable-action";
+//import DisableActions from "@/lib/disable-action";
 
 export const metadata: Metadata = {
   title: {
@@ -66,7 +66,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <DisableActions/>
+        {/* <DisableActions/> */}
         <AppProviders>
           <ToastProvider>
             <AuthProvider>
