@@ -67,8 +67,77 @@ export class AwsS3Service {
     return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${fileName}`;
   }
 
+  /**
+   * Upload a KYC Aadhaar PDF (front or back) as a private S3 object.
+   * Returns the S3 key (NOT a public URL). Use `getSignedDocumentUrl(key)` to
+   * generate a time-limited access URL for display/download.
+   */
+  async uploadKycPdf(
+    file: Express.Multer.File,
+    userId: string,
+    side: 'front' | 'back',
+  ): Promise<string> {
+    if (!file) throw new BadRequestException('PDF file not received');
+
+    if (file.mimetype !== 'application/pdf') {
+      throw new BadRequestException('Only PDF files are allowed for Aadhaar KYC');
+    }
+
+    // Verify actual magic bytes — client-supplied Content-Type can be spoofed.
+    const detected = await fromBuffer(file.buffer);
+    if (!detected || detected.mime !== 'application/pdf') {
+      throw new BadRequestException('File content is not a valid PDF');
+    }
+
+    await this.virusScan.scan(file.buffer, file.originalname);
+
+    const key = `kyc/${userId}/aadhaar/${side}-${randomUUID()}.pdf`;
+
+    await this.s3.send(new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      Body: file.buffer,
+      ContentType: 'application/pdf',
+    }));
+
+    return key;
+  }
+
   // ── Sensitive documents (KYC, identity proofs, athlete certificates) ─────
   // Bucket must be private. Access is granted only via short-lived signed URLs.
+
+  /**
+   * Upload a KYC PAN card PDF as a private S3 object.
+   * Returns the S3 key. Use `getSignedDocumentUrl(key)` to generate a time-limited URL.
+   */
+  async uploadPanPdf(
+    file: Express.Multer.File,
+    userId: string,
+  ): Promise<string> {
+    if (!file) throw new BadRequestException('PDF file not received');
+
+    if (file.mimetype !== 'application/pdf') {
+      throw new BadRequestException('Only PDF files are allowed for PAN KYC');
+    }
+
+    const detected = await fromBuffer(file.buffer);
+    if (!detected || detected.mime !== 'application/pdf') {
+      throw new BadRequestException('File content is not a valid PDF');
+    }
+
+    await this.virusScan.scan(file.buffer, file.originalname);
+
+    const key = `kyc/${userId}/pan/${randomUUID()}.pdf`;
+
+    await this.s3.send(new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      Body: file.buffer,
+      ContentType: 'application/pdf',
+    }));
+
+    return key;
+  }
 
   /**
    * Upload a PDF document and return its S3 key (NOT a public URL).

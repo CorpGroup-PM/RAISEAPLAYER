@@ -22,7 +22,7 @@ export default function PanKycModal({ isOpen, onClose }: Props) {
     <div className="kyc-overlay" onClick={onClose}>
       <div className="kyc-modal" onClick={(e) => e.stopPropagation()}>
         <div className="kyc-header">
-          <h2>PAN details required</h2>
+          <h2>KYC required</h2>
           <button className="kyc-close" onClick={onClose}>
             &times;
           </button>
@@ -30,8 +30,8 @@ export default function PanKycModal({ isOpen, onClose }: Props) {
 
         <div className="kyc-body">
           <p>
-            To create a fundraiser, please add your PAN details first. It takes
-            less than a minute.
+            To create a fundraiser, you must complete your KYC — both PAN and
+            Aadhaar details (including front &amp; back images) are required.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export default function PanKycModal({ isOpen, onClose }: Props) {
             Cancel
           </button>
           <button className="kyc-btn-primary" onClick={handleAddPan}>
-            Add PAN details
+            Complete KYC
           </button>
         </div>
       </div>

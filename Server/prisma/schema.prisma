@@ -121,6 +121,7 @@ model User {
   adminLogs                AdminLog[]
   otps                     EmailOtp[]
   panDetails               PanDetails?
+  aadhaarDetails           AadhaarDetails?
   transferRequestsCreated   FundTransferRequest[] @relation("TransferRequestedBy")
   transferRequestsReviewed  FundTransferRequest[] @relation("TransferReviewedBy")
   verifiedRecipientAccounts RecipientAccount[]    @relation("RecipientAccountVerifiedBy")
@@ -175,10 +176,29 @@ model PanDetails {
   state     String?
   country   String?
   pincode   String?
+  panPdfKey String?
 
   isPanVerified   Boolean   @default(false)
   panVerifiedById String?
   panVerifiedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ----------------------------------------------------------------------
+// AADHAAR DETAILS
+// ----------------------------------------------------------------------
+
+model AadhaarDetails {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  aadhaarNumber String?
+  frontPdfKey   String?
+  backPdfKey    String?
+
+  isAadhaarVerified   Boolean   @default(false)
+  aadhaarVerifiedById String?
+  aadhaarVerifiedAt   DateTime?
 
   user User @relation(fields: [userId], references: [id])
 }

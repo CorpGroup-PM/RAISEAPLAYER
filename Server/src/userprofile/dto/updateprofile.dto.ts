@@ -12,6 +12,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { PanDetailsDto } from './pan-details.dto';
+import { AadhaarDetailsDto } from './aadhaar-details.dto';
 
 export class UpdateProfileDto {
   @ApiProperty({
@@ -54,4 +55,14 @@ export class UpdateProfileDto {
   @ValidateNested()
   @Type(() => PanDetailsDto)
   panDetails?: PanDetailsDto;
+
+  @ApiProperty({
+    description: 'Aadhaar details payload',
+    required: false,
+    type: () => AadhaarDetailsDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AadhaarDetailsDto)
+  aadhaarDetails?: AadhaarDetailsDto;
 }

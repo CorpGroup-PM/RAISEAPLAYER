@@ -11,7 +11,7 @@ export const UserService = {
     firstName: string;
     lastName: string;
     phoneNumber: string;
-    panDetails: {
+    panDetails?: {
       panNumber: string | null;
       panName: string | null;
       address: string | null;
@@ -19,6 +19,9 @@ export const UserService = {
       state: string | null;
       country: string | null;
       pincode: string | null;
+    };
+    aadhaarDetails?: {
+      aadhaarNumber: string | null;
     };
   }) {
     return api.put("/user/profile", payload);
@@ -30,9 +33,32 @@ export const UserService = {
 
   updateProfilePicture(file: File) {
     const formData = new FormData();
-    formData.append("file", file); // must be `file`
-
+    formData.append("file", file);
     return api.put("/user/profile-picture", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  updatePanPdf(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.put("/user/pan-pdf", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  updateAadhaarFrontPdf(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.put("/user/aadhaar-front-pdf", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  updateAadhaarBackPdf(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.put("/user/aadhaar-back-pdf", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },

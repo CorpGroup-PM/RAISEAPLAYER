@@ -6,12 +6,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { UserService } from "@/services/user.service";
 import { useToast } from "@/components/toast/ToastContext";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ----------------------- REGEX ----------------------- */
 const onlyLetters = /^[A-Za-z]+$/;
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const phoneRegex = /^[6-9][0-9]{9}$/;
+const aadhaarRegex = /^[0-9]{12}$/;
 
 /* ----------------------- ZOD SCHEMA ----------------------- */
 const userProfileSchema = z.object({
@@ -32,13 +33,13 @@ const userProfileSchema = z.object({
 
   panNumber: z
     .string()
-    .optional()
-    .refine((v) => !v || panRegex.test(v), "Invalid PAN format (ABCDE1234F)"),
+    .min(1, "PAN number is required")
+    .refine((v) => panRegex.test(v), "Invalid PAN format (ABCDE1234F)"),
 
   panName: z
     .string()
-    .optional()
-    .refine((v) => !v || /^[A-Za-z ]+$/.test(v), "Only alphabets allowed"),
+    .min(1, "Name on PAN is required")
+    .refine((v) => /^[A-Za-z ]+$/.test(v), "Only alphabets allowed"),
 
   address: z
     .string()
@@ -64,6 +65,11 @@ const userProfileSchema = z.object({
     .string()
     .min(1, "Pincode is required")
     .regex(/^[1-9][0-9]{5}$/, "Enter valid 6 digit pincode"),
+
+  aadhaarNumber: z
+    .string()
+    .min(1, "Aadhaar number is required")
+    .refine((v) => v.startsWith("XXXXXXXX") || aadhaarRegex.test(v), "Aadhaar must be exactly 12 digits"),
 });
 
 const phoneRules = [
@@ -76,6 +82,20 @@ export default function UserProfile() {
   const { addToast } = useToast();
   const { user, refreshUser, isLoaded } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [panPdfUploading, setPanPdfUploading] = useState(false);
+  const [aadhaarFrontUploading, setAadhaarFrontUploading] = useState(false);
+  const [aadhaarBackUploading, setAadhaarBackUploading] = useState(false);
+  const panPdfRef = useRef<HTMLInputElement>(null);
+  const aadhaarFrontRef = useRef<HTMLInputElement>(null);
+  const aadhaarBackRef = useRef<HTMLInputElement>(null);
+
+  // Local PDF URL state — avoids triggering form reset on upload
+  const [localPanPdfUrl, setLocalPanPdfUrl] = useState<string | null>(null);
+  const [localAadhaarFrontPdfUrl, setLocalAadhaarFrontPdfUrl] = useState<string | null>(null);
+  const [localAadhaarBackPdfUrl, setLocalAadhaarBackPdfUrl] = useState<string | null>(null);
+
+  // Tracks whether any PDF was uploaded since last Save — enables the Save button
+  const [hasPdfChanged, setHasPdfChanged] = useState(false);
 
   /* ----------------------- FORM ----------------------- */
   const {
@@ -113,6 +133,7 @@ export default function UserProfile() {
       state: user.panDetails?.state ?? "",
       country: user.panDetails?.country ?? "",
       pincode: user.panDetails?.pincode ?? "",
+      aadhaarNumber: user.aadhaarDetails?.aadhaarNumber ?? "",
     });
   }, [user, reset]);
 
@@ -137,14 +158,92 @@ export default function UserProfile() {
       };
     }
 
-    try {
-      await UserService.updateProfile(payload);
-      //addToast("Profile updated successfully", "success");
+    // Only include aadhaarDetails when Aadhaar is NOT yet verified
+    if (!user?.aadhaarDetails?.isAadhaarVerified && data.aadhaarNumber) {
+      payload.aadhaarDetails = {
+        aadhaarNumber: data.aadhaarNumber,
+      };
+    }
 
-      await refreshUser(); // single source of truth
-      reset(data); // reset dirty state
+    try {
+      // Only send profile data to server when form fields actually changed
+      if (isDirty) {
+        await UserService.updateProfile(payload);
+      }
+      await refreshUser();
+      reset(data);
+      setHasPdfChanged(false);
     } catch (err) {
       console.error("Profile update failed", err);
+    }
+  };
+
+  /* ----------------------- PAN PDF UPLOAD ----------------------- */
+  const handlePanPdfChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      addToast("Only PDF files are allowed", "error");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      addToast("PDF must be under 10MB", "error");
+      return;
+    }
+
+    try {
+      setPanPdfUploading(true);
+      const res = await UserService.updatePanPdf(file);
+      setLocalPanPdfUrl(res.data.signedUrl);
+      setHasPdfChanged(true);
+    } catch {
+      addToast("Failed to upload PAN PDF", "error");
+    } finally {
+      setPanPdfUploading(false);
+      if (panPdfRef.current) panPdfRef.current.value = "";
+    }
+  };
+
+  /* ----------------------- AADHAAR PDF UPLOAD ----------------------- */
+  const handleAadhaarPdfChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    side: "front" | "back"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      addToast("Only PDF files are allowed", "error");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      addToast("PDF must be under 10MB", "error");
+      return;
+    }
+
+    try {
+      if (side === "front") setAadhaarFrontUploading(true);
+      else setAadhaarBackUploading(true);
+
+      if (side === "front") {
+        const res = await UserService.updateAadhaarFrontPdf(file);
+        setLocalAadhaarFrontPdfUrl(res.data.signedUrl);
+      } else {
+        const res = await UserService.updateAadhaarBackPdf(file);
+        setLocalAadhaarBackPdfUrl(res.data.signedUrl);
+      }
+      setHasPdfChanged(true);
+    } catch {
+      addToast(`Failed to upload Aadhaar ${side} PDF`, "error");
+    } finally {
+      if (side === "front") setAadhaarFrontUploading(false);
+      else setAadhaarBackUploading(false);
+      // Reset input so the same file can be re-uploaded if needed
+      if (side === "front" && aadhaarFrontRef.current) aadhaarFrontRef.current.value = "";
+      if (side === "back" && aadhaarBackRef.current) aadhaarBackRef.current.value = "";
     }
   };
 
@@ -387,12 +486,144 @@ export default function UserProfile() {
                 )}
               </div>
             </div>
+
+            {/* PAN PDF UPLOAD */}
+            <div className="aadhaar-pdf-row" style={{ marginTop: 8 }}>
+              {(() => {
+                const panPdfUrl = localPanPdfUrl ?? user.panDetails?.panPdfSignedUrl;
+                return (
+                  <div className={`aadhaar-pdf-card${panPdfUrl ? " uploaded" : ""}`}>
+                    <div className="aadhaar-pdf-card-icon">{panPdfUrl ? "" : "📄"}</div>
+                    <div className="aadhaar-pdf-card-label">PAN Card PDF</div>
+
+                    {panPdfUrl ? (
+                      <div className="aadhaar-pdf-card-actions">
+                        <a href={panPdfUrl} target="_blank" rel="noopener noreferrer" className="aadhaar-pdf-view-btn">
+                          View PDF
+                        </a>
+                        {!user.panDetails?.isPanVerified && (
+                          <label className="aadhaar-pdf-replace-btn">
+                            {panPdfUploading ? "Uploading..." : "Replace"}
+                            <input ref={panPdfRef} type="file" accept="application/pdf" hidden disabled={panPdfUploading} onChange={handlePanPdfChange} />
+                          </label>
+                        )}
+                      </div>
+                    ) : (
+                      <label className={`aadhaar-pdf-upload-btn${panPdfUploading ? " loading" : ""}${user.panDetails?.isPanVerified ? " disabled" : ""}`}>
+                        {panPdfUploading ? "Uploading..." : "Upload PDF"}
+                        <input ref={panPdfRef} type="file" accept="application/pdf" hidden disabled={panPdfUploading || !!user.panDetails?.isPanVerified} onChange={handlePanPdfChange} />
+                      </label>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* AADHAAR DETAILS */}
+          <div className="up-section">
+            <h3 className="up-section-title">
+              Aadhaar Details
+              {user.aadhaarDetails?.isAadhaarVerified && (
+                <span className="pan-verified-badge">&#10003; Verified</span>
+              )}
+            </h3>
+
+            {user.aadhaarDetails?.isAadhaarVerified && (
+              <p className="pan-verified-note">
+                Your Aadhaar details have been verified by admin and cannot be edited.
+              </p>
+            )}
+
+            <div className="up-field">
+              <label>Aadhaar Number</label>
+              <input
+                {...register("aadhaarNumber")}
+                readOnly={!!user.aadhaarDetails?.isAadhaarVerified}
+                className={user.aadhaarDetails?.isAadhaarVerified ? "up-input-readonly" : ""}
+                placeholder="Enter 12-digit Aadhaar number"
+                maxLength={12}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, "").slice(0, 12);
+                  e.target.value = raw;
+                  register("aadhaarNumber").onChange(e);
+                }}
+              />
+              {errors.aadhaarNumber && (
+                <p className="error">{errors.aadhaarNumber.message}</p>
+              )}
+            </div>
+
+            {/* AADHAAR PDF HINT */}
+            <div className="aadhaar-hint-box">
+              <span className="aadhaar-hint-icon">&#128161;</span>
+              <p className="aadhaar-hint-text">
+                If you have an e-Aadhaar PDF from UIDAI, you can upload the same file for both front and back.
+              </p>
+            </div>
+
+            {/* FRONT + BACK PDF CARDS */}
+            <div className="aadhaar-pdf-row">
+              {/* FRONT CARD */}
+              {(() => {
+                const frontUrl = localAadhaarFrontPdfUrl ?? user.aadhaarDetails?.frontPdfSignedUrl;
+                return (
+                  <div className={`aadhaar-pdf-card${frontUrl ? " uploaded" : ""}`}>
+                    <div className="aadhaar-pdf-card-icon">{frontUrl ? "" : "📄"}</div>
+                    <div className="aadhaar-pdf-card-label">Front Side</div>
+                    {frontUrl ? (
+                      <div className="aadhaar-pdf-card-actions">
+                        <a href={frontUrl} target="_blank" rel="noopener noreferrer" className="aadhaar-pdf-view-btn">View PDF</a>
+                        {!user.aadhaarDetails?.isAadhaarVerified && (
+                          <label className="aadhaar-pdf-replace-btn">
+                            {aadhaarFrontUploading ? "Uploading..." : "Replace"}
+                            <input ref={aadhaarFrontRef} type="file" accept="application/pdf" hidden disabled={aadhaarFrontUploading} onChange={(e) => handleAadhaarPdfChange(e, "front")} />
+                          </label>
+                        )}
+                      </div>
+                    ) : (
+                      <label className={`aadhaar-pdf-upload-btn${aadhaarFrontUploading ? " loading" : ""}${user.aadhaarDetails?.isAadhaarVerified ? " disabled" : ""}`}>
+                        {aadhaarFrontUploading ? "Uploading..." : "Upload PDF"}
+                        <input ref={aadhaarFrontRef} type="file" accept="application/pdf" hidden disabled={aadhaarFrontUploading || !!user.aadhaarDetails?.isAadhaarVerified} onChange={(e) => handleAadhaarPdfChange(e, "front")} />
+                      </label>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* BACK CARD */}
+              {(() => {
+                const backUrl = localAadhaarBackPdfUrl ?? user.aadhaarDetails?.backPdfSignedUrl;
+                return (
+                  <div className={`aadhaar-pdf-card${backUrl ? " uploaded" : ""}`}>
+                    <div className="aadhaar-pdf-card-icon">{backUrl ? "" : "📄"}</div>
+                    <div className="aadhaar-pdf-card-label">Back Side</div>
+                    {backUrl ? (
+                      <div className="aadhaar-pdf-card-actions">
+                        <a href={backUrl} target="_blank" rel="noopener noreferrer" className="aadhaar-pdf-view-btn">View PDF</a>
+                        {!user.aadhaarDetails?.isAadhaarVerified && (
+                          <label className="aadhaar-pdf-replace-btn">
+                            {aadhaarBackUploading ? "Uploading..." : "Replace"}
+                            <input ref={aadhaarBackRef} type="file" accept="application/pdf" hidden disabled={aadhaarBackUploading} onChange={(e) => handleAadhaarPdfChange(e, "back")} />
+                          </label>
+                        )}
+                      </div>
+                    ) : (
+                      <label className={`aadhaar-pdf-upload-btn${aadhaarBackUploading ? " loading" : ""}${user.aadhaarDetails?.isAadhaarVerified ? " disabled" : ""}`}>
+                        {aadhaarBackUploading ? "Uploading..." : "Upload PDF"}
+                        <input ref={aadhaarBackRef} type="file" accept="application/pdf" hidden disabled={aadhaarBackUploading || !!user.aadhaarDetails?.isAadhaarVerified} onChange={(e) => handleAadhaarPdfChange(e, "back")} />
+                      </label>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
 
           <button
             type="submit"
             className="up-save-btn"
-            disabled={!isDirty || isSubmitting}
+            disabled={(!isDirty && !hasPdfChanged) || isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Save"}
           </button>

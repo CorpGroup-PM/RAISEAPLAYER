@@ -262,6 +262,16 @@ export class AdminFundraiserController {
     }
 
     // ------------------------------------------------------------------
+    // VERIFY AADHAAR DETAILS
+    // ------------------------------------------------------------------
+    @Put(':id/verify-aadhaar')
+    @ApiOperation({ summary: 'Verify Aadhaar details for campaign creator' })
+    @ApiParam({ name: 'id', example: 'campaign-uuid' })
+    async verifyAadhaar(@Param('id') id: string, @Req() req: any) {
+        return this.bankAccountService.verifyAadhaar(id, req.user.sub);
+    }
+
+    // ------------------------------------------------------------------
     // GET USER BY ID
     // ------------------------------------------------------------------
     @Get(':id/userinfo')

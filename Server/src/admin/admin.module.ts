@@ -8,6 +8,7 @@ import { AdminBankAccountService } from './admin-bank-account.service';
 import { AdminFundraiserController } from './admin-fundraiser.controller';
 import { AdminPayoutsModule } from './payouts/admin.payouts.module';
 import { MailModule } from 'src/mail/mail.module';
+import { AwsModule } from 'src/aws/aws.module';
 
 @Module({
   controllers: [AdminController, AdminFundraiserController],
@@ -18,6 +19,6 @@ import { MailModule } from 'src/mail/mail.module';
     AdminReviewService,
     AdminBankAccountService,
   ],
-  imports: [AdminPayoutsModule, MailModule],
+  imports: [AdminPayoutsModule, MailModule, AwsModule],
 })
 export class AdminModule {}

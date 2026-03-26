@@ -8,6 +8,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CampaignStatus, Prisma } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
 import { CryptoHelper } from 'src/common/helpers/crypto.helper';
+import { AwsS3Service } from 'src/aws/aws.service';
 
 /**
  * Handles admin operations scoped to campaigns (fundraisers):
@@ -25,6 +26,7 @@ export class AdminCampaignService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly awsS3Service: AwsS3Service,
   ) {}
 
   /** Write a best-effort audit log entry. Never throws. */
@@ -47,17 +49,62 @@ export class AdminCampaignService {
     }
   }
 
-  /** Decrypt PAN — admin sees full plaintext for KYC validation. */
-  private maskPan(
+  /** Decrypt PAN — admin sees full plaintext + signed PDF URL. */
+  private async buildPanAdmin(
     pan: Record<string, any> | null | undefined,
-  ): Record<string, any> | null | undefined {
-    if (!pan?.panNumber) return pan;
-    try {
-      const plain = CryptoHelper.decryptField(pan.panNumber);
-      return { ...pan, panNumber: plain };
-    } catch {
-      return { ...pan, panNumber: '(unreadable)' };
+  ): Promise<Record<string, any> | null | undefined> {
+    if (!pan) return pan;
+
+    let decrypted = pan;
+    if (pan.panNumber) {
+      try {
+        const plain = CryptoHelper.decryptField(pan.panNumber);
+        decrypted = { ...pan, panNumber: plain };
+      } catch {
+        decrypted = { ...pan, panNumber: '(unreadable)' };
+      }
     }
+
+    const panPdfSignedUrl = pan.panPdfKey
+      ? await this.awsS3Service.getSignedDocumentUrl(pan.panPdfKey).catch(() => null)
+      : null;
+
+    return { ...decrypted, panPdfSignedUrl };
+  }
+
+  /** Decrypt Aadhaar + generate signed image URLs — admin sees full plaintext. */
+  private async buildAadhaarAdmin(
+    aadhaar: Record<string, any> | null | undefined,
+  ): Promise<Record<string, any> | null | undefined> {
+    if (!aadhaar) return aadhaar;
+
+    let aadhaarNumber = aadhaar.aadhaarNumber ?? null;
+    if (aadhaarNumber) {
+      try {
+        aadhaarNumber = CryptoHelper.decryptField(aadhaarNumber);
+      } catch {
+        aadhaarNumber = '(unreadable)';
+      }
+    }
+
+    const frontPdfSignedUrl = aadhaar.frontPdfKey
+      ? await this.awsS3Service.getSignedDocumentUrl(aadhaar.frontPdfKey).catch(() => null)
+      : null;
+
+    const backPdfSignedUrl = aadhaar.backPdfKey
+      ? await this.awsS3Service.getSignedDocumentUrl(aadhaar.backPdfKey).catch(() => null)
+      : null;
+
+    return {
+      id: aadhaar.id,
+      userId: aadhaar.userId,
+      aadhaarNumber,
+      isAadhaarVerified: aadhaar.isAadhaarVerified,
+      aadhaarVerifiedById: aadhaar.aadhaarVerifiedById,
+      aadhaarVerifiedAt: aadhaar.aadhaarVerifiedAt,
+      frontPdfSignedUrl,
+      backPdfSignedUrl,
+    };
   }
 
   // ── Listing ───────────────────────────────────────────────────────────────
@@ -178,6 +225,7 @@ export class AdminCampaignService {
             role: true,
             createdAt: true,
             panDetails: true,
+            aadhaarDetails: true,
           },
         },
         beneficiaryUser: {
@@ -258,7 +306,8 @@ export class AdminCampaignService {
         ...campaign,
         creator: {
           ...campaign.creator,
-          panDetails: this.maskPan(campaign.creator?.panDetails),
+          panDetails: await this.buildPanAdmin(campaign.creator?.panDetails),
+          aadhaarDetails: await this.buildAadhaarAdmin(campaign.creator?.aadhaarDetails),
         },
         donations,
         recipientAccount: decryptedRecipientAccount,

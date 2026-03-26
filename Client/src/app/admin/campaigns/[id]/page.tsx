@@ -50,6 +50,7 @@ export default function AdminCampaignDetailsPage() {
 
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [kycRefreshing, setKycRefreshing] = useState(false);
 
   const [imageMedia, setImageMedia] = useState<string[]>([]);
   const [videoMedia, setVideoMedia] = useState<VideoMedia[]>([]);
@@ -98,6 +99,7 @@ export default function AdminCampaignDetailsPage() {
     const [overflowingUpdates, setOverflowingUpdates] = useState<Record<string, boolean>>({});
 
   const [showPan, setShowPan] = useState(false);
+  const [showAadhaar, setShowAadhaar] = useState(false);
 
   const fetchDocuments = async () => {
     if (!id) return;
@@ -119,6 +121,13 @@ export default function AdminCampaignDetailsPage() {
   useEffect(() => {
     fetchDocuments();
   }, [id]);
+
+  /* ================= REFRESH KYC ================= */
+  const refreshKyc = async () => {
+    setKycRefreshing(true);
+    await fetchCampaign();
+    setKycRefreshing(false);
+  };
 
   /* ================= FETCH CAMPAIGN ================= */
   const fetchCampaign = async () => {
@@ -349,6 +358,29 @@ export default function AdminCampaignDetailsPage() {
     }
   };
 
+  const handleVerifyAadhaar = async () => {
+    if (!id) return;
+
+    try {
+      setActionLoading(true);
+      await AdminCampaignsService.verifyAadhaar(id);
+      setCampaign((prev: any) => ({
+        ...prev,
+        creator: {
+          ...prev.creator,
+          aadhaarDetails: {
+            ...prev.creator?.aadhaarDetails,
+            isAadhaarVerified: true,
+          },
+        },
+      }));
+    } catch (err) {
+      console.error("Failed to verify Aadhaar", err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleVerifyDocument = async (documentId: string) => {
     await FundraiserDocumentsService.verifyDocument(documentId, {
       status: "VERIFIED",
@@ -560,37 +592,69 @@ export default function AdminCampaignDetailsPage() {
               </div>
 
               <div className="admin-beneficiary-content">
-                <strong>
-                  {campaign.creator.firstName} {campaign.creator.lastName}
-                </strong>
-                <div className="beneficiary-contact">
-                  {campaign.creator.email && (
-                    <span>
-                      <span style={{ fontWeight: 600, color: "#111827" }}>Email:</span>{" "}
-                      <span>{campaign.creator.email}</span>
-                    </span>
-                  )}
-                  {campaign.creator.phoneNumber && (
-                    <span>
-                      <span style={{ fontWeight: 600, color: "#111827" }}>Phone:</span>{" "}
-                      <span >{campaign.creator.phoneNumber}</span>
-                    </span>
-                  )}
+                {/* Top row: info on left, buttons on right */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                  <div>
+                    <strong>
+                      {campaign.creator.firstName} {campaign.creator.lastName}
+                    </strong>
+                    <div className="beneficiary-contact">
+                      {campaign.creator.email && (
+                        <span>
+                          <span style={{ fontWeight: 600, color: "#111827" }}>Email:</span>{" "}
+                          <span>{campaign.creator.email}</span>
+                        </span>
+                      )}
+                      {campaign.creator.phoneNumber && (
+                        <span>
+                          <span style={{ fontWeight: 600, color: "#111827" }}>Phone:</span>{" "}
+                          <span>{campaign.creator.phoneNumber}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* KYC toggle buttons */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                    <button
+                      className="view-pan-btn"
+                      style={{ position: "static" }}
+                      onClick={() => {
+                        const opening = !showPan;
+                        setShowPan(opening);
+                        if (opening) fetchCampaign();
+                      }}
+                    >
+                      {showPan ? "Hide PAN Details" : "View PAN Details"}
+                    </button>
+                    <button
+                      className="view-pan-btn"
+                      style={{ position: "static" }}
+                      onClick={() => {
+                        const opening = !showAadhaar;
+                        setShowAadhaar(opening);
+                        if (opening) fetchCampaign();
+                      }}
+                    >
+                      {showAadhaar ? "Hide Aadhaar Details" : "View Aadhaar Details"}
+                    </button>
+                  </div>
                 </div>
 
-
-                <div className="pan-anchor">
-                  <button
-                    className="view-pan-btn"
-                    onClick={() => setShowPan((v) => !v)}
-                  >
-                    {showPan ? "Hide PAN Details" : "View PAN Details"}
-                  </button>
-
-                  {showPan && (
-                    <div className="pan-inline-card">
-                      <div className="pan-inline-header">
-                        <span className="pan-inline-title">PAN Details</span>
+                {/* ── PAN EXPANDED CARD ── */}
+                {showPan && (
+                  <div className="pan-inline-card">
+                    <div className="pan-inline-header">
+                      <span className="pan-inline-title">PAN Details</span>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <button
+                          onClick={refreshKyc}
+                          disabled={kycRefreshing}
+                          title="Refresh KYC data"
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#135bec", padding: "2px 6px", borderRadius: 6 }}
+                        >
+                          {kycRefreshing ? "..." : "↺"}
+                        </button>
                         {campaign.creator.panDetails?.isPanVerified ? (
                           <span className="pan-verified-chip">&#10003; Verified</span>
                         ) : (
@@ -603,35 +667,119 @@ export default function AdminCampaignDetailsPage() {
                           </button>
                         )}
                       </div>
+                    </div>
 
-                      <div>
-                        <span className="label">PAN Number: </span>
-                        <span className="value">
-                          {campaign.creator.panDetails?.panNumber || "—"}
-                        </span>
+                    <div>
+                      <span className="label">PAN Number: </span>
+                      <span className="value">
+                        {campaign.creator.panDetails?.panNumber || "—"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="label">Name on PAN: </span>
+                      <span className="value">
+                        {campaign.creator.panDetails?.panName || "—"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="label">Address: </span>
+                      <span className="value">
+                        {campaign.creator.panDetails
+                          ? `${campaign.creator.panDetails.address}, ${campaign.creator.panDetails.city}, ${campaign.creator.panDetails.state} - ${campaign.creator.panDetails.pincode}`
+                          : "—"}
+                      </span>
+                    </div>
+
+                    <div style={{ marginTop: 12 }}>
+                      <div className="label" style={{ marginBottom: 6 }}>PAN Card PDF</div>
+                      {campaign.creator.panDetails?.panPdfSignedUrl ? (
+                        <a
+                          href={campaign.creator.panDetails.panPdfSignedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#f0f4ff", border: "1px solid #c7d7fc", borderRadius: 8, color: "#135bec", fontWeight: 600, fontSize: 13, textDecoration: "none" }}
+                        >
+                          &#128196; View PAN PDF
+                        </a>
+                      ) : (
+                        <span className="value">Not uploaded</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── AADHAAR EXPANDED CARD ── */}
+                {showAadhaar && (
+                    <div className="pan-inline-card">
+                      <div className="pan-inline-header">
+                        <span className="pan-inline-title">Aadhaar Details</span>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <button
+                            onClick={refreshKyc}
+                            disabled={kycRefreshing}
+                            title="Refresh KYC data"
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#135bec", padding: "2px 6px", borderRadius: 6 }}
+                          >
+                            {kycRefreshing ? "..." : "↺"}
+                          </button>
+                          {campaign.creator.aadhaarDetails?.isAadhaarVerified ? (
+                            <span className="pan-verified-chip">&#10003; Verified</span>
+                          ) : (
+                            <button
+                              className="verify-btn"
+                              disabled={actionLoading || !campaign.creator.aadhaarDetails?.aadhaarNumber}
+                              onClick={handleVerifyAadhaar}
+                            >
+                              Verify Aadhaar
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div>
-                        <span className="label">Name on PAN: </span>
+                        <span className="label">Aadhaar Number: </span>
                         <span className="value">
-                          {campaign.creator.panDetails?.panName || "—"}
+                          {campaign.creator.aadhaarDetails?.aadhaarNumber || "—"}
                         </span>
                       </div>
 
-                      <div>
-                        <span className="label">Address: </span>
-                        <span className="value">
-                          {campaign.creator.panDetails
-                            ? `${campaign.creator.panDetails.address},
-               ${campaign.creator.panDetails.city},
-               ${campaign.creator.panDetails.state} -
-               ${campaign.creator.panDetails.pincode}`
-                            : "—"}
-                        </span>
+                      <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                        <div>
+                          <div className="label" style={{ marginBottom: 6 }}>Front PDF</div>
+                          {campaign.creator.aadhaarDetails?.frontPdfSignedUrl ? (
+                            <a
+                              href={campaign.creator.aadhaarDetails.frontPdfSignedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#f0f4ff", border: "1px solid #c7d7fc", borderRadius: 8, color: "#135bec", fontWeight: 600, fontSize: 13, textDecoration: "none" }}
+                            >
+                              &#128196; View Front PDF
+                            </a>
+                          ) : (
+                            <span className="value">Not uploaded</span>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="label" style={{ marginBottom: 6 }}>Back PDF</div>
+                          {campaign.creator.aadhaarDetails?.backPdfSignedUrl ? (
+                            <a
+                              href={campaign.creator.aadhaarDetails.backPdfSignedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#f0f4ff", border: "1px solid #c7d7fc", borderRadius: 8, color: "#135bec", fontWeight: 600, fontSize: 13, textDecoration: "none" }}
+                            >
+                              &#128196; View Back PDF
+                            </a>
+                          ) : (
+                            <span className="value">Not uploaded</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
-                </div>
 
               </div>
             </div>

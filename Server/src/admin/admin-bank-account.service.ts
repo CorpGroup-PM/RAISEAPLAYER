@@ -121,6 +121,48 @@ export class AdminBankAccountService {
     };
   }
 
+  async verifyAadhaar(campaignId: string, adminId: string) {
+    const campaign = await this.prisma.fundraiser.findUnique({
+      where: { id: campaignId },
+      select: { creatorId: true },
+    });
+
+    if (!campaign) throw new NotFoundException('Campaign not found');
+
+    const aadhaarDetails = await this.prisma.aadhaarDetails.findUnique({
+      where: { userId: campaign.creatorId },
+      select: { id: true, isAadhaarVerified: true },
+    });
+
+    if (!aadhaarDetails) throw new NotFoundException('Aadhaar details not found for this campaign creator');
+
+    if (aadhaarDetails.isAadhaarVerified) {
+      return { id: aadhaarDetails.id, isAadhaarVerified: true };
+    }
+
+    const updated = await this.prisma.aadhaarDetails.update({
+      where: { id: aadhaarDetails.id },
+      data: {
+        isAadhaarVerified: true,
+        aadhaarVerifiedById: adminId,
+        aadhaarVerifiedAt: new Date(),
+      },
+    });
+
+    await this.audit(adminId, 'AADHAAR_VERIFIED', aadhaarDetails.id, 'AadhaarDetails', {
+      campaignId,
+      userId: campaign.creatorId,
+    });
+
+    return {
+      message: 'Aadhaar verified successfully.',
+      id: updated.id,
+      isAadhaarVerified: updated.isAadhaarVerified,
+      aadhaarVerifiedById: updated.aadhaarVerifiedById,
+      aadhaarVerifiedAt: updated.aadhaarVerifiedAt,
+    };
+  }
+
   async verifyRecipientAccount(id: string, adminId: string) {
     const account = await this.prisma.recipientAccount.findUnique({
       where: { id },

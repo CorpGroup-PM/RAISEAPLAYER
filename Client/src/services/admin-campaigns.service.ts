@@ -27,7 +27,9 @@ export const AdminCampaignsService = {
   },
 
   getCampaignById: (id: string) => {
-    return api.get(`/admin/campaigns/${id}`);
+    return api.get(`/admin/campaigns/${id}`, {
+      params: { _t: Date.now() },
+    });
   },
 
   approveCampaign: (id: string) => {
@@ -71,5 +73,9 @@ export const AdminCampaignsService = {
 
   verifyPan: (campaignId: string) => {
     return api.put(`/admin/campaigns/${campaignId}/verify-pan`);
+  },
+
+  verifyAadhaar: (campaignId: string) => {
+    return api.put(`/admin/campaigns/${campaignId}/verify-aadhaar`);
   },
 };

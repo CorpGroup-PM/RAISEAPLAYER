@@ -162,4 +162,100 @@ export class UserprofileController {
     const userId = req.user.sub;
     return this.userProfileService.updateProfilePicture(userId, file);
   }
+
+  // ------------------------------------------------------------------
+  // UPLOAD PAN PDF
+  // ------------------------------------------------------------------
+  @UseGuards(AccessTokenGuard)
+  @Put('pan-pdf')
+  @ApiOperation({ summary: 'Upload PAN card PDF' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+      required: ['file'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor(
+      'file',
+      createFileInterceptorOptions({
+        allowedMimeTypes: ['application/pdf'],
+        maxFileSizeMB: 10,
+      }),
+    ),
+  )
+  @ApiResponse({ status: 200, description: 'PAN PDF uploaded' })
+  async updatePanPdf(
+    @Req() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    return this.userProfileService.updatePanPdf(req.user.sub, file);
+  }
+
+  // ------------------------------------------------------------------
+  // UPLOAD AADHAAR FRONT PDF
+  // ------------------------------------------------------------------
+  @UseGuards(AccessTokenGuard)
+  @Put('aadhaar-front-pdf')
+  @ApiOperation({ summary: 'Upload Aadhaar front PDF (mandatory)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+      required: ['file'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor(
+      'file',
+      createFileInterceptorOptions({
+        allowedMimeTypes: ['application/pdf'],
+        maxFileSizeMB: 10,
+      }),
+    ),
+  )
+  @ApiResponse({ status: 200, description: 'Aadhaar front PDF uploaded' })
+  async updateAadhaarFrontPdf(
+    @Req() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    return this.userProfileService.updateAadhaarPdf(req.user.sub, file, 'front');
+  }
+
+  // ------------------------------------------------------------------
+  // UPLOAD AADHAAR BACK PDF
+  // ------------------------------------------------------------------
+  @UseGuards(AccessTokenGuard)
+  @Put('aadhaar-back-pdf')
+  @ApiOperation({ summary: 'Upload Aadhaar back PDF (mandatory)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+      required: ['file'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor(
+      'file',
+      createFileInterceptorOptions({
+        allowedMimeTypes: ['application/pdf'],
+        maxFileSizeMB: 10,
+      }),
+    ),
+  )
+  @ApiResponse({ status: 200, description: 'Aadhaar back PDF uploaded' })
+  async updateAadhaarBackPdf(
+    @Req() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    return this.userProfileService.updateAadhaarPdf(req.user.sub, file, 'back');
+  }
 }

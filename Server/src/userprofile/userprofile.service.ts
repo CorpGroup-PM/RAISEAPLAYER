@@ -16,7 +16,30 @@ export class UserprofileService {
     private readonly awsS3Service: AwsS3Service,
   ) {}
 
-  /** Decrypt encrypted panNumber and return masked form (XXXXX1234F). */
+  /** Decrypt encrypted panNumber, mask it, and attach signed PDF URL if available. */
+  private async buildPanResponse(
+    pan: Record<string, any> | null,
+  ): Promise<Record<string, any> | null> {
+    if (!pan) return null;
+
+    let maskedPan = pan;
+    if (pan.panNumber) {
+      try {
+        const plain = CryptoHelper.decryptField(pan.panNumber);
+        maskedPan = { ...pan, panNumber: 'XXXXX' + plain.slice(5) };
+      } catch {
+        maskedPan = { ...pan, panNumber: 'XXXXXXXXXX' };
+      }
+    }
+
+    const panPdfSignedUrl = pan.panPdfKey
+      ? await this.awsS3Service.getSignedDocumentUrl(pan.panPdfKey).catch(() => null)
+      : null;
+
+    return { ...maskedPan, panPdfSignedUrl };
+  }
+
+  /** @deprecated Use buildPanResponse for full response. Kept for quick masking inside updateProfile. */
   private maskPan(pan: Record<string, any> | null): Record<string, any> | null {
     if (!pan?.panNumber) return pan;
     try {
@@ -25,6 +48,40 @@ export class UserprofileService {
     } catch {
       return { ...pan, panNumber: 'XXXXXXXXXX' };
     }
+  }
+
+  /** Decrypt encrypted aadhaarNumber, mask it, and attach signed image URLs. */
+  private async buildAadhaarResponse(
+    aadhaar: Record<string, any> | null,
+  ): Promise<Record<string, any> | null> {
+    if (!aadhaar) return null;
+
+    let maskedNumber: string | null = null;
+    if (aadhaar.aadhaarNumber) {
+      try {
+        const plain = CryptoHelper.decryptField(aadhaar.aadhaarNumber);
+        maskedNumber = 'XXXXXXXX' + plain.slice(8);
+      } catch {
+        maskedNumber = 'XXXXXXXXXXXX';
+      }
+    }
+
+    const frontPdfSignedUrl = aadhaar.frontPdfKey
+      ? await this.awsS3Service.getSignedDocumentUrl(aadhaar.frontPdfKey)
+      : null;
+
+    const backPdfSignedUrl = aadhaar.backPdfKey
+      ? await this.awsS3Service.getSignedDocumentUrl(aadhaar.backPdfKey)
+      : null;
+
+    return {
+      id: aadhaar.id,
+      userId: aadhaar.userId,
+      aadhaarNumber: maskedNumber,
+      isAadhaarVerified: aadhaar.isAadhaarVerified,
+      frontPdfSignedUrl,
+      backPdfSignedUrl,
+    };
   }
 
   // async createPan(userId: string, dto: PanDetailsDto) {
@@ -48,7 +105,7 @@ export class UserprofileService {
   async getUserProfilewithPan(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { panDetails: true },
+      include: { panDetails: true, aadhaarDetails: true },
     });
 
     if (!user) {
@@ -63,12 +120,13 @@ export class UserprofileService {
       phoneNumber: user.phoneNumber,
       profileImageUrl: user.profileImageUrl,
       role: user.role,
-      panDetails: this.maskPan(user.panDetails),
+      panDetails: await this.buildPanResponse(user.panDetails),
+      aadhaarDetails: await this.buildAadhaarResponse(user.aadhaarDetails),
     };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    const { firstName, lastName, phoneNumber, panDetails } = dto;
+    const { firstName, lastName, phoneNumber, panDetails, aadhaarDetails } = dto;
 
     //  Checking user exist
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -112,10 +170,35 @@ export class UserprofileService {
       });
     }
 
+    //  Aadhaar number update (required when aadhaarDetails block is provided)
+    if (aadhaarDetails) {
+      const existingAadhaar = await this.prisma.aadhaarDetails.findUnique({
+        where: { userId },
+        select: { isAadhaarVerified: true },
+      });
+      if (existingAadhaar?.isAadhaarVerified) {
+        throw new BadRequestException('Aadhaar details have been verified by admin and cannot be edited.');
+      }
+
+      const isRealAadhaar = !aadhaarDetails.aadhaarNumber.startsWith('XXXXXXXX');
+      if (isRealAadhaar) {
+        await this.prisma.aadhaarDetails.upsert({
+          where: { userId },
+          create: {
+            userId,
+            aadhaarNumber: CryptoHelper.encryptField(aadhaarDetails.aadhaarNumber),
+          },
+          update: {
+            aadhaarNumber: CryptoHelper.encryptField(aadhaarDetails.aadhaarNumber),
+          },
+        });
+      }
+    }
+
     //  Fetching and updating data
     const updated = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { panDetails: true },
+      include: { panDetails: true, aadhaarDetails: true },
     });
 
     if (!updated) throw new NotFoundException('User not found');
@@ -127,6 +210,7 @@ export class UserprofileService {
       lastName: updated.lastName,
       phoneNumber: updated.phoneNumber,
       panDetails: this.maskPan(updated.panDetails),
+      aadhaarDetails: await this.buildAadhaarResponse(updated.aadhaarDetails),
     };
   }
 
@@ -156,15 +240,27 @@ export class UserprofileService {
 
   async getKycStatus(userId: string): Promise<{
     panCompleted: boolean;
+    aadhaarCompleted: boolean;
     panNumberMasked?: string;
     kycStatus: 'COMPLETE' | 'INCOMPLETE';
   }> {
-    const pan = await this.prisma.panDetails.findUnique({
-      where: { userId },
-      select: { panNumber: true },
-    });
+    const [pan, aadhaar] = await Promise.all([
+      this.prisma.panDetails.findUnique({
+        where: { userId },
+        select: { panNumber: true },
+      }),
+      this.prisma.aadhaarDetails.findUnique({
+        where: { userId },
+        select: { aadhaarNumber: true, frontPdfKey: true, backPdfKey: true },
+      }),
+    ]);
 
     const panCompleted = !!pan?.panNumber;
+    const aadhaarCompleted = !!(
+      aadhaar?.aadhaarNumber &&
+      aadhaar.frontPdfKey &&
+      aadhaar.backPdfKey
+    );
 
     let panNumberMasked: string | undefined;
     if (panCompleted && pan?.panNumber) {
@@ -178,8 +274,85 @@ export class UserprofileService {
 
     return {
       panCompleted,
-      kycStatus: panCompleted ? 'COMPLETE' : 'INCOMPLETE',
+      aadhaarCompleted,
+      kycStatus: panCompleted && aadhaarCompleted ? 'COMPLETE' : 'INCOMPLETE',
       ...(panNumberMasked ? { panNumberMasked } : {}),
+    };
+  }
+
+  async updateAadhaarPdf(
+    userId: string,
+    file: Express.Multer.File,
+    side: 'front' | 'back',
+  ): Promise<{ message: string; signedUrl: string }> {
+    const existing = await this.prisma.aadhaarDetails.findUnique({
+      where: { userId },
+      select: { isAadhaarVerified: true, frontPdfKey: true, backPdfKey: true },
+    });
+
+    const oldKey = side === 'front' ? existing?.frontPdfKey : existing?.backPdfKey;
+
+    if (existing?.isAadhaarVerified) {
+      throw new BadRequestException('Aadhaar details have been verified by admin and cannot be edited.');
+    }
+
+    const key = await this.awsS3Service.uploadKycPdf(file, userId, side);
+
+    // Delete old PDF from S3 if exists
+    if (oldKey) {
+      await this.awsS3Service.deleteFile(oldKey).catch(() => {/* non-critical */});
+    }
+
+    await this.prisma.aadhaarDetails.upsert({
+      where: { userId },
+      create: {
+        userId,
+        [side === 'front' ? 'frontPdfKey' : 'backPdfKey']: key,
+      },
+      update: {
+        [side === 'front' ? 'frontPdfKey' : 'backPdfKey']: key,
+      },
+    });
+
+    const signedUrl = await this.awsS3Service.getSignedDocumentUrl(key);
+
+    return {
+      message: `Aadhaar ${side} PDF uploaded successfully.`,
+      signedUrl,
+    };
+  }
+
+  async updatePanPdf(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<{ message: string; signedUrl: string }> {
+    const existing = await this.prisma.panDetails.findUnique({
+      where: { userId },
+      select: { isPanVerified: true, panPdfKey: true },
+    });
+
+    if (existing?.isPanVerified) {
+      throw new BadRequestException('PAN details have been verified by admin and cannot be edited.');
+    }
+
+    const key = await this.awsS3Service.uploadPanPdf(file, userId);
+
+    // Delete old PDF from S3 if exists
+    if (existing?.panPdfKey) {
+      await this.awsS3Service.deleteFile(existing.panPdfKey).catch(() => {/* non-critical */});
+    }
+
+    await this.prisma.panDetails.upsert({
+      where: { userId },
+      create: { userId, panPdfKey: key },
+      update: { panPdfKey: key },
+    });
+
+    const signedUrl = await this.awsS3Service.getSignedDocumentUrl(key);
+
+    return {
+      message: 'PAN PDF uploaded successfully.',
+      signedUrl,
     };
   }
 }

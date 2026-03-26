@@ -179,14 +179,14 @@
 .up-field {
   display: flex;
   flex-direction: column;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .up-field label {
   font-size: 14px;
   font-weight: 600;
-  color: #444;
-  margin-bottom: 6px;
+  color: #374151;
+  margin-bottom: 8px;
 }
 
 .up-field input {
@@ -327,4 +327,151 @@
   border-radius: 8px;
   padding: 8px 12px;
   margin-bottom: 12px;
+}
+
+/* ── Aadhaar PDF Section ── */
+
+/* Hint info box */
+.aadhaar-hint-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.aadhaar-hint-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.aadhaar-hint-text {
+  font-size: 12.5px;
+  color: #92400e;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Side-by-side cards row */
+.aadhaar-pdf-row {
+  display: flex;
+  gap: 12px;
+}
+
+/* Individual card */
+.aadhaar-pdf-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0px 12px 12px;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  background: #fafafa;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  text-align: center;
+}
+
+.aadhaar-pdf-card.uploaded {
+  border: 2px solid #bbf7d0;
+  background: #f0fdf4;
+}
+
+/* .aadhaar-pdf-card-icon {
+  font-size: 28px;
+  line-height: 1;
+} */
+
+.aadhaar-pdf-card-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+
+/* Upload button inside card */
+.aadhaar-pdf-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  background: #135bec;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-top: 4px;
+}
+
+.aadhaar-pdf-upload-btn:hover {
+  background: #0d49c7;
+}
+
+.aadhaar-pdf-upload-btn.loading,
+.aadhaar-pdf-upload-btn.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Uploaded state — view + replace */
+.aadhaar-pdf-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.aadhaar-pdf-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 16px;
+  background: #f0f4ff;
+  border: 1px solid #c7d7fc;
+  border-radius: 8px;
+  color: #135bec;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  width: 100%;
+  transition: background 0.15s ease;
+}
+
+.aadhaar-pdf-view-btn:hover {
+  background: #e0eaff;
+}
+
+.aadhaar-pdf-replace-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s ease;
+}
+
+.aadhaar-pdf-replace-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+@media (max-width: 480px) {
+  .aadhaar-pdf-row {
+    flex-direction: column;
+  }
 }

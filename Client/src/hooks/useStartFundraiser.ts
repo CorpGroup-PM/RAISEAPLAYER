@@ -22,14 +22,14 @@ export function useStartFundraiser() {
     setKycCheckLoading(true);
     try {
       const res = await UserService.getKycStatus();
-      if (!res.data.panCompleted) {
+      if (!res.data.panCompleted || !res.data.aadhaarCompleted) {
         setIsKycModalOpen(true);
       } else {
         router.push("/start-fundraiser");
       }
     } catch {
       toastManager.show(
-        "Unable to verify PAN status. Please try again.",
+        "Unable to verify KYC status. Please try again.",
         "error",
       );
     } finally {

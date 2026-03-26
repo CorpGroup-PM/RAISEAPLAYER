@@ -60,6 +60,14 @@ interface PanDetails {
   country: string | null;
   pincode: string | null;
   isPanVerified?: boolean;
+  panPdfSignedUrl?: string | null;
+}
+
+interface AadhaarDetails {
+  aadhaarNumber: string | null;
+  isAadhaarVerified?: boolean;
+  frontPdfSignedUrl?: string | null;
+  backPdfSignedUrl?: string | null;
 }
 
 interface User {
@@ -71,6 +79,7 @@ interface User {
   role: "USER" | "ADMIN";
   profilePicture?: string | null;
   panDetails?: PanDetails | null;
+  aadhaarDetails?: AadhaarDetails | null;
 }
 
 
