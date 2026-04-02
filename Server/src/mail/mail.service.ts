@@ -42,6 +42,22 @@ export class MailService {
     }
   }
 
+  // Strip HTML tags to generate plain-text fallback
+  private htmlToText(html: string): string {
+    return html
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
   // Load & compile Handlebars template
   private renderTemplate(templatePath: string, context: any = {}) {
     try {
@@ -78,7 +94,11 @@ export class MailService {
         from: `"RaiseAPlayer" <${process.env.MAIL_USER}>`,
         to,
         subject,
+        text: this.htmlToText(html),
         html,
+        headers: {
+          'List-Unsubscribe': `<mailto:${process.env.MAIL_USER}?subject=unsubscribe>`,
+        },
         attachments,
       });
     } catch (error) {
@@ -129,7 +149,7 @@ export class MailService {
 
     await this.sendMail(
       email,
-      '🎉 Your Fundraiser Has Been Approved',
+      'Your Fundraiser Has Been Approved',
       html,
     );
   }
@@ -160,7 +180,7 @@ export class MailService {
 
     await this.sendMail(
       email,
-      '❌ Your Fundraiser Was Rejected',
+      'Your Fundraiser Was Rejected',
       html,
     );
   }
@@ -190,7 +210,7 @@ export class MailService {
 
     await this.sendMail(
       email,
-      '🚀 Your Fundraiser Is Now Live',
+      'Your Fundraiser Is Now Live',
       html,
     );
   }
@@ -239,7 +259,7 @@ export class MailService {
 
     await this.sendMail(
       email,
-      '💖 You Received a New Donation',
+      'You Received a New Donation',
       html,
     );
   }
@@ -270,7 +290,7 @@ export class MailService {
 
     await this.sendMail(
       email,
-      'Thank You for Your Support 💙',
+      'Thank You for Your Support',
       html,
       [
         {
@@ -307,7 +327,7 @@ export class MailService {
 
     await this.sendMail(
       email,
-      '🎉 Welcome to RaiseAPlayer!',
+      'Welcome to RaiseAPlayer',
       html,
     );
   }
@@ -337,7 +357,7 @@ export class MailService {
 
     await this.sendMail(
       email,
-      '📌 Your Fundraiser Has Been Created',
+      'Your Fundraiser Has Been Created',
       html,
     );
   }
@@ -383,7 +403,7 @@ a{color:#16a34a;text-decoration:none;font-weight:800}
       css,
     });
 
-    await this.sendMail(email, '💸 Payout Request Submitted', html);
+    await this.sendMail(email, 'Payout Request Submitted', html);
   }
 
   async sendPayoutRequestAdminMail(
@@ -429,7 +449,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
       css,
     });
 
-    await this.sendMail(emails.join(','), '🚨 New Payout Request Pending', html);
+    await this.sendMail(emails.join(','), 'New Payout Request Pending', html);
   }
 
 
@@ -454,7 +474,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
 
     await this.sendMail(
       email,
-      '✅ Your payout request has been approved',
+      'Your Payout Request Has Been Approved',
       html,
     );
   }
@@ -481,7 +501,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
 
     await this.sendMail(
       email,
-      '❌ Your payout request was rejected',
+      'Your Payout Request Was Rejected',
       html,
     );
   }
@@ -508,7 +528,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
 
     await this.sendMail(
       email,
-      '⚠️ Your payout transfer failed',
+      'Your Payout Transfer Failed',
       html,
     );
   }
@@ -535,7 +555,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
 
     await this.sendMail(
       email,
-      '💰 Your payout has been successfully transferred',
+      'Your Payout Has Been Successfully Transferred',
       html,
     );
   }
@@ -570,9 +590,78 @@ a{color:#b42318;text-decoration:none;font-weight:900}
 
     await this.sendMail(
       email,
-      '💙 Thank You for Your Foundation Donation',
+      'Thank You for Your Foundation Donation',
       html,
       attachments,
+    );
+  }
+
+  // VOLUNTEER ACCEPTED EMAIL
+  async sendVolunteerAcceptedMail(
+    email: string,
+    data: {
+      name: string;
+      volunteerId: string;
+    },
+  ) {
+    const body = this.renderTemplate('volunteer/accepted.hbs', data);
+
+    const css = `
+:root{color-scheme:light}
+body{margin:0!important;padding:0!important;background:#f6f7fb!important;font-family:Arial,Helvetica,sans-serif;color:#101828}
+.wrapper{width:100%;background:#f6f7fb;padding:24px 0}
+.container{max-width:640px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #eaecf0;box-shadow:0 8px 28px rgba(16,24,40,.10)}
+.content{padding:22px}
+h1{font-size:20px;font-weight:900;margin:0 0 14px 0}
+p{font-size:14px;line-height:22px;color:#475467;margin:0 0 12px 0}
+strong{color:#101828}
+.footer{padding:16px 22px;border-top:1px solid #eaecf0;font-size:11px;color:#98a2b3;line-height:16px}
+a{color:#065f46;text-decoration:none;font-weight:800}
+`;
+
+    const html = this.renderTemplate('layouts/main.hbs', {
+      title: 'Your Volunteer Application Has Been Approved',
+      body,
+      css,
+    });
+
+    await this.sendMail(
+      email,
+      'You are now a RaiseAPlayer Volunteer',
+      html,
+    );
+  }
+
+  // VOLUNTEER REJECTED EMAIL
+  async sendVolunteerRejectedMail(
+    email: string,
+    data: { name: string },
+  ) {
+    const body = this.renderTemplate('volunteer/rejected.hbs', data);
+
+    const css = `
+:root{color-scheme:light}
+body{margin:0!important;padding:0!important;background:#f6f7fb!important;font-family:Arial,Helvetica,sans-serif;color:#101828}
+.wrapper{width:100%;background:#f6f7fb;padding:24px 0}
+.container{max-width:640px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #eaecf0;box-shadow:0 8px 28px rgba(16,24,40,.10)}
+.content{padding:22px}
+h1{font-size:20px;font-weight:900;margin:0 0 14px 0}
+p{font-size:14px;line-height:22px;color:#475467;margin:0 0 12px 0}
+strong{color:#101828}
+.footer{padding:16px 22px;border-top:1px solid #eaecf0;font-size:11px;color:#98a2b3;line-height:16px}
+a{color:#991b1b;text-decoration:none;font-weight:800}
+`;
+
+    const html = this.renderTemplate('layouts/main.hbs', {
+      title: 'Your Volunteer Application',
+      body,
+      css,
+    });
+
+    await this.sendMail(
+      email,
+      'Update on Your Volunteer Application — RaiseAPlayer',
+      html,
     );
   }
 
@@ -607,7 +696,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
       css: '',
     });
 
-    await this.sendMail(adminEmail, '📩 New Contact Us Form Submission', html);
+    await this.sendMail(adminEmail, 'New Contact Us Form Submission', html);
   }
 
   async sendFundraiserCompletedMail(
@@ -633,7 +722,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
 
     await this.sendMail(
       email,
-      `🎉 Fundraiser Completed: ${data.title}`,
+      `Fundraiser Completed: ${data.title}`,
       html,
     );
   }
@@ -671,7 +760,7 @@ a{color:#b42318;text-decoration:none;font-weight:900}
 
     //  send to all admins
     for (const email of toList) {
-      await this.sendMail(email, `✅ Campaign Completed: ${data.title}`, html);
+      await this.sendMail(email, `Campaign Completed: ${data.title}`, html);
     }
   }
 }

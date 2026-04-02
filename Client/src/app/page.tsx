@@ -8,6 +8,9 @@ import { AnalyticsService } from "@/services/analytics.service";
 import { useStartFundraiser } from "@/hooks/useStartFundraiser";
 import PanKycModal from "@/components/Pan-Kyc-Modal/PanKycModal";
 import ShareButton from "@/components/ShareButton/ShareButton";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/toast/ToastContext";
+import { VolunteerService } from "@/services/volunteer.service";
 
 type FundraiserTop = {
   id: string;
@@ -55,6 +58,8 @@ const SPONSORS = [
 
 export default function Home() {
   const router = useRouter();
+  const { user, isLoaded } = useAuth();
+  const { addToast } = useToast();
   const {
     handleStartFundraiser,
     kycCheckLoading,
@@ -62,6 +67,13 @@ export default function Home() {
     closeKycModal,
   } = useStartFundraiser();
   const [sidebarVisible, setSidebarVisible] = useState(true);
+
+  // Volunteer
+  const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+  const [volunteerCity, setVolunteerCity] = useState("");
+  const [volunteerMessage, setVolunteerMessage] = useState("");
+  const [volunteerSubmitting, setVolunteerSubmitting] = useState(false);
+  const [myVolunteer, setMyVolunteer] = useState<{ id: string; status: string } | null | undefined>(undefined);
   const [trustTab, setTrustTab] = useState<"FUNDRAISERS" | "DONORS">(
     "FUNDRAISERS",
   );
@@ -125,6 +137,43 @@ export default function Home() {
     loadTopCampaigns();
     loadPublicReviews();
   }, []);
+
+  // Load volunteer status for logged-in users
+  useEffect(() => {
+    if (!isLoaded || !user) { setMyVolunteer(null); return; }
+    VolunteerService.getMyStatus()
+      .then((res) => setMyVolunteer(res.data ?? null))
+      .catch(() => setMyVolunteer(null));
+  }, [isLoaded, user]);
+
+  const handleVolunteerClick = () => {
+    if (!user) { router.push("/login"); return; }
+    if (myVolunteer?.status === "PENDING") {
+      addToast("Your application is under review. Check your profile for status.", "info");
+      return;
+    }
+    setShowVolunteerModal(true);
+  };
+
+  const handleVolunteerSubmit = async () => {
+    if (!volunteerCity.trim()) { addToast("City is required", "error"); return; }
+    try {
+      setVolunteerSubmitting(true);
+      const res = await VolunteerService.apply({
+        city: volunteerCity.trim(),
+        message: volunteerMessage.trim() || undefined,
+      });
+      setMyVolunteer(res.data?.volunteer ?? null);
+      setShowVolunteerModal(false);
+      setVolunteerCity("");
+      setVolunteerMessage("");
+      addToast("Application submitted! Check your profile for status updates.", "success");
+    } catch (err: any) {
+      addToast(err?.response?.data?.message || "Failed to submit application", "error");
+    } finally {
+      setVolunteerSubmitting(false);
+    }
+  };
 
   const handleSponsorClick = async () => {
     try { await AnalyticsService.trackSponsorClick(); } catch { /* non-blocking */ }
@@ -199,6 +248,13 @@ export default function Home() {
                 >
                   DONATE FOR FOUNDATION DEVELOPMENT
                 </button>
+
+                {/* Volunteer button — only show when no application or rejected */}
+                {!myVolunteer || myVolunteer.status === "REJECTED" ? (
+                  <button className="home-volunteerBtn" onClick={handleVolunteerClick}>
+                    Become a Volunteer
+                  </button>
+                ) : null}
               </div>
 
             </div>
@@ -782,6 +838,94 @@ export default function Home() {
       </div>{/* end pageOuter */}
 
       <PanKycModal isOpen={isKycModalOpen} onClose={closeKycModal} />
+
+      {/* VOLUNTEER MODAL */}
+      {showVolunteerModal && user && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 1000, padding: 16,
+          }}
+          onClick={() => setShowVolunteerModal(false)}
+        >
+          <div
+            style={{
+              background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480,
+              maxHeight: "90vh", overflowY: "auto",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              display: "flex", flexDirection: "column",
+              fontFamily: "Manrope, sans-serif",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 12px", borderBottom: "1px solid #f0f0f0" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Become a Volunteer</h3>
+              <button onClick={() => setShowVolunteerModal(false)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}>&#x2715;</button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "16px 24px", flex: 1 }}>
+              <p style={{ fontSize: 13.5, color: "#6b7280", marginBottom: 16, lineHeight: 1.5 }}>
+                Join the Navyug RaiseAPlayer Foundation as a volunteer and help raise the next generation of players.
+              </p>
+              {[
+                { label: "Name", value: `${user.firstName} ${user.lastName}` },
+                { label: "Email", value: user.email },
+                { label: "Phone", value: user.phoneNumber ?? "" },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>{label}</label>
+                  <input value={value} readOnly style={{ width: "100%", padding: "9px 12px", border: "1px solid #e5e7eb", borderRadius: 8, background: "#f9fafb", fontSize: 14, color: "#6b7280", boxSizing: "border-box" }} />
+                </div>
+              ))}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>
+                  City <span style={{ color: "#e53e3e" }}>*</span>
+                </label>
+                <input
+                  value={volunteerCity}
+                  onChange={(e) => setVolunteerCity(e.target.value)}
+                  placeholder="Enter your city"
+                  style={{ width: "100%", padding: "9px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ marginBottom: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>Message (optional)</label>
+                <textarea
+                  value={volunteerMessage}
+                  onChange={(e) => setVolunteerMessage(e.target.value)}
+                  placeholder="Why do you want to volunteer?"
+                  rows={3}
+                  style={{ width: "100%", padding: "9px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, resize: "vertical", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: "flex", gap: 10, padding: "12px 24px 20px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowVolunteerModal(false)}
+                style={{ padding: "9px 20px", background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleVolunteerSubmit}
+                disabled={volunteerSubmitting}
+                style={{
+                  padding: "9px 22px", background: "#0f6fec", border: "none", borderRadius: 8,
+                  fontSize: 14, fontWeight: 600, color: "#fff", cursor: volunteerSubmitting ? "not-allowed" : "pointer",
+                  opacity: volunteerSubmitting ? 0.7 : 1,
+                }}
+              >
+                {volunteerSubmitting ? "Submitting..." : "Submit Application"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

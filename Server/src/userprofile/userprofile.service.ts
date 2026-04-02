@@ -120,6 +120,7 @@ export class UserprofileService {
       phoneNumber: user.phoneNumber,
       profileImageUrl: user.profileImageUrl,
       role: user.role,
+      provider: user.provider,
       panDetails: await this.buildPanResponse(user.panDetails),
       aadhaarDetails: await this.buildAadhaarResponse(user.aadhaarDetails),
     };

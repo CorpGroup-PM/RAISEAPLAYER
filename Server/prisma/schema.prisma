@@ -88,6 +88,12 @@ enum TransferStatus {
   CANCELLED
 }
 
+enum VolunteerStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 // ----------------------------------------------------------------------
 // 3. USER & AUTH DOMAIN
 // ----------------------------------------------------------------------
@@ -125,6 +131,7 @@ model User {
   transferRequestsCreated   FundTransferRequest[] @relation("TransferRequestedBy")
   transferRequestsReviewed  FundTransferRequest[] @relation("TransferReviewedBy")
   verifiedRecipientAccounts RecipientAccount[]    @relation("RecipientAccountVerifiedBy")
+  volunteer                 Volunteer?
 
   @@map("users")
 }
@@ -604,4 +611,38 @@ model SponsorClick {
   clickedAt DateTime @default(now()) @map("clicked_at")
 
   @@map("sponsor_clicks")
+}
+
+// ----------------------------------------------------------------------
+// VOLUNTEER
+// ----------------------------------------------------------------------
+
+model Volunteer {
+  id        String          @id               // e.g. NRPF202603270001
+  userId    String          @unique           @map("user_id")
+  city      String
+  message   String?
+  status    VolunteerStatus @default(PENDING)
+  createdAt DateTime        @default(now())   @map("created_at")
+  updatedAt DateTime        @updatedAt        @map("updated_at")
+
+  user       User                @relation(fields: [userId], references: [id])
+  activities VolunteerActivity[]
+
+  @@map("volunteers")
+}
+
+model VolunteerActivity {
+  id             String   @id @default(uuid())
+  volunteerId    String   @map("volunteer_id")
+  imageUrl       String   @map("image_url")
+  date           DateTime
+  note           String   @db.Text
+  helpedCampaign String   @map("helped_campaign")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  volunteer Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  @@index([volunteerId])
+  @@map("volunteer_activities")
 }

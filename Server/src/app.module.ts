@@ -24,6 +24,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { ReceiptService } from './receipt/receipt.service';
 import { ContactusModule } from './contactus/contactus.module';
 import { FoundationModule } from './foundation/foundation.module';
+import { VolunteerModule } from './volunteer/volunteer.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { VirusScanModule } from './common/virus-scan/virus-scan.module';
@@ -98,6 +99,7 @@ import { VirusScanModule } from './common/virus-scan/virus-scan.module';
     ContactusModule,
     FoundationModule,
     AnalyticsModule,
+    VolunteerModule,
   
   ],
   controllers: [AppController,],

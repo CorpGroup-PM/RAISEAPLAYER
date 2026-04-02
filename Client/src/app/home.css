@@ -1933,8 +1933,8 @@
   cursor: pointer;
   padding: 13px 26px;
   border-radius: 999px;
-  background: white;
-  color: black;
+  background: linear-gradient(135deg, #ff7a18 0%, #ff9f43 100%);
+  color: #ffffff;
   font-weight: 700;
   font-size: 15px;
   box-shadow: 0 8px 24px rgba(255, 122, 24, 0.3);
@@ -1943,7 +1943,7 @@
 
 .home-primaryBtn:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 32px rgba(255, 122, 24, 0.4);
+  box-shadow: 0 12px 32px rgba(222, 121, 49, 0.4);
 }
 
 .home-primaryBtn:active {
@@ -1964,32 +1964,39 @@
   backdrop-filter: blur(8px);
 }
 
+.home-secondaryBtn:hover {
+  background: linear-gradient(135deg, #e86c10 0%, #f08c30 100%);
+  border-color: rgba(15, 23, 42, 0.18);
+  box-shadow: 0 8px 20px rgba(255, 122, 24, 0.35);
+  transform: translateY(-1px);
+}
+
 .home-secondaryBtn1 {
-  border: 1.5px solid rgba(15, 23, 42, 0.12);
-  cursor: pointer;
-  padding: 13px 26px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #0f172a;
-  font-weight: 700;
-  font-size: 12px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(8px);
   display: none;
 }
 
 @media (max-width: 768px) {
   .home-secondaryBtn1 {
     display: block;
+    cursor: pointer;
+    padding: 13px 20px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #ff7a18 0%, #ff9f43 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+    box-shadow: 0 6px 20px rgba(255, 122, 24, 0.35);
+    transition: all 0.25s ease;
+    width: 100%;
   }
-}
 
-.home-secondaryBtn:hover {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.18);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
-  transform: translateY(-1px);
+  .home-secondaryBtn1:hover {
+    background: linear-gradient(135deg, #e86c10 0%, #f08c30 100%);
+    box-shadow: 0 8px 24px rgba(255, 122, 24, 0.45);
+    transform: translateY(-1px);
+  }
 }
 
 /* Hero responsive */
@@ -3591,3 +3598,32 @@
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
+
+/* ── Volunteer hero button & badge ── */
+.home-volunteerBtn {
+  border: 1.5px solid #0f6fec;
+  cursor: pointer;
+  padding: 13px 26px;
+  border-radius: 999px;
+  background: rgba(15, 111, 236, 0.08);
+  color: #0f6fec;
+  font-weight: 700;
+  font-size: 15px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.home-volunteerBtn:hover {
+  background: #0f6fec;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 111, 236, 0.25);
+}
+.home-volunteer-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.home-volunteer-badge.accepted { background: #d1fae5; color: #065f46; }
+.home-volunteer-badge.pending  { background: #fef3c7; color: #92400e; }

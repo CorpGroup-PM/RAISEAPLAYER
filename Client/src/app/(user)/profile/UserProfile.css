@@ -475,3 +475,143 @@
     flex-direction: column;
   }
 }
+
+/* ----------------------------- */
+/* Volunteer button & badges     */
+/* ----------------------------- */
+.up-volunteer-btn {
+  margin-top: 14px;
+  padding: 9px 22px;
+  background: #0f6fec;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.up-volunteer-btn:hover {
+  background: #0a58ca;
+}
+
+.up-volunteer-badge {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.up-volunteer-badge.accepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+.up-volunteer-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.up-volunteer-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ----------------------------- */
+/* Volunteer modal                */
+/* ----------------------------- */
+.up-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.up-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+
+.up-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.up-modal-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+.up-modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  line-height: 1;
+}
+.up-modal-close:hover {
+  color: #111;
+}
+
+.up-modal-body {
+  padding: 16px 24px;
+  flex: 1;
+}
+.up-modal-intro {
+  font-size: 13.5px;
+  color: #6b7280;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.up-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 24px 20px;
+  justify-content: flex-end;
+}
+.up-modal-cancel {
+  padding: 9px 20px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+}
+.up-modal-cancel:hover {
+  background: #e5e7eb;
+}
+.up-modal-submit {
+  padding: 9px 22px;
+  background: #0f6fec;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.up-modal-submit:hover:not(:disabled) {
+  background: #0a58ca;
+}
+.up-modal-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

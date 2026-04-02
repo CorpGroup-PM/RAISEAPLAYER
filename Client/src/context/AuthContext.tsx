@@ -77,6 +77,7 @@ interface User {
   lastName: string;
   phoneNumber: string;
   role: "USER" | "ADMIN";
+  provider?: "LOCAL" | "GOOGLE";
   profilePicture?: string | null;
   panDetails?: PanDetails | null;
   aadhaarDetails?: AadhaarDetails | null;

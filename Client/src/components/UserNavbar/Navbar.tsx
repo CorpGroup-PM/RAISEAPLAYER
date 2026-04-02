@@ -68,6 +68,10 @@ export default function Navbar() {
           <li className={pathname === "/contact" ? "active" : ""}>
             <Link href="/contact">Contact us</Link>
           </li>
+
+          <li className={pathname === "/volunteers" ? "active" : ""}>
+            <Link href="/volunteers">Volunteer Impact</Link>
+          </li>
         </ul>
 
         <div className="rp-right">
@@ -138,7 +142,7 @@ export default function Navbar() {
                         className="rp-dd-btn"
                         onClick={() => setProfileOpen(false)}
                       >
-                        My donations
+                        My Donations
                       </button>
                     </Link>
 
@@ -147,7 +151,16 @@ export default function Navbar() {
                         className="rp-dd-btn"
                         onClick={() => setProfileOpen(false)}
                       >
-                        My profile
+                        My Profile
+                      </button>
+                    </Link>
+
+                    <Link href="/volunteer">
+                      <button
+                        className="rp-dd-btn"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        My Volunteer
                       </button>
                     </Link>
 
@@ -213,6 +226,13 @@ export default function Navbar() {
           >
             <Link href="/contact">Contact us</Link>
           </li>
+
+          <li
+            className={pathname === "/volunteers" ? "active" : ""}
+            onClick={() => setMenuOpen(false)}
+          >
+            <Link href="/volunteers">Volunteer Impact</Link>
+          </li>
         </ul>
 
         <div className="rp-mobile-bottom">
@@ -272,6 +292,15 @@ export default function Navbar() {
                   onClick={() => setMenuOpen(false)}
                 >
                   My Profile
+                </button>
+              </Link>
+
+              <Link href="/volunteer">
+                <button
+                  className="rp-mobile-secondary"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Volunteer
                 </button>
               </Link>
 

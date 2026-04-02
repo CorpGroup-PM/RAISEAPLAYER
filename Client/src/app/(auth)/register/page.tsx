@@ -164,7 +164,7 @@ export default function Register() {
       reset();
       window.location.href = "/login";
     } catch {
-      addToast("Registration failed. Please try again.", "error");
+      // error toast is already shown by the API interceptor
     } finally {
       loadingManager.stop();
     }

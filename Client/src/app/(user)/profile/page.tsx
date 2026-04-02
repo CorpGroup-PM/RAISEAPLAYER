@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserService } from "@/services/user.service";
+import { VolunteerService } from "@/services/volunteer.service";
 import { useToast } from "@/components/toast/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useRef, useState } from "react";
@@ -97,6 +98,13 @@ export default function UserProfile() {
   // Tracks whether any PDF was uploaded since last Save — enables the Save button
   const [hasPdfChanged, setHasPdfChanged] = useState(false);
 
+  // Volunteer
+  const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+  const [volunteerCity, setVolunteerCity] = useState("");
+  const [volunteerMessage, setVolunteerMessage] = useState("");
+  const [volunteerSubmitting, setVolunteerSubmitting] = useState(false);
+  const [myVolunteer, setMyVolunteer] = useState<{ id: string; status: string } | null | undefined>(undefined);
+
   /* ----------------------- FORM ----------------------- */
   const {
     register,
@@ -116,6 +124,13 @@ export default function UserProfile() {
   useEffect(() => {
     refreshUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ----------------------- VOLUNTEER STATUS ----------------------- */
+  useEffect(() => {
+    VolunteerService.getMyStatus()
+      .then((res) => setMyVolunteer(res.data ?? null))
+      .catch(() => setMyVolunteer(null));
   }, []);
 
   /* ----------------------- LOAD USER ----------------------- */
@@ -175,6 +190,29 @@ export default function UserProfile() {
       setHasPdfChanged(false);
     } catch (err) {
       console.error("Profile update failed", err);
+    }
+  };
+
+  /* ----------------------- VOLUNTEER APPLY ----------------------- */
+  const handleVolunteerSubmit = async () => {
+    if (!volunteerCity.trim()) {
+      addToast("City is required", "error");
+      return;
+    }
+    try {
+      setVolunteerSubmitting(true);
+      const res = await VolunteerService.apply({
+        city: volunteerCity.trim(),
+        message: volunteerMessage.trim() || undefined,
+      });
+      setMyVolunteer(res.data?.volunteer ?? null);
+      setShowVolunteerModal(false);
+      setVolunteerCity("");
+      setVolunteerMessage("");
+    } catch (err: any) {
+      addToast(err?.response?.data?.message || "Failed to submit application", "error");
+    } finally {
+      setVolunteerSubmitting(false);
     }
   };
 
@@ -276,7 +314,7 @@ export default function UserProfile() {
   };
 
   /* ----------------------- GUARDS ----------------------- */
-  if (!isLoaded) return null;
+   if (!isLoaded) return null;
   if (!user) return <div>Please login</div>;
 
   // Extract register result so we can call panReg.onChange after uppercasing
@@ -284,6 +322,7 @@ export default function UserProfile() {
 
   /* ----------------------- UI ----------------------- */
   return (
+    <>
     <div className="up-page">
       <div className="up-wrapper">
         {/* LEFT CARD */}
@@ -322,6 +361,21 @@ export default function UserProfile() {
             {user.firstName} {user.lastName}
           </h3>
           <p className="up-phone">{user.phoneNumber}</p>
+
+          {myVolunteer === undefined ? null : myVolunteer === null ? (
+            <button
+              className="up-volunteer-btn"
+              onClick={() => setShowVolunteerModal(true)}
+            >
+              Become a Volunteer
+            </button>
+          ) : myVolunteer.status === "ACCEPTED" ? (
+            <span className="up-volunteer-badge accepted">&#10003; Volunteer</span>
+          ) : myVolunteer.status === "REJECTED" ? (
+            <span className="up-volunteer-badge rejected">Application Rejected</span>
+          ) : (
+            <span className="up-volunteer-badge pending">Application Pending</span>
+          )}
         </div>
 
         {/* FORM */}
@@ -630,5 +684,71 @@ export default function UserProfile() {
         </form>
       </div>
     </div>
+
+    {/* VOLUNTEER MODAL */}
+    {showVolunteerModal && (
+      <div className="up-modal-overlay" onClick={() => setShowVolunteerModal(false)}>
+        <div className="up-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="up-modal-header">
+            <h3>Become a Volunteer</h3>
+            <button className="up-modal-close" onClick={() => setShowVolunteerModal(false)}>&#x2715;</button>
+          </div>
+          <div className="up-modal-body">
+            <p className="up-modal-intro">
+              Join the Navyug RaiseAPlayer Foundation as a volunteer and help raise the next generation of players.
+            </p>
+            <div className="up-field">
+              <label>Name</label>
+              <input
+                value={`${user.firstName} ${user.lastName}`}
+                readOnly
+                className="up-input-readonly"
+              />
+            </div>
+            <div className="up-field">
+              <label>Email</label>
+              <input value={user.email} readOnly className="up-input-readonly" />
+            </div>
+            <div className="up-field">
+              <label>Phone</label>
+              <input value={user.phoneNumber ?? ""} readOnly className="up-input-readonly" />
+            </div>
+            <div className="up-field">
+              <label>City <span style={{ color: "#e53e3e" }}>*</span></label>
+              <input
+                value={volunteerCity}
+                onChange={(e) => setVolunteerCity(e.target.value)}
+                placeholder="Enter your city"
+              />
+            </div>
+            <div className="up-field">
+              <label>Message (optional)</label>
+              <textarea
+                value={volunteerMessage}
+                onChange={(e) => setVolunteerMessage(e.target.value)}
+                placeholder="Why do you want to volunteer?"
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="up-modal-footer">
+            <button
+              className="up-modal-cancel"
+              onClick={() => setShowVolunteerModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="up-modal-submit"
+              onClick={handleVolunteerSubmit}
+              disabled={volunteerSubmitting}
+            >
+              {volunteerSubmitting ? "Submitting..." : "Submit Application"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
