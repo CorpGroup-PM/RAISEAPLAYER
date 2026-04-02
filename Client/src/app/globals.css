@@ -19,7 +19,11 @@
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
 
-html, body {
+html {
+  width: 100%;
+}
+
+body {
   width: 100%;
   overflow-x: hidden;
 }

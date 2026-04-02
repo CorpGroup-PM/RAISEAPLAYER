@@ -26,6 +26,7 @@ export default function VolunteerDetailPage() {
   const [volunteer, setVolunteer] = useState<VolunteerInfo | null | undefined>(undefined);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Activity | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -93,9 +94,14 @@ export default function VolunteerDetailPage() {
         ) : (
           <div className="vd-grid">
             {activities.map((act) => (
-              <div key={act.id} className="vd-act-card">
+              <div key={act.id} className="vd-act-card" onClick={() => setSelected(act)}>
                 <div className="vd-act-img-wrap">
-                  <img src={act.imageUrl} alt="Activity" className="vd-act-img" />
+                  <img
+                    src={act.imageUrl}
+                    alt="Activity"
+                    className="vd-act-img"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/icon.png"; }}
+                  />
                   <span className="vd-act-date-badge">
                     {new Date(act.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                   </span>
@@ -109,6 +115,36 @@ export default function VolunteerDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Activity detail modal */}
+      {selected && (
+        <div className="vi-modal-overlay" onClick={() => setSelected(null)}>
+          <div className="vi-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="vi-modal-img-wrap">
+              <img
+                src={selected.imageUrl}
+                alt="Activity"
+                className="vi-modal-img"
+                onError={(e) => { (e.target as HTMLImageElement).src = "/icon.png"; }}
+              />
+              <button className="vi-modal-close" onClick={() => setSelected(null)}>✕</button>
+            </div>
+            <div className="vi-modal-body">
+              <p className="vi-modal-campaign">{selected.helpedCampaign}</p>
+              <p className="vi-modal-date">
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="#065f46" strokeWidth="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6" stroke="#065f46" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="8" y1="2" x2="8" y2="6" stroke="#065f46" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="3" y1="10" x2="21" y2="10" stroke="#065f46" strokeWidth="2"/>
+                </svg>
+                {new Date(selected.date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+              </p>
+              <p className="vi-modal-note">{selected.note}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
